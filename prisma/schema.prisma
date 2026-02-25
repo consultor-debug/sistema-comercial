@@ -1,0 +1,213 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id             String        @id @default(uuid())
+  name           String
+  slug           String        @unique
+  logoUrl        String?       @map("logo_url")
+  primaryColor   String?       @default("#3B82F6") @map("primary_color")
+  isActive       Boolean       @default(true) @map("is_active")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  smtpHost       String?       @map("smtp_host")
+  smtpPort       Int?          @map("smtp_port")
+  smtpUser       String?       @map("smtp_user")
+  smtpPassword   String?       @map("smtp_password")
+  smtpFrom       String?       @map("smtp_from")
+  paypalClientId String?       @map("paypal_client_id")
+  paypalSecret   String?       @map("paypal_secret")
+  reniecToken    String?       @map("reniec_token")
+  reniecUrl      String?       @map("reniec_url")
+  n8nWebhookUrl  String?       @map("n8n_webhook_url")
+  auditLogs      AuditLog[]
+  projects       Project[]
+  quotations     Quotation[]
+  subscription   Subscription?
+  users          User[]
+
+  @@map("tenants")
+}
+
+model User {
+  id              String      @id @default(uuid())
+  tenantId        String?     @map("tenant_id")
+  email           String      @unique
+  passwordHash    String      @map("password_hash")
+  name            String
+  role            UserRole    @default(ASESOR)
+  canChangeStatus Boolean     @default(false) @map("can_change_status")
+  isActive        Boolean     @default(true) @map("is_active")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  auditLogs       AuditLog[]
+  assignedLots    Lot[]       @relation("AsesorLots")
+  quotations      Quotation[]
+  tenant          Tenant?     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("users")
+}
+
+model Project {
+  id           String      @id @default(uuid())
+  tenantId     String      @map("tenant_id")
+  name         String
+  description  String?
+  mapImageUrl  String?     @map("map_image_url")
+  sheetsId     String?     @map("sheets_id")
+  isActive     Boolean     @default(true) @map("is_active")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+  maxCuotas    Int         @default(60) @map("max_cuotas")
+  minInicial   Float       @default(0) @map("min_inicial")
+  interestRate Float       @default(0) @map("interest_rate")
+  n8nWebhookUrl String?     @map("n8n_webhook_url")
+  lots         Lot[]
+  tenant       Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  quotations   Quotation[]
+
+  @@index([tenantId])
+  @@map("projects")
+}
+
+model Lot {
+  id           String      @id @default(uuid())
+  projectId    String      @map("project_id")
+  code         String
+  manzana      String
+  loteNumero   Int         @map("lote_numero")
+  areaM2       Float       @map("area_m2")
+  tipologia    String?
+  etapa        String?
+  frenteM      Float?      @map("frente_m")
+  fondoM       Float?      @map("fondo_m")
+  ladoDerM     Float?      @map("lado_der_m")
+  ladoIzqM     Float?      @map("lado_izq_m")
+  precioLista  Float       @map("precio_lista")
+  descuentoMax Float       @default(0) @map("descuento_max")
+  estado       LotStatus   @default(LIBRE)
+  asesorId     String?     @map("asesor_id")
+  mapShapeType String?     @map("map_shape_type")
+  mapShapeData Json?       @map("map_shape_data")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+  auditLogs    AuditLog[]
+  asesor       User?       @relation("AsesorLots", fields: [asesorId], references: [id])
+  project      Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  quotations   Quotation[]
+
+  @@unique([projectId, code])
+  @@index([projectId])
+  @@index([estado])
+  @@map("lots")
+}
+
+model Quotation {
+  id                 String      @id @default(uuid())
+  codigo             String      @unique
+  tenantId           String      @map("tenant_id")
+  projectId          String      @map("project_id")
+  lotId              String      @map("lot_id")
+  userId             String      @map("user_id")
+  estadoLoteAlEnviar LotStatus   @map("estado_lote_al_enviar")
+  clienteDni         String      @map("cliente_dni")
+  clienteNombres     String      @map("cliente_nombres")
+  clienteApellidos   String      @map("cliente_apellidos")
+  clienteEmail       String      @map("cliente_email")
+  clienteFechaNac    DateTime?   @map("cliente_fecha_nac")
+  precioLista        Float       @map("precio_lista")
+  descuento          Float       @default(0)
+  precioFinal        Float       @map("precio_final")
+  inicial            Float
+  cuotas             Int
+  fechaInicio        DateTime    @map("fecha_inicio")
+  cronograma         Json
+  pdfUrl             String?     @map("pdf_url")
+  emailStatus        EmailStatus @default(PENDING) @map("email_status")
+  emailSentAt        DateTime?   @map("email_sent_at")
+  createdAt          DateTime    @default(now()) @map("created_at")
+  lot                Lot         @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  project            Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tenant             Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user               User        @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([projectId])
+  @@index([lotId])
+  @@map("quotations")
+}
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  tenantId      String   @map("tenant_id")
+  lotId         String   @map("lot_id")
+  userId        String   @map("user_id")
+  campo         String
+  valorAnterior String?  @map("valor_anterior")
+  valorNuevo    String?  @map("valor_nuevo")
+  ipAddress     String?  @map("ip_address")
+  motivo        String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  lot           Lot      @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([lotId])
+  @@map("audit_logs")
+}
+
+model Subscription {
+  id                   String             @id @default(uuid())
+  tenantId             String             @unique @map("tenant_id")
+  paypalSubscriptionId String?            @unique @map("paypal_subscription_id")
+  plan                 SubscriptionPlan   @default(BASIC)
+  status               SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart   DateTime?          @map("current_period_start")
+  currentPeriodEnd     DateTime?          @map("current_period_end")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+  tenant               Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  ASESOR
+  LECTOR
+}
+
+enum LotStatus {
+  LIBRE
+  SEPARADO
+  VENDIDO
+  NO_DISPONIBLE
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum SubscriptionPlan {
+  BASIC
+  PRO
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  SUSPENDED
+}

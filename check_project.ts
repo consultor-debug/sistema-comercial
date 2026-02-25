@@ -1,0 +1,1 @@
+import { PrismaClient } from '@prisma/client'; const prisma = new PrismaClient(); async function check() { const p = await prisma.project.findFirst({ where: { name: 'Napoles' } }); console.log(JSON.stringify(p, null, 2)); } check();

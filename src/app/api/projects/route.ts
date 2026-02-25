@@ -1,0 +1,192 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/db'
+import { auth } from '@/auth'
+import { LotStatus } from '@prisma/client'
+
+export async function GET(_request: NextRequest) {
+    try {
+        const session = await auth()
+        if (!session?.user) {
+            return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+        }
+
+        const userRole = (session.user as any).role
+        const userTenantId = (session.user as any).tenantId
+
+        const where = userRole === 'SUPER_ADMIN' ? {} : { tenantId: userTenantId }
+
+        const projects = await prisma.project.findMany({
+            where: {
+                ...where,
+                isActive: true
+            },
+            include: {
+                tenant: {
+                    select: {
+                        name: true,
+                        slug: true,
+                        logoUrl: true
+                    }
+                },
+                lots: {
+                    select: {
+                        estado: true
+                    }
+                }
+            },
+            orderBy: {
+                name: 'asc'
+            }
+        })
+
+        const projectsWithStats = projects.map(project => {
+            const stats = {
+                total: project.lots.length,
+                libre: project.lots.filter(l => l.estado === LotStatus.LIBRE).length,
+                separado: project.lots.filter(l => l.estado === LotStatus.SEPARADO).length,
+                vendido: project.lots.filter(l => l.estado === LotStatus.VENDIDO).length,
+                noDisponible: project.lots.filter(l => l.estado === LotStatus.NO_DISPONIBLE).length
+            }
+
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { lots, ...projectData } = project
+
+            return {
+                ...projectData,
+                stats
+            }
+        })
+
+        return NextResponse.json({
+            success: true,
+            projects: projectsWithStats
+        })
+    } catch (error) {
+        console.error('Projects fetch error:', error)
+        return NextResponse.json(
+            { success: false, error: 'Error al obtener proyectos' },
+            { status: 500 }
+        )
+    }
+}
+
+export async function POST(request: NextRequest) {
+    try {
+        const session = await auth()
+        if (!session?.user) {
+            return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+        }
+
+        const userRole = (session.user as any).role
+        const body = await request.json()
+        const { name, description, maxCuotas, minInicial, tenantId: bodyTenantId } = body
+
+        if (!name) {
+            return NextResponse.json({ error: 'Nombre es requerido' }, { status: 400 })
+        }
+
+        const tenantId = userRole === 'SUPER_ADMIN' ? bodyTenantId : (session.user as any).tenantId
+
+        if (!tenantId) {
+            return NextResponse.json({ error: 'Tenant ID es requerido' }, { status: 400 })
+        }
+
+        const project = await prisma.project.create({
+            data: {
+                tenantId,
+                name,
+                description,
+                maxCuotas: maxCuotas || 60,
+                minInicial: minInicial || 0,
+                isActive: true
+            }
+        })
+
+        return NextResponse.json({ success: true, project })
+    } catch (error) {
+        console.error('Project creation error:', error)
+        return NextResponse.json({ error: 'Error al crear proyecto' }, { status: 500 })
+    }
+}
+export async function DELETE(request: NextRequest) {
+    try {
+        const session = await auth()
+        if (!session?.user) {
+            return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+        }
+
+        const userRole = (session.user as any).role
+        const userTenantId = (session.user as any).tenantId
+        const { searchParams } = new URL(request.url)
+        const id = searchParams.get('id')
+
+        if (!id) {
+            return NextResponse.json({ error: 'ID de proyecto es requerido' }, { status: 400 })
+        }
+
+        // Verify project exists and belongs to tenant (or user is SUPER_ADMIN)
+        const where = userRole === 'SUPER_ADMIN' ? { id } : { id, tenantId: userTenantId }
+        const project = await prisma.project.findFirst({
+            where
+        })
+
+        if (!project) {
+            return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 })
+        }
+
+        // Delete project (cascades to lots, quotations, etc. thanks to schema)
+        await prisma.project.delete({
+            where: { id }
+        })
+
+        return NextResponse.json({ success: true, message: 'Proyecto eliminado correctamente' })
+    } catch (error) {
+        console.error('Project deletion error:', error)
+        return NextResponse.json({ error: 'Error al eliminar proyecto' }, { status: 500 })
+    }
+}
+
+export async function PUT(request: NextRequest) {
+    try {
+        const session = await auth()
+        if (!session?.user) {
+            return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+        }
+
+        const userRole = (session.user as any).role
+        const userTenantId = (session.user as any).tenantId
+        const body = await request.json()
+        const { id, name, description, maxCuotas, minInicial, isActive, tenantId: bodyTenantId } = body
+
+        if (!id) {
+            return NextResponse.json({ error: 'ID de proyecto es requerido' }, { status: 400 })
+        }
+
+        // Verify project exists and belongs to tenant (or user is SUPER_ADMIN)
+        const where = userRole === 'SUPER_ADMIN' ? { id } : { id, tenantId: userTenantId }
+        const existingProject = await prisma.project.findFirst({
+            where
+        })
+
+        if (!existingProject) {
+            return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 })
+        }
+
+        const project = await prisma.project.update({
+            where: { id },
+            data: {
+                name: name !== undefined ? name : undefined,
+                description: description !== undefined ? description : undefined,
+                tenantId: userRole === 'SUPER_ADMIN' && bodyTenantId ? bodyTenantId : undefined,
+                maxCuotas: maxCuotas !== undefined ? (maxCuotas ? parseInt(maxCuotas.toString()) : 0) : undefined,
+                minInicial: minInicial !== undefined ? (minInicial ? parseFloat(minInicial.toString()) : 0) : undefined,
+                isActive: isActive !== undefined ? isActive : undefined,
+            }
+        })
+
+        return NextResponse.json({ success: true, project })
+    } catch (error) {
+        console.error('Project update error:', error)
+        return NextResponse.json({ error: 'Error al actualizar proyecto' }, { status: 500 })
+    }
+}
