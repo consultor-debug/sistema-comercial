@@ -33,8 +33,8 @@ interface UserModalProps {
     } | null
     isOpen: boolean
     sessionInfo?: {
-        role: string;
-        tenantId: string;
+        role?: string;
+        tenantId?: string | null;
         availableTenants: Array<{ id: string; name: string }>;
     } | null
     onClose: () => void
