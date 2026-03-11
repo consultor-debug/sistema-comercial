@@ -144,12 +144,14 @@ export default function TenantsPage() {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 {tenant.logoUrl ? (
-                                                    {/* eslint-disable-next-line @next/next/no-img-element */ }
-                                                    < img src={tenant.logoUrl} alt="" className="w-8 h-8 rounded bg-white p-0.5 object-contain" />
+                                                    <>
+                                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                        <img src={tenant.logoUrl} alt="" className="w-8 h-8 rounded bg-white p-0.5 object-contain" />
+                                                    </>
                                                 ) : (
-                                                <div className="w-8 h-8 rounded bg-slate-800 flex items-center justify-center font-bold text-slate-400 text-xs">
-                                                    {tenant.name.substring(0, 2).toUpperCase()}
-                                                </div>
+                                                    <div className="w-8 h-8 rounded bg-slate-800 flex items-center justify-center font-bold text-slate-400 text-xs">
+                                                        {tenant.name.substring(0, 2).toUpperCase()}
+                                                    </div>
                                                 )}
                                                 <div className="flex flex-col">
                                                     <span className="font-semibold text-white">{tenant.name}</span>
