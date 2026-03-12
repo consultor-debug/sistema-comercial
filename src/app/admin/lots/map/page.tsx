@@ -291,14 +291,19 @@ export default function AdminMapPage() {
                     </CardHeader>
                     <CardContent>
                         <p className="text-sm text-slate-400 mb-4">
-                            Los planos se guardan en la carpeta:
+                            Los planos se están almacenando de manera segura en el servidor, en el directorio:
                         </p>
-                        <code className="block bg-slate-800 p-4 rounded-lg text-emerald-400 font-mono text-sm">
-                            /Users/luisda/Sistema Comercial/sistema-comercial/public/maps/
+                        <code className="block bg-slate-800 p-4 rounded-lg text-emerald-400 font-mono text-sm leading-relaxed overflow-x-auto whitespace-pre">
+                            /app/public/maps/
                         </code>
-                        <p className="text-sm text-slate-500 mt-4">
-                            Puedes copiar tus archivos SVG o PNG directamente a esta carpeta.
-                        </p>
+                        <div className="mt-4 p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                            <h4 className="text-orange-400 font-medium mb-1">⚠️ Importante para despliegues (Easypanel/Docker)</h4>
+                            <p className="text-sm text-slate-400 leading-relaxed">
+                                Si estás utilizando un servidor como <strong>Easypanel</strong>, asegúrate de configurar un <strong className="text-white">&quot;Volume Mount&quot;</strong> en la pestaña <strong>Advanced</strong> o <strong>Storage</strong> de tu aplicación. 
+                                <br/><br/>
+                                Deberás montar la ruta <code className="bg-slate-800 px-1.5 py-0.5 rounded text-white text-xs">/app/public/maps</code> para evitar que los planos se borren con cada nueva actualización o reinicio del sistema.
+                            </p>
+                        </div>
                     </CardContent>
                 </Card>
             </main>
