@@ -13,55 +13,61 @@ export async function POST(request: NextRequest) {
         
         const lotCode = body.ID || body.Lote || body.id || body.code
         const newStatusRaw = body.Estado || body.Status || body.estado || body.status
-        const projectId = body.projectId || body.proyectoId // Optional: helps disambiguate if codes repeat across projects
+        const newPriceRaw = body['Precio Lista'] || body.Precio || body.Monto || body.precio
+        const newAreaRaw = body.Area || body['Area M2'] || body.area
+        const projectId = body.projectId || body.proyectoId
 
-        if (!lotCode || !newStatusRaw) {
-            return NextResponse.json({ 
-                success: false, 
-                error: 'Missing ID or Estado in payload' 
-            }, { status: 400 })
+        if (!lotCode) {
+            return NextResponse.json({ success: false, error: 'Missing lot code (ID)' }, { status: 400 })
         }
 
-        // Standardize status to uppercase (LIBRE, SEPARADO, VENDIDO)
-        const statusMap: Record<string, string> = {
-            'disponible': 'LIBRE',
-            'libre': 'LIBRE',
-            'separado': 'SEPARADO',
-            'vendido': 'VENDIDO',
-            'v': 'VENDIDO',
-            's': 'SEPARADO',
-            'l': 'LIBRE'
+        const updateData: any = {}
+
+        // 1. Status Mapping
+        if (newStatusRaw) {
+            const statusMap: Record<string, string> = {
+                'disponible': 'LIBRE',
+                'libre': 'LIBRE',
+                'separado': 'SEPARADO',
+                'vendido': 'VENDIDO',
+                'v': 'VENDIDO',
+                's': 'SEPARADO',
+                'l': 'LIBRE'
+            }
+            const newStatus = statusMap[String(newStatusRaw).toLowerCase()] || String(newStatusRaw).toUpperCase()
+            const validStatuses = ['LIBRE', 'SEPARADO', 'VENDIDO']
+            if (validStatuses.includes(newStatus)) {
+                updateData.estado = newStatus
+            }
         }
 
-        const newStatus = statusMap[String(newStatusRaw).toLowerCase()] || String(newStatusRaw).toUpperCase()
-
-        // Validate if it's a valid LotStatus enum
-        const validStatuses = ['LIBRE', 'SEPARADO', 'VENDIDO']
-        if (!validStatuses.includes(newStatus)) {
-            return NextResponse.json({ 
-                success: false, 
-                error: `Invalid status: ${newStatusRaw}` 
-            }, { status: 400 })
+        // 2. Price Mapping
+        if (newPriceRaw !== undefined) {
+            const price = parseFloat(String(newPriceRaw).replace(/[^0-9.]/g, ''))
+            if (!isNaN(price)) {
+                updateData.precioLista = price
+            }
         }
 
-        // Find and update the lot
-        // If projectId is provided, use it to be more specific
-        const whereClause = projectId 
-            ? { code: String(lotCode), projectId: String(projectId) }
-            : { code: String(lotCode) }
+        // 3. Area Mapping
+        if (newAreaRaw !== undefined) {
+            const area = parseFloat(String(newAreaRaw).replace(/[^0-9.]/g, ''))
+            if (!isNaN(area)) {
+                updateData.areaM2 = area
+            }
+        }
 
-        // Find first lot with that code (usually unique per project)
-        // If no projectId, and same code exists in multiple projects, it might update the wrong one.
-        // But usually, the Webhook is specific.
-        
+        if (Object.keys(updateData).length === 0) {
+            return NextResponse.json({ success: false, error: 'No valid data to update' }, { status: 400 })
+        }
+
+        // Find and update
         const updatedLots = await prisma.lot.updateMany({
             where: {
                 code: String(lotCode),
                 ...(projectId ? { projectId } : {})
             },
-            data: {
-                estado: newStatus as any
-            }
+            data: updateData
         })
 
         if (updatedLots.count === 0) {
@@ -73,7 +79,8 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({ 
             success: true, 
-            message: `Updated ${updatedLots.count} lot(s) to ${newStatus}` 
+            message: `Updated ${updatedLots.count} lot(s)`,
+            details: updateData
         })
 
     } catch (error) {
