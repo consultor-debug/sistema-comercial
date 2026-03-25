@@ -227,24 +227,21 @@ export const LotModal: React.FC<LotModalProps> = ({
                             </CardContent>
                         </Card>
 
-                        {/* Quoter section - only for LIBRE lots */}
+                        {/* Quoter and Client section - stacked vertically */}
                         {canQuote ? (
-                            <div className="grid lg:grid-cols-2 gap-6">
-                                <div className="space-y-4">
-                                    <Quoter
-                                        precioLista={lot.precioLista}
-                                        descuentoMax={lot.descuentoMax}
-                                        maxCuotas={projectSettings.maxCuotas}
-                                        minInicial={projectSettings.minInicial}
-                                        onQuotationCalculated={setQuotation}
-                                    />
-                                </div>
-                                <div className="space-y-4">
-                                    <ClientValidator
-                                        onValidated={setClient}
-                                        disabled={!quotation}
-                                    />
-                                </div>
+                            <div className="flex flex-col gap-6">
+                                <Quoter
+                                    precioLista={lot.precioLista}
+                                    descuentoMax={lot.descuentoMax}
+                                    maxCuotas={projectSettings.maxCuotas}
+                                    minInicial={projectSettings.minInicial}
+                                    onQuotationCalculated={setQuotation}
+                                />
+                                
+                                <ClientValidator
+                                    onValidated={setClient}
+                                    disabled={!quotation}
+                                />
                             </div>
                         ) : (
                             <Card variant="bordered" className="border-slate-600">

@@ -85,73 +85,89 @@ export const ClientValidator: React.FC<ClientValidatorProps> = ({
                     </h4>
                 </div>
 
-                {/* DNI Input with validate button */}
-                <div className="flex gap-3">
-                    <div className="flex-1">
-                        <Input
-                            label="DNI"
-                            placeholder="12345678"
-                            value={dni}
-                            onChange={(e) => {
-                                const value = e.target.value.replace(/\D/g, '').slice(0, 8)
-                                setDni(value)
-                                setValidatedClient(null)
-                                setError(null)
-                            }}
-                            disabled={disabled}
-                            error={error && !validatedClient ? error : undefined}
-                        />
-                    </div>
-                    <div className="pt-7">
-                        <Button
-                            onClick={handleValidateDNI}
-                            disabled={disabled || !validateDNI(dni) || isValidating}
-                            isLoading={isValidating}
-                            className="bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-900/20"
-                        >
-                            Validar
-                        </Button>
-                    </div>
-                </div>
-
-                {/* Validated client info */}
-                {validatedClient && (
-                    <div className="flex items-center gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl animate-in fade-in slide-in-from-top-1">
-                        <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-                        <div>
-                            <p className="text-xs font-medium text-emerald-400 uppercase">Validado</p>
-                            <p className="text-sm font-semibold text-white">{validatedClient.nombreCompleto}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* DNI Column */}
+                    <div className="space-y-4">
+                        <div className="flex gap-3">
+                            <div className="flex-1">
+                                <Input
+                                    label="DNI"
+                                    placeholder="12345678"
+                                    value={dni}
+                                    onChange={(e) => {
+                                        const value = e.target.value.replace(/\D/g, '').slice(0, 8)
+                                        setDni(value)
+                                        setValidatedClient(null)
+                                        setError(null)
+                                    }}
+                                    disabled={disabled}
+                                    error={error && !validatedClient ? error : undefined}
+                                />
+                            </div>
+                            <div className="pt-7">
+                                <Button
+                                    onClick={handleValidateDNI}
+                                    disabled={disabled || !validateDNI(dni) || isValidating}
+                                    isLoading={isValidating}
+                                    className="bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-900/20"
+                                >
+                                    Validar
+                                </Button>
+                            </div>
                         </div>
-                    </div>
-                )}
 
-                {/* Error message */}
-                {error && !isValidating && (
-                    <div className="flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400">
-                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                        <p className="text-xs font-medium">{error}</p>
-                    </div>
-                )}
+                        {/* Validated client info */}
+                        {validatedClient && (
+                            <div className="flex items-center gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl animate-in fade-in slide-in-from-top-1">
+                                <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                                <div>
+                                    <p className="text-xs font-medium text-emerald-400 uppercase">Validado</p>
+                                    <p className="text-sm font-semibold text-white">{validatedClient.nombreCompleto}</p>
+                                </div>
+                            </div>
+                        )}
 
-                {/* Additional fields */}
-                <div className="space-y-1">
-                    <Input
-                        type="email"
-                        label="Correo Electrónico"
-                        placeholder="cliente@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        disabled={disabled}
-                        leftIcon={<Mail className="w-4 h-4 text-slate-500" />}
-                    />
+                        {/* Error message */}
+                        {error && !isValidating && (
+                            <div className="flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400">
+                                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                <p className="text-xs font-medium">{error}</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Email Column */}
+                    <div className="space-y-4">
+                        <Input
+                            type="email"
+                            label="Correo Electrónico"
+                            placeholder="cliente@email.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            disabled={disabled}
+                            leftIcon={<Mail className="w-4 h-4 text-slate-500" />}
+                        />
+                        
+                        {/* Status indicator */}
+                        {!isComplete && (
+                            <div className="flex items-center gap-2 p-3 bg-slate-500/5 rounded-xl border border-slate-700/50">
+                                <AlertCircle className="w-4 h-4 text-slate-500" />
+                                <p className="text-[11px] text-slate-400 uppercase tracking-tight font-medium">
+                                    Complete DNI y Correo para el PDF
+                                </p>
+                            </div>
+                        )}
+                        
+                        {isComplete && (
+                            <div className="flex items-center gap-2 p-3 bg-emerald-500/5 rounded-xl border border-emerald-500/20">
+                                <CheckCircle className="w-4 h-4 text-emerald-500" />
+                                <p className="text-[11px] text-emerald-400 uppercase tracking-tight font-medium">
+                                    Listo para generar cotización
+                                </p>
+                            </div>
+                        )}
+                    </div>
                 </div>
-
-                {/* Status indicator */}
-                {!isComplete && (
-                    <p className="text-[10px] text-slate-500 text-center uppercase tracking-wider font-medium">
-                        Complete el DNI y Correo para habilitar el PDF
-                    </p>
-                )}
             </CardContent>
         </Card>
     )
