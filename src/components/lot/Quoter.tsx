@@ -87,18 +87,18 @@ export const Quoter: React.FC<QuoterProps> = ({
                         </h4>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4 mb-8">
-                        <div className="text-center p-4 bg-slate-800/60 rounded-2xl border border-slate-700/50 shadow-inner">
-                            <p className="text-[10px] text-slate-500 uppercase font-bold tracking-tighter mb-1">Precio Lista</p>
-                            <p className="text-xl font-black text-white">{formatCurrency(precioLista)}</p>
+                    <div className="grid grid-cols-3 gap-2 mb-8">
+                        <div className="text-center p-3 bg-slate-800/60 rounded-xl border border-slate-700/50 shadow-inner min-w-0">
+                            <p className="text-[10px] text-slate-500 uppercase font-black tracking-tighter mb-1 truncate">Precio Lista</p>
+                            <p className="text-[1.05rem] font-black text-white whitespace-nowrap">{formatCurrency(precioLista)}</p>
                         </div>
-                        <div className="text-center p-4 bg-amber-500/5 rounded-2xl border border-amber-500/20 shadow-inner">
-                            <p className="text-[10px] text-amber-500/70 uppercase font-bold tracking-tighter mb-1">Descuento</p>
-                            <p className="text-xl font-black text-amber-500">-{formatCurrency(descuento)}</p>
+                        <div className="text-center p-3 bg-amber-500/5 rounded-xl border border-amber-500/20 shadow-inner min-w-0">
+                            <p className="text-[10px] text-amber-500/70 uppercase font-black tracking-tighter mb-1 truncate">Descuento</p>
+                            <p className="text-[1.05rem] font-black text-amber-500 whitespace-nowrap">-{formatCurrency(descuento)}</p>
                         </div>
-                        <div className="text-center p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/20 shadow-inner shadow-emerald-900/10">
-                            <p className="text-[10px] text-emerald-500/70 uppercase font-bold tracking-tighter mb-1">Precio Final</p>
-                            <p className="text-xl font-black text-emerald-400">{formatCurrency(precioFinal)}</p>
+                        <div className="text-center p-3 bg-emerald-500/5 rounded-xl border border-emerald-500/20 shadow-inner shadow-emerald-900/10 min-w-0">
+                            <p className="text-[10px] text-emerald-500/70 uppercase font-black tracking-tighter mb-1 truncate">Precio Final</p>
+                            <p className="text-[1.05rem] font-black text-emerald-400 whitespace-nowrap">{formatCurrency(precioFinal)}</p>
                         </div>
                     </div>
 
