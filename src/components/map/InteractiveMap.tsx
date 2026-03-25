@@ -109,7 +109,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         }
     }
 
-    // Fullscreen toggle unchanged
+    // Fullscreen and Modal Handlers
 
     return (
         <div

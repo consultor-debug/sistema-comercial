@@ -1,19 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { auth } from '@/auth'
+import { generatePdfBuffer } from '@/lib/pdf'
 import { MapPdf } from '@/components/pdf/MapPdf'
 import path from 'path'
 import fs from 'fs'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(
-    request: NextRequest,
+    _request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth()
         if (!session?.user) {
-            return new NextResponse('No autorizado', { status: 401 })
+            return new Response('No autorizado', { status: 401 })
         }
+        
         const { id } = await params
         
         // Fetch project and lots
@@ -33,11 +36,10 @@ export async function GET(
         })
 
         if (!project || !project.mapImageUrl) {
-            return new NextResponse('Proyecto o plano no encontrado', { status: 404 })
+            return new Response('Proyecto o plano no encontrado', { status: 404 })
         }
 
         // Resolve absolute path for map image
-        // mapImageUrl common format: /maps/project-id.svg or /maps/image.png
         const cleanPath = project.mapImageUrl.startsWith('/') 
             ? project.mapImageUrl.substring(1) 
             : project.mapImageUrl
@@ -46,16 +48,19 @@ export async function GET(
 
         if (!fs.existsSync(absoluteImagePath)) {
             console.error('Map image not found at:', absoluteImagePath)
-            return new NextResponse('Archivo de plano no encontrado en el servidor', { status: 404 })
+            return new Response('Archivo de plano no encontrado en el servidor', { status: 404 })
         }
 
         // Render PDF to buffer
-        const { generatePdfBuffer } = await import('@/lib/pdf')
         const pdfBuffer = await generatePdfBuffer(
             <MapPdf 
                 projectName={project.name}
                 mapImagePath={absoluteImagePath}
-                lots={project.lots}
+                lots={project.lots.map(l => ({
+                    ...l,
+                    mapShapeType: l.mapShapeType ?? null,
+                    mapShapeData: l.mapShapeData ?? null
+                }))}
             />
         )
         
@@ -70,6 +75,6 @@ export async function GET(
         })
     } catch (error) {
         console.error('PDF Generation Error:', error)
-        return new NextResponse('Error al generar el PDF', { status: 500 })
+        return new Response('Error al generar el PDF', { status: 500 })
     }
 }
