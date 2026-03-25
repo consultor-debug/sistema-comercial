@@ -30,6 +30,8 @@ interface ProjectData {
     tenantId: string | null;
     maxCuotas: number;
     minInicial: number;
+    sheetsId: string | null;
+    n8nWebhookUrl: string | null;
     tenant?: { name: string } | null;
     stats: { total: number; libre: number; separado: number; vendido: number };
 }
@@ -209,8 +211,32 @@ export default function ProjectsManagementPage() {
                                         <div className="flex items-center gap-2">
                                             <XCircle className="w-3 h-3 text-rose-500" />
                                             <span className="text-white font-semibold">{project.stats.vendido}</span>
-                                        </div>
+                                           </div>
                                     </div>
+                                </div>
+
+                                {/* Connection Indicators */}
+                                <div className="flex flex-wrap gap-2">
+                                    {project.sheetsId ? (
+                                        <Badge variant="success" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 py-0.5">
+                                            <Building2 className="w-3 h-3 mr-1" />
+                                            Sheets Link
+                                        </Badge>
+                                    ) : (
+                                        <Badge variant="neutral" className="bg-slate-800 text-slate-500 border-slate-700 py-0.5">
+                                            Sin Sheets
+                                        </Badge>
+                                    )}
+                                    {project.n8nWebhookUrl ? (
+                                        <Badge variant="success" className="bg-blue-500/10 text-blue-400 border-blue-500/20 py-0.5" title={project.n8nWebhookUrl}>
+                                            <Globe className="w-3 h-3 mr-1" />
+                                            Webhook
+                                        </Badge>
+                                    ) : (
+                                        <Badge variant="neutral" className="bg-slate-800 text-slate-500 border-slate-700 py-0.5">
+                                            Sin Webhook
+                                        </Badge>
+                                    )}
                                 </div>
 
                                 <div className="pt-4 border-t border-slate-800 flex items-center justify-between gap-2">
@@ -339,11 +365,29 @@ export default function ProjectsManagementPage() {
                                     type="number"
                                     value={projectToEdit?.minInicial || ''}
                                     onChange={(e) => setProjectToEdit((prev) => prev ? ({ ...prev, minInicial: parseFloat(e.target.value) || 0 }) : null)}
-                                    placeholder="20"
-                                />
-                            </div>
-                        </div>
-                    </ModalBody>
+                                     placeholder="20"
+                                 />
+                             </div>
+                         </div>
+
+                         <div className="space-y-2">
+                             <label className="text-sm font-medium text-slate-300">Google Sheet ID</label>
+                             <Input
+                                 value={projectToEdit?.sheetsId || ''}
+                                 onChange={(e) => setProjectToEdit((prev) => prev ? ({ ...prev, sheetsId: e.target.value }) : null)}
+                                 placeholder="ID del Excel (ej: 1bxto...)"
+                             />
+                         </div>
+
+                         <div className="space-y-2">
+                             <label className="text-sm font-medium text-slate-300">n8n Webhook URL</label>
+                             <Input
+                                 value={projectToEdit?.n8nWebhookUrl || ''}
+                                 onChange={(e) => setProjectToEdit((prev) => prev ? ({ ...prev, n8nWebhookUrl: e.target.value }) : null)}
+                                 placeholder="https://tu-n8n.host/..."
+                             />
+                         </div>
+                     </ModalBody>
                     <ModalFooter>
                         <Button variant="ghost" type="button" onClick={() => setProjectToEdit(null)} disabled={isSaving}>
                             Cancelar

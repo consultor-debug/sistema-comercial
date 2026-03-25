@@ -17,7 +17,9 @@ export default function NewProjectPage() {
         description: '',
         tenantId: '',
         maxCuotas: 60,
-        minInicial: 0
+        minInicial: 0,
+        sheetsId: '',
+        n8nWebhookUrl: ''
     })
     const [sessionInfo, setSessionInfo] = React.useState<{ tenantId?: string | null; role?: string; availableTenants?: { id: string; name: string }[] } | null>(null)
 
@@ -135,6 +137,26 @@ export default function NewProjectPage() {
                                     value={formData.minInicial}
                                     onChange={(e) => setFormData({ ...formData, minInicial: parseFloat(e.target.value) || 0 })}
                                     hint="Monto mínimo para separar"
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium text-slate-300">Google Sheet ID</label>
+                                <Input
+                                    placeholder="1bxtoP3mjCIHJMQa_x5qRD1sTP-0_JDKyftwA3h-WfKM"
+                                    value={formData.sheetsId}
+                                    onChange={(e) => setFormData({ ...formData, sheetsId: e.target.value })}
+                                    hint="El ID de la hoja de cálculo para sincronizar datos"
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium text-slate-300">n8n Webhook URL</label>
+                                <Input
+                                    placeholder="https://su-n8n.host/webhook/..."
+                                    value={formData.n8nWebhookUrl}
+                                    onChange={(e) => setFormData({ ...formData, n8nWebhookUrl: e.target.value })}
+                                    hint="URL para notificaciones de cambios de estado"
                                 />
                             </div>
 

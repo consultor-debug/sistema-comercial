@@ -98,6 +98,8 @@ export async function POST(request: NextRequest) {
                 description,
                 maxCuotas: maxCuotas || 60,
                 minInicial: minInicial || 0,
+                sheetsId: body.sheetsId || null,
+                n8nWebhookUrl: body.n8nWebhookUrl || null,
                 isActive: true
             }
         })
@@ -180,6 +182,8 @@ export async function PUT(request: NextRequest) {
                 tenantId: userRole === 'SUPER_ADMIN' && bodyTenantId ? bodyTenantId : undefined,
                 maxCuotas: maxCuotas !== undefined ? (maxCuotas ? parseInt(maxCuotas.toString()) : 0) : undefined,
                 minInicial: minInicial !== undefined ? (minInicial ? parseFloat(minInicial.toString()) : 0) : undefined,
+                sheetsId: body.sheetsId !== undefined ? body.sheetsId : undefined,
+                n8nWebhookUrl: body.n8nWebhookUrl !== undefined ? body.n8nWebhookUrl : undefined,
                 isActive: isActive !== undefined ? isActive : undefined,
             }
         })
