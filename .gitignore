@@ -10,6 +10,12 @@ new-install/
 .tsx-*/
 *.zip
 *.log
+.my-cache/
+new-install/
+.siteground-deploy/
+siteground-deploy.tar.gz
+.npm-local/
+.npm-local-cache/
 
 
 .yarn/*
