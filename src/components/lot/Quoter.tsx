@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { calculateQuotation } from '@/lib/quotation'
-import { Calculator, Calendar, DollarSign, CreditCard } from 'lucide-react'
+import { Calculator, Calendar } from 'lucide-react'
 
 interface QuotationResult {
     precioLista: number
@@ -102,7 +102,7 @@ export const Quoter: React.FC<QuoterProps> = ({
                             value={descuento || ''}
                             onChange={(e) => setDescuento(parseFloat(e.target.value) || 0)}
                             disabled={disabled}
-                            leftIcon={<DollarSign className="w-4 h-4" />}
+                            leftIcon={<span className="text-xs font-bold text-slate-400">S/</span>}
                             hint={`Máximo: ${formatCurrency(descuentoMax)}`}
                             error={descuento > descuentoMax ? 'Excede monto límite' : undefined}
                         />
@@ -114,7 +114,7 @@ export const Quoter: React.FC<QuoterProps> = ({
                             value={inicial || ''}
                             onChange={(e) => setInicial(parseFloat(e.target.value) || 0)}
                             disabled={disabled}
-                            leftIcon={<CreditCard className="w-4 h-4" />}
+                            leftIcon={<span className="text-xs font-bold text-slate-400">S/</span>}
                             hint={minInicial > 0 ? `Mínimo: ${formatCurrency(minInicial)}` : undefined}
                             error={inicial > 0 && inicial < minInicial ? 'El monto es menor al mínimo' : undefined}
                         />
