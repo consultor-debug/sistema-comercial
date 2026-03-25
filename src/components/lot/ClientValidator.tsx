@@ -4,8 +4,8 @@ import * as React from 'react'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { validateDNI, validateEmail } from '@/lib/utils'
-import { CheckCircle, AlertCircle, Loader2, User } from 'lucide-react'
+import { validateDNI } from '@/lib/utils'
+import { CheckCircle, AlertCircle, User, Mail } from 'lucide-react'
 
 interface ValidatedClient {
     dni: string
@@ -25,7 +25,6 @@ export const ClientValidator: React.FC<ClientValidatorProps> = ({
 }) => {
     const [dni, setDni] = React.useState('')
     const [email, setEmail] = React.useState('')
-    const [fechaNac, setFechaNac] = React.useState('')
     const [validatedClient, setValidatedClient] = React.useState<ValidatedClient | null>(null)
     const [isValidating, setIsValidating] = React.useState(false)
     const [error, setError] = React.useState<string | null>(null)
@@ -55,16 +54,16 @@ export const ClientValidator: React.FC<ClientValidatorProps> = ({
             } else {
                 setError(data.error || 'No se pudo validar el DNI')
             }
-        } catch (err) {
+        } catch {
             setError('Error de conexión. Intente nuevamente.')
         } finally {
             setIsValidating(false)
         }
     }
 
-    // Check if all fields are valid
+    // Check if all fields are valid - Only require DNI validation and something in email
     React.useEffect(() => {
-        if (validatedClient && validateEmail(email) && fechaNac) {
+        if (validatedClient && email.trim().length > 0) {
             onValidated({
                 ...validatedClient,
                 dni,
@@ -72,19 +71,22 @@ export const ClientValidator: React.FC<ClientValidatorProps> = ({
         } else {
             onValidated(null)
         }
-    }, [validatedClient, email, fechaNac, dni, onValidated])
+    }, [validatedClient, email, dni, onValidated])
 
-    const isComplete = validatedClient && validateEmail(email) && fechaNac
+    const isComplete = validatedClient && email.trim().length > 0
 
     return (
-        <Card variant="bordered" className="border-slate-600">
-            <CardContent className="p-4 space-y-4">
-                <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wide">
-                    Datos del Cliente
-                </h4>
+        <Card variant="bordered" className="border-slate-700 bg-slate-800/20">
+            <CardContent className="p-5 space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                    <User className="w-4 h-4 text-blue-400" />
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                        Datos del Cliente
+                    </h4>
+                </div>
 
                 {/* DNI Input with validate button */}
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                     <div className="flex-1">
                         <Input
                             label="DNI"
@@ -98,7 +100,6 @@ export const ClientValidator: React.FC<ClientValidatorProps> = ({
                             }}
                             disabled={disabled}
                             error={error && !validatedClient ? error : undefined}
-                            leftIcon={<User className="w-4 h-4" />}
                         />
                     </div>
                     <div className="pt-7">
@@ -106,7 +107,7 @@ export const ClientValidator: React.FC<ClientValidatorProps> = ({
                             onClick={handleValidateDNI}
                             disabled={disabled || !validateDNI(dni) || isValidating}
                             isLoading={isValidating}
-                            size="default"
+                            className="bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-900/20"
                         >
                             Validar
                         </Button>
@@ -115,53 +116,44 @@ export const ClientValidator: React.FC<ClientValidatorProps> = ({
 
                 {/* Validated client info */}
                 {validatedClient && (
-                    <div className="flex items-center gap-2 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+                    <div className="flex items-center gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl animate-in fade-in slide-in-from-top-1">
                         <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
                         <div>
-                            <p className="text-sm font-medium text-emerald-400">Cliente validado</p>
-                            <p className="text-sm text-slate-300">{validatedClient.nombreCompleto}</p>
+                            <p className="text-xs font-medium text-emerald-400 uppercase">Validado</p>
+                            <p className="text-sm font-semibold text-white">{validatedClient.nombreCompleto}</p>
                         </div>
                     </div>
                 )}
 
                 {/* Error message */}
                 {error && !isValidating && (
-                    <div className="flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg">
-                        <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0" />
-                        <p className="text-sm text-rose-400">{error}</p>
+                    <div className="flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        <p className="text-xs font-medium">{error}</p>
                     </div>
                 )}
 
                 {/* Additional fields */}
-                <Input
-                    type="email"
-                    label="Correo Electrónico"
-                    placeholder="cliente@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={disabled}
-                    error={email && !validateEmail(email) ? 'Email inválido' : undefined}
-                />
-
-                <Input
-                    type="date"
-                    label="Fecha de Nacimiento"
-                    value={fechaNac}
-                    onChange={(e) => setFechaNac(e.target.value)}
-                    disabled={disabled}
-                />
-
-                {/* Completion indicator */}
-                <div className={`p-2 rounded-lg text-sm text-center ${isComplete
-                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                        : 'bg-slate-700/50 text-slate-400'
-                    }`}>
-                    {isComplete
-                        ? '✓ Datos completos - Puede enviar la cotización'
-                        : 'Complete todos los campos para habilitar el envío'
-                    }
+                <div className="space-y-1">
+                    <Input
+                        type="email"
+                        label="Correo Electrónico"
+                        placeholder="cliente@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        disabled={disabled}
+                        leftIcon={<Mail className="w-4 h-4 text-slate-500" />}
+                    />
                 </div>
+
+                {/* Status indicator */}
+                {!isComplete && (
+                    <p className="text-[10px] text-slate-500 text-center uppercase tracking-wider font-medium">
+                        Complete el DNI y Correo para habilitar el PDF
+                    </p>
+                )}
             </CardContent>
         </Card>
     )
 }
+

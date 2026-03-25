@@ -58,13 +58,13 @@ export async function PATCH(
             // Trigger n8n or Google App Script Webhook
             const project = existingLot.project as { n8nWebhookUrl?: string | null, sheetsId?: string | null, tenant: { n8nWebhookUrl?: string | null } }
             const webhookUrl = project.n8nWebhookUrl || project.tenant.n8nWebhookUrl
+            
             if (webhookUrl) {
-                await sendToN8n(webhookUrl, {
-                    // Google App Script compat keys
-                    id: lot.code, // Usar el codigo ('A1') que es lo que esta en la columna 'ID' del Excel
+                console.log(`Sending update to webhook: ${webhookUrl}`)
+                const payload = {
+                    id: lot.code,
                     status: lot.estado,
                     sheetId: project.sheetsId || '1bxtoP3mjCIHJMQa_x5qRD1sTP-0_JDKyftwA3h-WfKM',
-                    // Regular n8n payload keys
                     event: 'lot.status_changed',
                     data: {
                         lot: {
@@ -77,13 +77,15 @@ export async function PATCH(
                             id: existingLot.project.id,
                             name: existingLot.project.name
                         },
-                        user: {
-                            id: (session.user as { id: string }).id,
-                            name: session.user.name
-                        },
                         timestamp: new Date().toISOString()
                     }
-                }).catch(err => console.error('n8n error in lot update:', err))
+                }
+                
+                await sendToN8n(webhookUrl, payload)
+                    .then(() => console.log('Webhook successfully sent'))
+                    .catch(err => console.error('Webhook error:', err))
+            } else {
+                console.warn('No webhook URL found for project or tenant')
             }
         }
 

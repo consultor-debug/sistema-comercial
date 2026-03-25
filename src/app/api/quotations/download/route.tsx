@@ -96,9 +96,9 @@ export async function GET(request: NextRequest) {
         const pdfData = {
             codigo: quotation.codigo,
             date: {
-                fechaEmision: now.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-                horaEmision: now.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true }),
-                fechaVigencia: vigencia.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                fechaEmision: now.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Lima' }),
+                horaEmision: now.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Lima' }),
+                fechaVigencia: vigencia.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Lima' })
             },
             tenant: {
                 name: quotation.tenant.name,

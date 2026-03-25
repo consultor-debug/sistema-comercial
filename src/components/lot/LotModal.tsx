@@ -11,7 +11,7 @@ import { LOT_STATUS_LABELS } from '@/lib/utils'
 import { LotStatus } from '@prisma/client'
 import {
     MapPin, Square, Layers, Grid3X3, User,
-    Send, FileText, Lock
+    FileText, Lock
 } from 'lucide-react'
 
 interface Lot {
@@ -75,7 +75,6 @@ export const LotModal: React.FC<LotModalProps> = ({
 }) => {
     const [quotation, setQuotation] = React.useState<QuotationResult | null>(null)
     const [client, setClient] = React.useState<ValidatedClient | null>(null)
-    const [isSending, setIsSending] = React.useState(false)
     const [updatingStatus, setUpdatingStatus] = React.useState<LotStatus | null>(null)
     const [sendSuccess, setSendSuccess] = React.useState(false)
     const [isDownloading, setIsDownloading] = React.useState(false)
@@ -93,40 +92,6 @@ export const LotModal: React.FC<LotModalProps> = ({
     const isLibre = lot.estado === 'LIBRE'
     const canQuote = isLibre
     const canSend = isLibre && quotation && client
-
-    const handleSendQuotation = async () => {
-        if (!canSend || !quotation || !client) return
-
-        setIsSending(true)
-
-        try {
-            const response = await fetch('/api/quotations/send', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    lotId: lot.id,
-                    quotation,
-                    client
-                })
-            })
-
-            const data = await response.json()
-
-            if (data.success) {
-                setSendSuccess(true)
-                // Show success for 2 seconds then close
-                setTimeout(() => {
-                    onClose()
-                }, 2000)
-            } else {
-                alert(data.error || 'Error al enviar la cotización')
-            }
-        } catch {
-            alert('Error de conexión. Intente nuevamente.')
-        } finally {
-            setIsSending(false)
-        }
-    }
 
     const handleDownloadPdf = async () => {
         if (!canSend || !quotation || !client) return
@@ -350,27 +315,16 @@ export const LotModal: React.FC<LotModalProps> = ({
                     </Button>
 
                     {canQuote && (
-                        <div className="flex gap-2">
-                            <Button
-                                variant="outline"
-                                onClick={handleDownloadPdf}
-                                disabled={!canSend || isDownloading || isSending}
-                                isLoading={isDownloading}
-                            >
-                                <FileText className="w-4 h-4 mr-2" />
-                                Descargar PDF
-                            </Button>
-
-                            <Button
-                                variant="success"
-                                onClick={handleSendQuotation}
-                                disabled={!canSend || isSending || isDownloading}
-                                isLoading={isSending}
-                            >
-                                <Send className="w-4 h-4 mr-2" />
-                                Enviar Cotización
-                            </Button>
-                        </div>
+                        <Button
+                            variant="success"
+                            onClick={handleDownloadPdf}
+                            disabled={!canSend || isDownloading}
+                            isLoading={isDownloading}
+                            className="bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-900/20 px-8"
+                        >
+                            <FileText className="w-4 h-4 mr-2" />
+                            Descargar PDF
+                        </Button>
                     )}
                 </ModalFooter>
             )}
