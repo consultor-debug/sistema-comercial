@@ -1,22 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { auth } from '@/auth'
-import { renderToStream } from '@react-pdf/renderer'
 import { MapPdf } from '@/components/pdf/MapPdf'
 import path from 'path'
 import fs from 'fs'
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth()
         if (!session?.user) {
             return new NextResponse('No autorizado', { status: 401 })
         }
-
-        const { id } = params
+        const { id } = await params
         
         // Fetch project and lots
         const project = await prisma.project.findUnique({
@@ -51,26 +49,25 @@ export async function GET(
             return new NextResponse('Archivo de plano no encontrado en el servidor', { status: 404 })
         }
 
-        // Render PDF to stream
-        const stream = await renderToStream(
+        // Render PDF to buffer
+        const { generatePdfBuffer } = await import('@/lib/pdf')
+        const pdfBuffer = await generatePdfBuffer(
             <MapPdf 
                 projectName={project.name}
                 mapImagePath={absoluteImagePath}
                 lots={project.lots}
             />
         )
-
-        // Convert stream to response
-        const response = new NextResponse(stream as unknown as ReadableStream)
         
-        // Set headers for PDF download
-        response.headers.set('Content-Type', 'application/pdf')
-        response.headers.set(
-            'Content-Disposition', 
-            `attachment; filename="Plano-${project.name.replace(/\s+/g, '-')}.pdf"`
-        )
-
-        return response
+        // Return response with PDF buffer
+        return new Response(new Uint8Array(pdfBuffer), {
+            status: 200,
+            headers: {
+                'Content-Type': 'application/pdf',
+                'Content-Disposition': `attachment; filename="Plano-${project.name.replace(/\s+/g, '-')}.pdf"`,
+                'Content-Length': pdfBuffer.length.toString()
+            },
+        })
     } catch (error) {
         console.error('PDF Generation Error:', error)
         return new NextResponse('Error al generar el PDF', { status: 500 })

@@ -96,6 +96,7 @@ export const MapPdf = ({ projectName, mapImagePath, lots }: MapPdfProps) => {
         <Document>
             <Page size="A4" orientation="landscape" style={styles.page}>
                 <View style={styles.container}>
+                    {/* eslint-disable-next-line jsx-a11y/alt-text */}
                     <Image 
                         src={mapImagePath} 
                         style={styles.mapImage} 
