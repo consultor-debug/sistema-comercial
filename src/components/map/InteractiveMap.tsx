@@ -8,6 +8,7 @@ import { MapControls, MapFilters, MapLegend, MapStats } from './MapControls'
 import { Lot } from '@prisma/client'
 
 interface InteractiveMapProps {
+    projectId: string
     projectName: string
     mapImageUrl: string
     lots: Lot[]
@@ -17,6 +18,7 @@ interface InteractiveMapProps {
 }
 
 export const InteractiveMap: React.FC<InteractiveMapProps> = ({
+    projectId,
     projectName,
     mapImageUrl,
     lots,
@@ -27,6 +29,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     const containerRef = React.useRef<HTMLDivElement>(null)
     const [zoom, setZoom] = React.useState(1)
     const [isFullscreen, setIsFullscreen] = React.useState(false)
+    const [isDownloading, setIsDownloading] = React.useState(false)
 
     // Filters
     const [selectedManzana, setSelectedManzana] = React.useState<string | 'all'>('all')
@@ -68,7 +71,9 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             await containerRef.current.requestFullscreen()
             setIsFullscreen(true)
         } else {
-            await document.exitFullscreen()
+            if (document.fullscreenElement) {
+                await document.exitFullscreen()
+            }
             setIsFullscreen(false)
         }
     }
@@ -80,6 +85,31 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         document.addEventListener('fullscreenchange', handleFullscreenChange)
         return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
     }, [])
+
+    const handleDownloadPdf = async () => {
+        setIsDownloading(true)
+        try {
+            const response = await fetch(`/api/projects/${projectId}/map/download`)
+            if (!response.ok) throw new Error('Error al generar PDF')
+            
+            const blob = await response.blob()
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `Plano-${projectName.replace(/\s+/g, '-')}.pdf`
+            document.body.appendChild(a)
+            a.click()
+            window.URL.revokeObjectURL(url)
+            document.body.removeChild(a)
+        } catch (error) {
+            console.error('Download error:', error)
+            alert('No se pudo descargar el plano en este momento.')
+        } finally {
+            setIsDownloading(false)
+        }
+    }
+
+    // Fullscreen toggle unchanged
 
     return (
         <div
@@ -169,6 +199,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                                 onZoomOut={() => zoomOut()}
                                 onReset={() => resetTransform()}
                                 onFullscreen={handleFullscreen}
+                                onDownloadPdf={handleDownloadPdf}
+                                isDownloading={isDownloading}
                             />
                         </>
                     )}

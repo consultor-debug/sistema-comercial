@@ -109,6 +109,7 @@ export default function ProjectPage() {
             {/* Main content */}
             <main className="container mx-auto px-6 py-6">
                 <InteractiveMap
+                    projectId={project.id}
                     projectName={project.name}
                     mapImageUrl={project.mapImageUrl || '/maps/Lumina_SVG2.svg'}
                     lots={lots}

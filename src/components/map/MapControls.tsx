@@ -3,13 +3,15 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/Badge'
-import { ZoomIn, ZoomOut, Maximize2, RotateCcw } from 'lucide-react'
+import { ZoomIn, ZoomOut, Maximize2, RotateCcw, FileText, Loader2 } from 'lucide-react'
 
 interface MapControlsProps {
     onZoomIn: () => void
     onZoomOut: () => void
     onReset: () => void
     onFullscreen: () => void
+    onDownloadPdf?: () => void
+    isDownloading?: boolean
     zoom: number
     minZoom?: number
     maxZoom?: number
@@ -20,12 +22,14 @@ export const MapControls: React.FC<MapControlsProps> = ({
     onZoomOut,
     onReset,
     onFullscreen,
+    onDownloadPdf,
+    isDownloading = false,
     zoom,
     minZoom = 0.5,
     maxZoom = 3
 }) => {
     return (
-        <div className="absolute bottom-4 right-4 lg:bottom-6 lg:right-6 flex flex-col gap-1 z-20">
+        <div className="absolute bottom-4 right-4 lg:bottom-6 lg:right-6 flex flex-col gap-2 z-20">
             <div className="flex flex-col bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl overflow-hidden shadow-2xl">
                 <button
                     onClick={onZoomIn}
@@ -61,6 +65,24 @@ export const MapControls: React.FC<MapControlsProps> = ({
             >
                 <Maximize2 className="w-4 h-4" />
             </button>
+
+            {onDownloadPdf && (
+                <button
+                    onClick={onDownloadPdf}
+                    disabled={isDownloading}
+                    className="p-2.5 bg-blue-600/80 backdrop-blur-md border border-blue-500/50 rounded-xl text-white hover:bg-blue-500 transition-all shadow-xl shadow-blue-900/40 group overflow-hidden"
+                    title="Descargar Plano PDF"
+                >
+                    {isDownloading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                        <div className="flex items-center gap-2">
+                            <FileText className="w-4 h-4" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider hidden group-hover:block transition-all duration-300">Descargar Plano</span>
+                        </div>
+                    )}
+                </button>
+            )}
         </div>
     )
 }
