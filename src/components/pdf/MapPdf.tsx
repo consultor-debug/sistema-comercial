@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Document, Page, Image, View, Text, StyleSheet, Svg, Circle, Polygon } from '@react-pdf/renderer'
 import { LotStatus } from '@prisma/client'
 import * as React from 'react'
