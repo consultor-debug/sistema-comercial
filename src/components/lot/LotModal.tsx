@@ -320,7 +320,14 @@ export const LotModal: React.FC<LotModalProps> = ({
     )
 }
 
-function SpecCard({ icon: Icon, label, value, color }: any) {
+interface SpecCardProps {
+    icon: React.ElementType
+    label: string
+    value: string | number
+    color: 'blue' | 'indigo' | 'emerald' | 'purple'
+}
+
+function SpecCard({ icon: Icon, label, value, color }: SpecCardProps) {
     const variants = {
         blue: 'from-blue-500/10 to-transparent border-blue-500/20 text-blue-400',
         indigo: 'from-indigo-500/10 to-transparent border-indigo-500/20 text-indigo-400',
@@ -351,7 +358,14 @@ function DimensionItem({ label, value }: { label: string; value: number | null }
     )
 }
 
-function AdminAction({ status, activeStatus, isLoading, onClick }: any) {
+interface AdminActionProps {
+    status: LotStatus
+    activeStatus: LotStatus
+    isLoading: boolean
+    onClick: () => void
+}
+
+function AdminAction({ status, activeStatus, isLoading, onClick }: AdminActionProps) {
     const colors = {
         LIBRE: 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10',
         SEPARADO: 'border-amber-500/30 text-amber-400 hover:bg-amber-500/10',
@@ -374,21 +388,4 @@ function AdminAction({ status, activeStatus, isLoading, onClick }: any) {
     )
 }
 
-function Loader2(props: any) {
-    return (
-        <svg
-            {...props}
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
-            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-        </svg>
-    )
-}
+

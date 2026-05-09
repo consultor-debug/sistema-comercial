@@ -328,7 +328,15 @@ export const Quoter: React.FC<QuoterProps> = ({
     )
 }
 
-function SummaryBox({ label, value, color, icon: Icon, highlight }: any) {
+interface SummaryBoxProps {
+    label: string
+    value: string
+    color: 'slate' | 'amber' | 'emerald' | 'blue'
+    icon?: React.ElementType
+    highlight?: boolean
+}
+
+function SummaryBox({ label, value, color, icon: Icon, highlight }: SummaryBoxProps) {
     const colorClasses = {
         slate: "text-slate-400",
         amber: "text-amber-500",

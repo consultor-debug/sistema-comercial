@@ -15,14 +15,14 @@ interface LotMarkerProps {
     }
     onClick?: () => void
     isSelected?: boolean
-    scale?: number
+
 }
 
 export const LotMarker: React.FC<LotMarkerProps> = ({
     lot,
     onClick,
     isSelected = false,
-    scale = 1
+
 }) => {
     const svgRef = React.useRef<SVGGElement>(null)
     const [svgSize, setSvgSize] = React.useState({ width: 0, height: 0 })
