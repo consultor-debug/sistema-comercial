@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/components/ui/Modal'
 import { StatusBadge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -11,7 +12,8 @@ import { LOT_STATUS_LABELS } from '@/lib/utils'
 import { LotStatus } from '@prisma/client'
 import {
     MapPin, Square, Layers, Grid3X3, User,
-    FileText, Lock
+    FileText, Lock, ChevronRight, CheckCircle2,
+    Ruler, Settings
 } from 'lucide-react'
 
 interface Lot {
@@ -109,14 +111,11 @@ export const LotModal: React.FC<LotModalProps> = ({
                 throw new Error(result.error || 'Error de servidor')
             }
 
-            // Abrir en el navegador directamente usando el Endpoint GET
-            // El backend le pondrá el nombre correcto al archivo: Cotizacion_LOTE.pdf
             const pdfUrl = `/api/quotations/download?id=${result.quotationId}`
             window.open(pdfUrl, '_blank')
         } catch (error) {
             const err = error as { message?: string };
             console.error('Download error:', error)
-            alert(err.message || 'Error al visualizar PDF.')
         } finally {
             setIsDownloading(false)
         }
@@ -134,11 +133,9 @@ export const LotModal: React.FC<LotModalProps> = ({
             const data = await response.json()
             if (data.success) {
                 if (onUpdate) onUpdate()
-            } else {
-                alert(data.error || 'Error al actualizar el estado')
             }
         } catch {
-            alert('Error de conexión al actualizar estado.')
+            console.error('Error updating status')
         } finally {
             setUpdatingStatus(null)
         }
@@ -146,209 +143,252 @@ export const LotModal: React.FC<LotModalProps> = ({
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} size="xl">
-            <ModalHeader className="flex items-center justify-between pr-12">
-                <div className="flex items-center gap-4">
-                    <ModalTitle>Lote {lot.code}</ModalTitle>
-                    <StatusBadge status={lot.estado} size="lg" />
+            <ModalHeader className="flex items-center justify-between pr-12 pb-6 border-b border-white/10">
+                <div className="flex items-center gap-6">
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Identificador de Lote</span>
+                        <ModalTitle className="text-3xl font-black text-white leading-none">Lote {lot.code}</ModalTitle>
+                    </div>
+                    <StatusBadge status={lot.estado} size="lg" className="h-8 px-4 text-xs font-black" />
                 </div>
             </ModalHeader>
 
-            <ModalBody className="space-y-6">
-                {/* Success message */}
-                {sendSuccess && (
-                    <div className="p-6 bg-emerald-500/20 border border-emerald-500/50 rounded-xl text-center">
-                        <div className="text-4xl mb-2">✓</div>
-                        <h3 className="text-xl font-semibold text-emerald-400 mb-1">
-                            ¡Cotización Enviada!
-                        </h3>
-                        <p className="text-slate-300">
-                            Se ha generado el PDF y enviado al correo del cliente.
-                        </p>
-                    </div>
-                )}
+            <ModalBody className="space-y-8 py-8">
+                <AnimatePresence mode="wait">
+                    {sendSuccess ? (
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="p-12 glass-strong border border-emerald-500/30 rounded-[2.5rem] text-center"
+                        >
+                            <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-500/10">
+                                <CheckCircle2 className="w-10 h-10 text-emerald-400" />
+                            </div>
+                            <h3 className="text-2xl font-black text-white mb-2">¡Cotización Generada!</h3>
+                            <p className="text-slate-400 font-medium max-w-xs mx-auto">
+                                Se ha generado el documento PDF con todos los detalles financieros.
+                            </p>
+                        </motion.div>
+                    ) : (
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="space-y-8"
+                        >
+                            {/* Lot specs grid */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <SpecCard icon={Grid3X3} label="Manzana" value={lot.manzana} color="blue" />
+                                <SpecCard icon={MapPin} label="Número" value={lot.loteNumero} color="indigo" />
+                                <SpecCard icon={Square} label="Área Total" value={`${lot.areaM2} m²`} color="emerald" />
+                                <SpecCard icon={Layers} label="Etapa" value={lot.etapa || '1'} color="purple" />
+                            </div>
 
-                {!sendSuccess && (
-                    <>
-                        {/* Lot info cards */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                            <InfoCard
-                                icon={<Grid3X3 className="w-4 h-4" />}
-                                label="Manzana"
-                                value={lot.manzana}
-                            />
-                            <InfoCard
-                                icon={<MapPin className="w-4 h-4" />}
-                                label="Lote N°"
-                                value={lot.loteNumero.toString()}
-                            />
-                            <InfoCard
-                                icon={<Square className="w-4 h-4" />}
-                                label="Área"
-                                value={`${lot.areaM2} m²`}
-                            />
-                            <InfoCard
-                                icon={<Layers className="w-4 h-4" />}
-                                label="Tipología"
-                                value={lot.tipologia || '-'}
-                            />
-                            <InfoCard
-                                icon={<FileText className="w-4 h-4" />}
-                                label="Etapa"
-                                value={lot.etapa || '-'}
-                            />
-                        </div>
-
-                        {/* Asesor info if lot is not LIBRE */}
-                        {!isLibre && lot.asesor && (
-                            <Card variant="bordered" className="border-amber-500/30 bg-amber-500/5">
-                                <CardContent className="p-4 flex items-center gap-3">
-                                    <User className="w-5 h-5 text-amber-400" />
-                                    <div>
-                                        <p className="text-sm text-amber-400">Asesor Responsable</p>
-                                        <p className="font-medium text-white">{lot.asesor.name}</p>
-                                        <p className="text-sm text-slate-400">{lot.asesor.email}</p>
+                            {/* Dimensions Section */}
+                            <Card className="border-white/5 bg-slate-900/40 overflow-hidden">
+                                <CardContent className="p-6">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400">
+                                            <Ruler className="w-4 h-4" />
+                                        </div>
+                                        <h4 className="text-xs font-black text-white uppercase tracking-[0.2em]">Medidas Perimétricas</h4>
+                                    </div>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+                                        <DimensionItem label="Frente" value={lot.frenteM} />
+                                        <DimensionItem label="Fondo" value={lot.fondoM} />
+                                        <DimensionItem label="Lado Derecho" value={lot.ladoDerM} />
+                                        <DimensionItem label="Lado Izquierdo" value={lot.ladoIzqM} />
                                     </div>
                                 </CardContent>
                             </Card>
-                        )}
 
-                        {/* Dimensions */}
-                        <Card variant="glass">
-                            <CardContent className="p-4">
-                                <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-3">
-                                    Dimensiones
-                                </h4>
-                                <div className="grid grid-cols-4 gap-4">
-                                    <DimensionCard label="Frente" value={lot.frenteM} />
-                                    <DimensionCard label="Fondo" value={lot.fondoM} />
-                                    <DimensionCard label="Lado Der." value={lot.ladoDerM} />
-                                    <DimensionCard label="Lado Izq." value={lot.ladoIzqM} />
+                            {/* Asesor info for occupied lots */}
+                            {!isLibre && lot.asesor && (
+                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                                    <Card className="border-amber-500/20 bg-amber-500/5 overflow-hidden">
+                                        <CardContent className="p-5 flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
+                                                    <User className="w-6 h-6 text-amber-400" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-black text-amber-500/70 uppercase tracking-widest">Asesor a Cargo</p>
+                                                    <p className="font-bold text-white text-lg leading-tight">{lot.asesor.name}</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-xs font-medium text-slate-400">{lot.asesor.email}</p>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </motion.div>
+                            )}
+
+                            {/* Interactive Quoter Section */}
+                            {canQuote ? (
+                                <div className="space-y-8">
+                                    <Quoter
+                                        precioLista={lot.precioLista}
+                                        descuentoMax={lot.descuentoMax}
+                                        maxCuotas={projectSettings.maxCuotas}
+                                        minInicial={projectSettings.minInicial}
+                                        onQuotationCalculated={setQuotation}
+                                    />
+                                    
+                                    <AnimatePresence>
+                                        {quotation && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                            >
+                                                <ClientValidator
+                                                    onValidated={setClient}
+                                                    disabled={!quotation}
+                                                />
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Quoter and Client section - stacked vertically */}
-                        {canQuote ? (
-                            <div className="flex flex-col gap-6">
-                                <Quoter
-                                    precioLista={lot.precioLista}
-                                    descuentoMax={lot.descuentoMax}
-                                    maxCuotas={projectSettings.maxCuotas}
-                                    minInicial={projectSettings.minInicial}
-                                    onQuotationCalculated={setQuotation}
-                                />
-                                
-                                <ClientValidator
-                                    onValidated={setClient}
-                                    disabled={!quotation}
-                                />
-                            </div>
-                        ) : (
-                            <Card variant="bordered" className="border-slate-600">
-                                <CardContent className="p-6 text-center">
-                                    <Lock className="w-12 h-12 text-slate-500 mx-auto mb-3" />
-                                    <h4 className="text-lg font-medium text-slate-300 mb-2">
-                                        Cotización no disponible
-                                    </h4>
-                                    <p className="text-slate-400">
-                                        Este lote está {LOT_STATUS_LABELS[lot.estado].toLowerCase()} y no se puede cotizar.
+                            ) : (
+                                <div className="p-10 text-center glass-strong border border-white/5 rounded-[2.5rem]">
+                                    <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10 shadow-inner">
+                                        <Lock className="w-8 h-8 text-slate-500" />
+                                    </div>
+                                    <h4 className="text-xl font-black text-white mb-2 uppercase tracking-tight">Venta Restringida</h4>
+                                    <p className="text-slate-400 font-medium">
+                                        Este lote se encuentra en estado <span className="text-white font-bold">{LOT_STATUS_LABELS[lot.estado]}</span>.
                                     </p>
-                                </CardContent>
-                            </Card>
-                        )}
+                                </div>
+                            )}
 
-                        {/* Quick Action Status Buttons */}
-                        <div className="pt-4 mt-6 border-t border-slate-700/50">
-                            <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-3">
-                                Cambiar Estado Rápido
-                            </h4>
-                            <div className="flex flex-wrap gap-2">
-                                {lot.estado !== 'LIBRE' && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10"
-                                        onClick={() => handleChangeStatus('LIBRE')}
-                                        disabled={updatingStatus !== null}
-                                        isLoading={updatingStatus === 'LIBRE'}
-                                    >
-                                        Hacer Libre
-                                    </Button>
-                                )}
-                                {lot.estado !== 'SEPARADO' && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
-                                        onClick={() => handleChangeStatus('SEPARADO')}
-                                        disabled={updatingStatus !== null}
-                                        isLoading={updatingStatus === 'SEPARADO'}
-                                    >
-                                        Hacer Separado
-                                    </Button>
-                                )}
-                                {lot.estado !== 'VENDIDO' && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="border-rose-500/50 text-rose-400 hover:bg-rose-500/10"
-                                        onClick={() => handleChangeStatus('VENDIDO')}
-                                        disabled={updatingStatus !== null}
-                                        isLoading={updatingStatus === 'VENDIDO'}
-                                    >
-                                        Hacer Vendido
-                                    </Button>
-                                )}
+                            {/* Administrative Actions */}
+                            <div className="pt-8 border-t border-white/10">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <Settings className="w-4 h-4 text-slate-500" />
+                                    <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Gestión de Inventario</h4>
+                                </div>
+                                <div className="flex flex-wrap gap-3">
+                                    <AdminAction 
+                                        status="LIBRE" 
+                                        activeStatus={lot.estado} 
+                                        isLoading={updatingStatus === 'LIBRE'} 
+                                        onClick={() => handleChangeStatus('LIBRE')} 
+                                    />
+                                    <AdminAction 
+                                        status="SEPARADO" 
+                                        activeStatus={lot.estado} 
+                                        isLoading={updatingStatus === 'SEPARADO'} 
+                                        onClick={() => handleChangeStatus('SEPARADO')} 
+                                    />
+                                    <AdminAction 
+                                        status="VENDIDO" 
+                                        activeStatus={lot.estado} 
+                                        isLoading={updatingStatus === 'VENDIDO'} 
+                                        onClick={() => handleChangeStatus('VENDIDO')} 
+                                    />
+                                </div>
                             </div>
-                        </div>
-                    </>
-                )}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </ModalBody>
 
-            {!sendSuccess && (
-                <ModalFooter>
-                    <Button variant="outline" onClick={onClose}>
-                        Cerrar
-                    </Button>
+            <ModalFooter className="border-t border-white/10 pt-6">
+                <Button variant="ghost" onClick={onClose} className="text-slate-400 hover:text-white font-bold">
+                    Cerrar Ventana
+                </Button>
 
-                    {canQuote && (
+                {canQuote && (
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                         <Button
-                            variant="success"
                             onClick={handleDownloadPdf}
                             disabled={!canSend || isDownloading}
-                            isLoading={isDownloading}
-                            className="bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-900/20 px-8"
+                            className="bg-blue-600 hover:bg-blue-500 text-white font-black px-10 h-12 rounded-2xl shadow-xl shadow-blue-600/20 flex items-center gap-3 transition-all disabled:opacity-50"
                         >
-                            <FileText className="w-4 h-4 mr-2" />
-                            Descargar PDF
+                            {isDownloading ? (
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                                <>
+                                    <FileText className="w-5 h-5" />
+                                    GENERAR COTIZACIÓN PRO
+                                </>
+                            )}
                         </Button>
-                    )}
-                </ModalFooter>
-            )}
+                    </motion.div>
+                )}
+            </ModalFooter>
         </Modal>
     )
 }
 
-// Helper components
-const InfoCard: React.FC<{ icon: React.ReactNode; label: string; value: string }> = ({
-    icon, label, value
-}) => (
-    <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
-        <div className="flex items-center gap-1.5 text-slate-400 mb-1">
-            {icon}
-            <span className="text-xs">{label}</span>
-        </div>
-        <p className="font-semibold text-white">{value}</p>
-    </div>
-)
+function SpecCard({ icon: Icon, label, value, color }: any) {
+    const variants = {
+        blue: 'from-blue-500/10 to-transparent border-blue-500/20 text-blue-400',
+        indigo: 'from-indigo-500/10 to-transparent border-indigo-500/20 text-indigo-400',
+        emerald: 'from-emerald-500/10 to-transparent border-emerald-500/20 text-emerald-400',
+        purple: 'from-purple-500/10 to-transparent border-purple-500/20 text-purple-400',
+    }
 
-const DimensionCard: React.FC<{ label: string; value: number | null }> = ({
-    label, value
-}) => (
-    <div className="text-center p-3 bg-slate-700/30 rounded-lg">
-        <p className="text-xs text-slate-400 mb-1">{label}</p>
-        <p className="font-semibold text-white">
-            {value ? `${value} m` : '-'}
-        </p>
-    </div>
-)
+    return (
+        <div className={cn("p-4 rounded-2xl border bg-gradient-to-br", variants[color as keyof typeof variants])}>
+            <div className="flex items-center gap-2 mb-2 opacity-60">
+                <Icon className="w-3.5 h-3.5" />
+                <span className="text-[9px] font-black uppercase tracking-widest">{label}</span>
+            </div>
+            <p className="text-xl font-black text-white leading-none">{value}</p>
+        </div>
+    )
+}
+
+function DimensionItem({ label, value }: { label: string; value: number | null }) {
+    return (
+        <div className="flex flex-col">
+            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">{label}</span>
+            <div className="flex items-baseline gap-1">
+                <span className="text-lg font-bold text-white">{value || '-'}</span>
+                {value && <span className="text-[10px] font-bold text-slate-500">ML</span>}
+            </div>
+        </div>
+    )
+}
+
+function AdminAction({ status, activeStatus, isLoading, onClick }: any) {
+    const colors = {
+        LIBRE: 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10',
+        SEPARADO: 'border-amber-500/30 text-amber-400 hover:bg-amber-500/10',
+        VENDIDO: 'border-rose-500/30 text-rose-400 hover:bg-rose-500/10'
+    }
+
+    if (status === activeStatus) return null
+
+    return (
+        <Button
+            variant="outline"
+            size="sm"
+            className={cn("rounded-xl border h-9 px-4 text-[10px] font-black uppercase tracking-widest", colors[status as keyof typeof colors])}
+            onClick={onClick}
+            disabled={isLoading}
+        >
+            {isLoading ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <ChevronRight className="w-3 h-3 mr-2" />}
+            Marcar {status}
+        </Button>
+    )
+}
+
+function Loader2(props: any) {
+    return (
+        <svg
+            {...props}
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+        </svg>
+    )
+}

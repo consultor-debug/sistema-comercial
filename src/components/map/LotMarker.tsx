@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { LotStatus } from '@prisma/client'
 
@@ -20,7 +21,8 @@ interface LotMarkerProps {
 export const LotMarker: React.FC<LotMarkerProps> = ({
     lot,
     onClick,
-    isSelected = false
+    isSelected = false,
+    scale = 1
 }) => {
     const svgRef = React.useRef<SVGGElement>(null)
     const [svgSize, setSvgSize] = React.useState({ width: 0, height: 0 })
@@ -86,33 +88,48 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
         const radius = shapeData.radius || 20
 
         return (
-            <g
+            <motion.g
                 ref={svgRef}
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                whileHover={isClickable ? { scale: 1.15 } : {}}
+                whileTap={isClickable ? { scale: 0.95 } : {}}
                 onClick={isClickable ? onClick : undefined}
                 className={cn(
                     'transition-all duration-200',
                     isClickable && 'cursor-pointer'
                 )}
             >
-                {/* Outer shadow for selected */}
-                <circle
+                <motion.circle
                     cx={renderX}
                     cy={renderY}
                     r={radius}
                     fill={color}
-                    fillOpacity={1}
-                    stroke={isSelected ? '#fff' : color}
-                    strokeWidth={isSelected ? 3 : 1.5}
-                    className={cn(
-                        'transition-all duration-300',
-                        isClickable && 'hover:brightness-110'
-                    )}
+                    animate={{
+                        stroke: isSelected ? '#fff' : color,
+                        strokeWidth: isSelected ? 3 : 1.5,
+                        fillOpacity: isSelected ? 1 : 0.8,
+                    }}
+                    className="transition-all duration-300"
                     style={{
-                        filter: isSelected ? `drop-shadow(0 0 8px ${color})` : 'none'
+                        filter: isSelected ? `drop-shadow(0 0 12px ${color})` : 'none'
                     }}
                 />
 
-                {/* Lot code label */}
+                {isSelected && (
+                    <motion.circle
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1.5, opacity: 0 }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                        cx={renderX}
+                        cy={renderY}
+                        r={radius}
+                        fill="none"
+                        stroke={color}
+                        strokeWidth={2}
+                    />
+                )}
+
                 <text
                     x={renderX}
                     y={renderY}
@@ -126,7 +143,7 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
                 >
                     {lot.code}
                 </text>
-            </g>
+            </motion.g>
         )
     }
 
@@ -145,31 +162,33 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
         const { x: centroidX, y: centroidY } = getRenderCoords(rawCentroid.x, rawCentroid.y)
 
         return (
-            <g
+            <motion.g
                 ref={svgRef}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                whileHover={isClickable ? { scale: 1.02, filter: 'brightness(1.2)' } : {}}
+                whileTap={isClickable ? { scale: 0.98 } : {}}
                 onClick={isClickable ? onClick : undefined}
                 className={cn(
-                    'transition-all duration-200',
+                    'transition-all duration-200 origin-center',
                     isClickable && 'cursor-pointer'
                 )}
+                style={{ transformOrigin: `${centroidX}px ${centroidY}px` }}
             >
-                {/* Main polygon */}
-                <polygon
+                <motion.polygon
                     points={points}
                     fill={color}
-                    fillOpacity={1}
-                    stroke={isSelected ? '#fff' : color}
-                    strokeWidth={isSelected ? 2 : 1}
-                    className={cn(
-                        'transition-all duration-300',
-                        isClickable && 'hover:brightness-110'
-                    )}
+                    animate={{
+                        stroke: isSelected ? '#fff' : color,
+                        strokeWidth: isSelected ? 3 : 1,
+                        fillOpacity: isSelected ? 1 : 0.7,
+                    }}
+                    transition={{ duration: 0.3 }}
                     style={{
-                        filter: isSelected ? `drop-shadow(0 0 10px ${color}88)` : 'none'
+                        filter: isSelected ? `drop-shadow(0 0 15px ${color}aa)` : 'none'
                     }}
                 />
 
-                {/* Lot code label */}
                 <text
                     x={centroidX}
                     y={centroidY}
@@ -183,7 +202,7 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
                 >
                     {lot.code}
                 </text>
-            </g>
+            </motion.g>
         )
     }
 
