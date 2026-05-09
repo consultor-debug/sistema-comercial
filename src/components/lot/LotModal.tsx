@@ -13,7 +13,7 @@ import { LotStatus } from '@prisma/client'
 import {
     MapPin, Square, Layers, Grid3X3, User,
     FileText, Lock, ChevronRight, CheckCircle2,
-    Ruler, Settings
+    Ruler, Settings, Loader2
 } from 'lucide-react'
 
 interface Lot {
