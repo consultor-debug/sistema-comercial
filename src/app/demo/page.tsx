@@ -124,6 +124,7 @@ export default function DemoPage() {
             {/* Main content */}
             <main className="container mx-auto px-6 py-6">
                 <InteractiveMap
+                    projectId="demo"
                     projectName="Residencial Lumina - Vista General"
                     mapImageUrl="/maps/Lumina_SVG2.svg"
                     lots={lots}
