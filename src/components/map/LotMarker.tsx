@@ -15,42 +15,22 @@ interface LotMarkerProps {
     }
     onClick?: () => void
     isSelected?: boolean
-
+    /** Rendered pixel size of the map image — used to convert normalized (0-1) coordinates */
+    imageSize?: { width: number; height: number }
 }
 
 export const LotMarker: React.FC<LotMarkerProps> = ({
     lot,
     onClick,
     isSelected = false,
-
+    imageSize = { width: 0, height: 0 },
 }) => {
-    const svgRef = React.useRef<SVGGElement>(null)
-    const [svgSize, setSvgSize] = React.useState({ width: 0, height: 0 })
-
     const shapeData = lot.mapShapeData as {
         x?: number
         y?: number
         radius?: number
         points?: { x: number; y: number }[]
     } | null
-
-    React.useEffect(() => {
-        if (svgRef.current) {
-            const svg = svgRef.current.closest('svg')
-            if (svg) {
-                const updateSize = () => {
-                    setSvgSize({
-                        width: svg.clientWidth,
-                        height: svg.clientHeight
-                    })
-                }
-                updateSize()
-                const observer = new ResizeObserver(updateSize)
-                observer.observe(svg)
-                return () => observer.disconnect()
-            }
-        }
-    }, [])
 
     if (!shapeData) return null
 
@@ -61,35 +41,29 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
         NO_DISPONIBLE: '#64748B'
     }
 
-    const color = statusColors[lot.estado]
+    const color = statusColors[lot.estado] ?? '#64748B'
     const isClickable = lot.estado === 'LIBRE' || lot.estado === 'SEPARADO' || lot.estado === 'VENDIDO'
 
-    // Helper to calculate render coordinates
-    const getRenderCoords = (x?: number, y?: number) => {
-        if (x === undefined || y === undefined) return { x: 0, y: 0 }
-
-        // If x or y are between 0 and 1, they are normalized
-        const isNormalizedX = x <= 1 && x >= 0
-        const isNormalizedY = y <= 1 && y >= 0
-
-        if (isNormalizedX && isNormalizedY && svgSize.width > 0) {
-            return {
-                x: x * svgSize.width,
-                y: y * svgSize.height
-            }
+    /**
+     * Convert a stored coordinate to a pixel value relative to the image.
+     * Stored coords between 0–1 are normalized fractions; values > 1 are
+     * treated as raw pixel values (legacy data).
+     */
+    const toPixel = (value: number, dimension: number): number => {
+        if (value >= 0 && value <= 1 && dimension > 0) {
+            return value * dimension
         }
-        return { x, y }
+        return value
     }
-
-    const { x: renderX, y: renderY } = getRenderCoords(shapeData.x, shapeData.y)
 
     // Render circle marker
     if (lot.mapShapeType === 'circle' && shapeData.x !== undefined && shapeData.y !== undefined) {
         const radius = shapeData.radius || 20
+        const cx = toPixel(shapeData.x, imageSize.width)
+        const cy = toPixel(shapeData.y, imageSize.height)
 
         return (
             <motion.g
-                ref={svgRef}
                 initial={{ opacity: 0, scale: 0.5 }}
                 animate={{ opacity: 1, scale: 1 }}
                 whileHover={isClickable ? { scale: 1.15 } : {}}
@@ -99,10 +73,11 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
                     'transition-all duration-200',
                     isClickable && 'cursor-pointer'
                 )}
+                style={{ transformOrigin: `${cx}px ${cy}px` }}
             >
                 <motion.circle
-                    cx={renderX}
-                    cy={renderY}
+                    cx={cx}
+                    cy={cy}
                     r={radius}
                     fill={color}
                     animate={{
@@ -121,8 +96,8 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1.5, opacity: 0 }}
                         transition={{ duration: 1.5, repeat: Infinity }}
-                        cx={renderX}
-                        cy={renderY}
+                        cx={cx}
+                        cy={cy}
                         r={radius}
                         fill="none"
                         stroke={color}
@@ -131,8 +106,8 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
                 )}
 
                 <text
-                    x={renderX}
-                    y={renderY}
+                    x={cx}
+                    y={cy}
                     textAnchor="middle"
                     dominantBaseline="central"
                     fill="#fff"
@@ -149,21 +124,21 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
 
     // Render polygon marker
     if (lot.mapShapeType === 'polygon' && shapeData.points) {
-        const points = shapeData.points.map(p => {
-            const { x, y } = getRenderCoords(p.x, p.y)
-            return `${x},${y}`
-        }).join(' ')
+        const pixelPoints = shapeData.points.map(p => ({
+            x: toPixel(p.x, imageSize.width),
+            y: toPixel(p.y, imageSize.height),
+        }))
 
-        // Calculate centroid for label
-        const rawCentroid = shapeData.points.reduce(
-            (acc, p) => ({ x: acc.x + p.x / shapeData.points!.length, y: acc.y + p.y / shapeData.points!.length }),
+        const pointsStr = pixelPoints.map(p => `${p.x},${p.y}`).join(' ')
+
+        // Calculate centroid
+        const centroid = pixelPoints.reduce(
+            (acc, p) => ({ x: acc.x + p.x / pixelPoints.length, y: acc.y + p.y / pixelPoints.length }),
             { x: 0, y: 0 }
         )
-        const { x: centroidX, y: centroidY } = getRenderCoords(rawCentroid.x, rawCentroid.y)
 
         return (
             <motion.g
-                ref={svgRef}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 whileHover={isClickable ? { scale: 1.02, filter: 'brightness(1.2)' } : {}}
@@ -173,10 +148,10 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
                     'transition-all duration-200 origin-center',
                     isClickable && 'cursor-pointer'
                 )}
-                style={{ transformOrigin: `${centroidX}px ${centroidY}px` }}
+                style={{ transformOrigin: `${centroid.x}px ${centroid.y}px` }}
             >
                 <motion.polygon
-                    points={points}
+                    points={pointsStr}
                     fill={color}
                     animate={{
                         stroke: isSelected ? '#fff' : color,
@@ -190,8 +165,8 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
                 />
 
                 <text
-                    x={centroidX}
-                    y={centroidY}
+                    x={centroid.x}
+                    y={centroid.y}
                     textAnchor="middle"
                     dominantBaseline="central"
                     fill="#fff"
@@ -206,5 +181,5 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
         )
     }
 
-    return <g ref={svgRef} />
+    return null
 }

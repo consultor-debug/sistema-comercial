@@ -29,9 +29,11 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     className
 }) => {
     const containerRef = React.useRef<HTMLDivElement>(null)
+    const imageRef = React.useRef<HTMLImageElement>(null)
     const [zoom, setZoom] = React.useState(1)
     const [isFullscreen, setIsFullscreen] = React.useState(false)
     const [isDownloading, setIsDownloading] = React.useState(false)
+    const [imageSize, setImageSize] = React.useState({ width: 0, height: 0 })
 
     // Filters
     const [selectedManzana, setSelectedManzana] = React.useState<string | 'all'>('all')
@@ -89,6 +91,17 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         document.addEventListener('fullscreenchange', handleFullscreenChange)
         return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
     }, [])
+
+    // Track actual rendered image size for correct marker positioning
+    React.useEffect(() => {
+        const img = imageRef.current
+        if (!img) return
+        const update = () => setImageSize({ width: img.clientWidth, height: img.clientHeight })
+        update()
+        const observer = new ResizeObserver(update)
+        observer.observe(img)
+        return () => observer.disconnect()
+    }, [mapImageUrl])
 
     const handleDownloadPdf = async () => {
         setIsDownloading(true)
@@ -213,29 +226,39 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                                             className="relative w-full max-w-5xl"
                                         >
                                             <img
+                                                ref={imageRef}
                                                 src={mapImageUrl}
                                                 alt={projectName}
                                                 className="w-full h-auto drop-shadow-2xl rounded-lg block select-none pointer-events-none"
                                                 draggable={false}
+                                                onLoad={() => {
+                                                    if (imageRef.current) {
+                                                        setImageSize({ width: imageRef.current.clientWidth, height: imageRef.current.clientHeight })
+                                                    }
+                                                }}
                                             />
                                             
-                                            {/* SVG overlay for lot markers */}
-                                            <svg
-                                                className="absolute inset-0 w-full h-full"
-                                                style={{ zIndex: 10, overflow: 'visible' }}
-                                            >
-                                                <AnimatePresence>
-                                                    {filteredLots.map(lot => (
-                                                        <LotMarker
-                                                            key={lot.id}
-                                                            lot={lot}
-                                                            onClick={() => onLotClick(lot)}
-                                                            isSelected={selectedLotId === lot.id}
-                                                            scale={zoom}
-                                                        />
-                                                    ))}
-                                                </AnimatePresence>
-                                            </svg>
+                                            {/* SVG overlay for lot markers — same size as the image */}
+                                            {imageSize.width > 0 && (
+                                                <svg
+                                                    className="absolute inset-0 w-full h-full"
+                                                    viewBox={`0 0 ${imageSize.width} ${imageSize.height}`}
+                                                    preserveAspectRatio="none"
+                                                    style={{ zIndex: 10, overflow: 'visible' }}
+                                                >
+                                                    <AnimatePresence>
+                                                        {filteredLots.map(lot => (
+                                                            <LotMarker
+                                                                key={lot.id}
+                                                                lot={lot}
+                                                                onClick={() => onLotClick(lot)}
+                                                                isSelected={selectedLotId === lot.id}
+                                                                imageSize={imageSize}
+                                                            />
+                                                        ))}
+                                                    </AnimatePresence>
+                                                </svg>
+                                            )}
                                         </motion.div>
                                     )}
                                 </div>
