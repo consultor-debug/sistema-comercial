@@ -7,21 +7,25 @@ import { motion } from 'framer-motion'
 import { 
     LayoutDashboard, 
     Map as MapIcon, 
-    FileText, 
+    BarChart3, 
     Users, 
     Settings, 
     LogOut,
     Building2,
-    ChevronRight
+    ChevronRight,
+    Shield,
+    Database
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { logout } from '@/lib/actions'
 
 const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Proyectos', href: '/projects', icon: MapIcon },
-    { name: 'Cotizaciones', href: '/quotations', icon: FileText },
-    { name: 'Clientes', href: '/clients', icon: Users },
+    { name: 'Proyectos', href: '/admin/projects', icon: MapIcon },
+    { name: 'Reportes', href: '/admin/reports', icon: BarChart3 },
+    { name: 'Usuarios', href: '/admin/users', icon: Users },
+    { name: 'Negocios', href: '/admin/tenants', icon: Building2 },
+    { name: 'Lotes', href: '/admin/lots', icon: Database },
 ]
 
 export function Sidebar() {
@@ -84,11 +88,18 @@ export function Sidebar() {
             <div className="p-4 border-t border-slate-700/50">
                 <div className="flex flex-col gap-2">
                     <Link 
-                        href="/settings"
+                        href="/admin/settings"
                         className="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-xl transition-colors"
                     >
                         <Settings className="w-5 h-5" />
                         <span className="text-sm font-medium">Configuración</span>
+                    </Link>
+                    <Link 
+                        href="/admin"
+                        className="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-xl transition-colors"
+                    >
+                        <Shield className="w-5 h-5" />
+                        <span className="text-sm font-medium">Panel Admin</span>
                     </Link>
                     <button
                         onClick={() => logout()}
