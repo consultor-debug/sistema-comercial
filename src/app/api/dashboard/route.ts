@@ -3,24 +3,43 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
 import { LotStatus } from '@prisma/client'
 
-export async function GET() {
+export async function GET(request: Request) {
     const session = await auth()
 
     if (!session?.user) {
         return NextResponse.json({ success: false, error: 'No autorizado' }, { status: 401 })
     }
 
-    const { tenantId } = session.user
+    const { tenantId, role } = session.user
+    const isSuperAdmin = role === 'SUPER_ADMIN'
+
+    // Parse optional project filter from query params
+    const { searchParams } = new URL(request.url)
+    const projectIdsParam = searchParams.get('projectIds')
+    const selectedIds = projectIdsParam ? projectIdsParam.split(',').filter(Boolean) : []
 
     try {
+        // Build project filter:
+        // - SUPER_ADMIN: all projects (or subset if projectIds provided)
+        // - Others: only their tenant's projects
+        let projectWhere: Record<string, unknown> = {}
+        if (selectedIds.length > 0) {
+            projectWhere = { id: { in: selectedIds } }
+        } else if (!isSuperAdmin && tenantId) {
+            projectWhere = { tenantId }
+        }
+
         // Fetch Projects with lot counts
         const projects = await prisma.project.findMany({
-            where: tenantId ? { tenantId } : {},
+            where: projectWhere,
             include: {
                 lots: {
                     select: {
                         estado: true
                     }
+                },
+                tenant: {
+                    select: { name: true }
                 }
             },
             orderBy: { updatedAt: 'desc' }
@@ -37,14 +56,34 @@ export async function GET() {
                 id: p.id,
                 name: p.name,
                 description: p.description,
+                tenantName: p.tenant?.name ?? null,
                 stats,
                 updatedAt: p.updatedAt
             }
         })
 
+        // All projects list for the selector UI (only for SUPER_ADMIN)
+        const allProjects = isSuperAdmin
+            ? await prisma.project.findMany({
+                select: { id: true, name: true, tenant: { select: { name: true } } },
+                orderBy: { name: 'asc' }
+            })
+            : []
+
         // Fetch Recent Quotations
+        const quotationsWhere: Record<string, unknown> = {}
+        if (selectedIds.length > 0) {
+            const lotsInProjects = await prisma.lot.findMany({
+                where: { projectId: { in: selectedIds } },
+                select: { id: true }
+            })
+            quotationsWhere.lotId = { in: lotsInProjects.map(l => l.id) }
+        } else if (!isSuperAdmin && tenantId) {
+            quotationsWhere.tenantId = tenantId
+        }
+
         const recentQuotations = await prisma.quotation.findMany({
-            where: tenantId ? { tenantId } : {},
+            where: quotationsWhere,
             take: 5,
             orderBy: { createdAt: 'desc' },
             include: {
@@ -62,12 +101,19 @@ export async function GET() {
 
         const today = new Date()
         today.setHours(0, 0, 0, 0)
-        const quotationsToday = await prisma.quotation.count({
-            where: {
-                tenantId: tenantId || undefined,
-                createdAt: { gte: today }
-            }
-        })
+
+        const todayWhere: Record<string, unknown> = { createdAt: { gte: today } }
+        if (selectedIds.length > 0) {
+            const lotsInProjects = await prisma.lot.findMany({
+                where: { projectId: { in: selectedIds } },
+                select: { id: true }
+            })
+            todayWhere.lotId = { in: lotsInProjects.map(l => l.id) }
+        } else if (!isSuperAdmin && tenantId) {
+            todayWhere.tenantId = tenantId
+        }
+
+        const quotationsToday = await prisma.quotation.count({ where: todayWhere })
 
         return NextResponse.json({
             success: true,
@@ -77,6 +123,7 @@ export async function GET() {
                     role: session.user.role
                 },
                 projects: formattedProjects,
+                allProjects,
                 recentQuotations,
                 stats: {
                     totalLots,

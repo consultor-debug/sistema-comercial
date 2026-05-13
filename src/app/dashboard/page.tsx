@@ -5,8 +5,8 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
     Building2, Map, FileText, TrendingUp, 
-    Clock, ArrowRight, Settings, Plus,
-    Calendar, Users, DollarSign, ExternalLink
+    Plus, Calendar, Users, ExternalLink,
+    ChevronDown, Check, Globe, Filter
 } from 'lucide-react'
 import { Sidebar } from '@/components/Sidebar'
 import { StatsChart } from '@/components/dashboard/StatsChart'
@@ -16,12 +16,11 @@ import { Badge } from '@/components/ui/Badge'
 import { formatCurrency } from '@/lib/utils'
 
 // Types for the dashboard data
+interface ProjectOption { id: string; name: string; tenant?: { name: string } | null }
 interface DashboardData {
-    user: {
-        name: string
-        role: string
-    }
+    user: { name: string; role: string }
     projects: any[]
+    allProjects: ProjectOption[]
     recentQuotations: any[]
     stats: {
         totalLots: number
@@ -35,23 +34,51 @@ interface DashboardData {
 export default function DashboardPage() {
     const [data, setData] = React.useState<DashboardData | null>(null)
     const [isLoading, setIsLoading] = React.useState(true)
+    const [selectedProjectIds, setSelectedProjectIds] = React.useState<string[]>([])
+    const [selectorOpen, setSelectorOpen] = React.useState(false)
+    const selectorRef = React.useRef<HTMLDivElement>(null)
 
+    const fetchDashboardData = React.useCallback(async (ids: string[] = []) => {
+        setIsLoading(true)
+        try {
+            const qs = ids.length > 0 ? `?projectIds=${ids.join(',')}` : ''
+            const response = await fetch(`/api/dashboard${qs}`)
+            const result = await response.json()
+            if (result.success) {
+                setData(result.data)
+            }
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error)
+        } finally {
+            setIsLoading(false)
+        }
+    }, [])
+
+    React.useEffect(() => { fetchDashboardData() }, [fetchDashboardData])
+
+    // Close selector on outside click
     React.useEffect(() => {
-        async function fetchDashboardData() {
-            try {
-                const response = await fetch('/api/dashboard')
-                const result = await response.json()
-                if (result.success) {
-                    setData(result.data)
-                }
-            } catch (error) {
-                console.error('Error fetching dashboard data:', error)
-            } finally {
-                setIsLoading(false)
+        function handleClick(e: MouseEvent) {
+            if (selectorRef.current && !selectorRef.current.contains(e.target as Node)) {
+                setSelectorOpen(false)
             }
         }
-        fetchDashboardData()
+        document.addEventListener('mousedown', handleClick)
+        return () => document.removeEventListener('mousedown', handleClick)
     }, [])
+
+    const toggleProject = (id: string) => {
+        const next = selectedProjectIds.includes(id)
+            ? selectedProjectIds.filter(p => p !== id)
+            : [...selectedProjectIds, id]
+        setSelectedProjectIds(next)
+        fetchDashboardData(next)
+    }
+
+    const selectAll = () => {
+        setSelectedProjectIds([])
+        fetchDashboardData([])
+    }
 
     if (isLoading) {
         return (
@@ -88,7 +115,68 @@ export default function DashboardPage() {
                         <span>{new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
+                        {/* Multi-project selector — only for SUPER_ADMIN */}
+                        {data.user.role === 'SUPER_ADMIN' && data.allProjects.length > 0 && (
+                            <div className="relative" ref={selectorRef}>
+                                <button
+                                    onClick={() => setSelectorOpen(o => !o)}
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/70 border border-slate-700/50 rounded-xl text-xs font-bold text-slate-300 hover:border-blue-500/50 hover:text-white transition-all"
+                                >
+                                    <Filter className="w-3 h-3 text-blue-400" />
+                                    <span>
+                                        {selectedProjectIds.length === 0
+                                            ? 'Todos los proyectos'
+                                            : `${selectedProjectIds.length} proyecto${selectedProjectIds.length > 1 ? 's' : ''}`}
+                                    </span>
+                                    <ChevronDown className={`w-3 h-3 transition-transform ${selectorOpen ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                <AnimatePresence>
+                                    {selectorOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: -8, scale: 0.97 }}
+                                            transition={{ duration: 0.15 }}
+                                            className="absolute right-0 top-full mt-2 w-64 bg-slate-900 border border-slate-700/60 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden z-50"
+                                        >
+                                            <div className="p-2">
+                                                <button
+                                                    onClick={selectAll}
+                                                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${selectedProjectIds.length === 0 ? 'bg-blue-500/15 text-blue-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                                                >
+                                                    <span>Todos los proyectos</span>
+                                                    {selectedProjectIds.length === 0 && <Check className="w-4 h-4" />}
+                                                </button>
+                                                <div className="border-t border-slate-800 my-1.5" />
+                                                {data.allProjects.map(p => {
+                                                    const isSelected = selectedProjectIds.includes(p.id)
+                                                    return (
+                                                        <button
+                                                            key={p.id}
+                                                            onClick={() => toggleProject(p.id)}
+                                                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all ${isSelected ? 'bg-blue-500/15 text-blue-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                                                        >
+                                                            <div className="flex flex-col items-start">
+                                                                <span className="font-semibold">{p.name}</span>
+                                                                {p.tenant?.name && (
+                                                                    <span className="text-[10px] text-slate-500 flex items-center gap-1">
+                                                                        <Globe className="w-2.5 h-2.5" />{p.tenant.name}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            {isSelected && <Check className="w-4 h-4 shrink-0" />}
+                                                        </button>
+                                                    )
+                                                })}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        )}
+
                         <div className="flex items-center gap-2 px-3 py-1 bg-slate-800/50 border border-slate-700/50 rounded-full">
                             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
                             <span className="text-[10px] font-bold text-slate-300 uppercase tracking-tight">Sistema Online</span>
