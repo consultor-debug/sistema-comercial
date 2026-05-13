@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Quoter } from './Quoter'
 import { ClientValidator } from './ClientValidator'
-import { LOT_STATUS_LABELS } from '@/lib/utils'
+import { cn, LOT_STATUS_LABELS } from '@/lib/utils'
 import { LotStatus } from '@prisma/client'
 import {
     MapPin, Square, Layers, Grid3X3, User,
