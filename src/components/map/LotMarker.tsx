@@ -60,7 +60,7 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
     const toPixel = (value: number, dimension: number): number =>
         value >= 0 && value <= 1 && dimension > 0 ? value * dimension : value
 
-    const baseRadius = 10
+    const baseRadius = 8
 
     /* ── CIRCLE ─────────────────────────────────────────────── */
     if (lot.mapShapeType === 'circle' && shapeData.x !== undefined && shapeData.y !== undefined) {
