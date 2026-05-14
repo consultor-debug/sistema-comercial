@@ -41,7 +41,11 @@ interface UserData {
 interface SessionInfo {
     role?: string;
     tenantId?: string | null;
-    availableTenants: { id: string; name: string }[];
+    availableTenants: { 
+        id: string; 
+        name: string;
+        projects: { id: string; name: string }[];
+    }[];
 }
 
 export default function UsersPage() {
@@ -248,7 +252,7 @@ export default function UsersPage() {
             <UserModal
                 isOpen={isModalOpen}
                 user={selectedUser}
-                sessionInfo={sessionInfo as any}
+                sessionInfo={sessionInfo}
                 onClose={() => { setIsModalOpen(false); fetchUsers(); }}
             />
         </div>
