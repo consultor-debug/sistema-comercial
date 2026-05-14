@@ -4,7 +4,7 @@ import * as React from 'react'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 import { cn } from '@/lib/utils'
 import { LotMarker } from './LotMarker'
-import { MapControls, MapLegend } from './MapControls'
+import { MapControls, MapFilters, MapLegend, MapStats } from './MapControls'
 import { Lot } from '@prisma/client'
 import { Maximize2, Minimize2, Download } from 'lucide-react'
 
@@ -39,7 +39,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     const [isFullscreen, setIsFullscreen] = React.useState(false)
     const [isDownloading, setIsDownloading] = React.useState(false)
     const [imageLoaded, setImageLoaded] = React.useState(false)
-    const [imageError, setImageError] = React.useState(false)
 
     // Filters
     const [selectedManzana, setSelectedManzana] = React.useState<string | 'all'>('all')
@@ -124,76 +123,52 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                 className
             )}
         >
-            {/* Toolbar — single compact bar */}
-            <div className="absolute top-0 inset-x-0 z-30 pointer-events-none">
-                <div className="flex flex-col gap-1.5 p-2 pointer-events-auto">
-
-                    {/* Row 1: name + actions */}
-                    <div className="flex items-center gap-2">
-                        <div className="px-2.5 py-1 bg-slate-900/90 backdrop-blur-sm rounded-md border border-white/10 shrink-0">
-                            <h2 className="text-[11px] font-semibold text-white leading-none">{projectName}</h2>
-                        </div>
-
-                        {/* Manzana filters — scrollable */}
-                        <div className="flex-1 overflow-x-auto no-scrollbar">
-                            <div className="flex items-center gap-1 w-max">
-                                <span className="text-[9px] font-semibold text-slate-600 uppercase tracking-wider px-1 shrink-0">MZ</span>
-                                <button
-                                    onClick={() => setSelectedManzana('all')}
-                                    className={cn('px-2.5 py-1 text-[11px] rounded-md border transition-colors shrink-0',
-                                        selectedManzana === 'all'
-                                            ? 'bg-white text-slate-950 border-white font-medium'
-                                            : 'bg-slate-900/80 border-white/10 text-slate-400 hover:text-white')}
-                                >Todas</button>
-                                {manzanas.map(m => (
-                                    <button key={m} onClick={() => setSelectedManzana(m)}
-                                        className={cn('px-2.5 py-1 text-[11px] rounded-md border transition-colors shrink-0',
-                                            selectedManzana === m
-                                                ? 'bg-white text-slate-950 border-white font-medium'
-                                                : 'bg-slate-900/80 border-white/10 text-slate-400 hover:text-white')}
-                                    >{m}</button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Action buttons */}
-                        <div className="flex gap-1 shrink-0">
-                            <button onClick={handleDownloadPdf} disabled={isDownloading}
-                                className="p-1.5 bg-slate-900/90 backdrop-blur-sm rounded-md border border-white/10 text-white/60 hover:text-white hover:bg-slate-800 transition-colors disabled:opacity-50"
-                                title="Descargar PDF">
-                                {isDownloading
-                                    ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white animate-spin rounded-full" />
-                                    : <Download className="w-3.5 h-3.5" />}
-                            </button>
-                            <button onClick={handleFullscreen}
-                                className="p-1.5 bg-slate-900/90 backdrop-blur-sm rounded-md border border-white/10 text-white/60 hover:text-white hover:bg-slate-800 transition-colors"
-                                title={isFullscreen ? 'Salir' : 'Pantalla completa'}>
-                                {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-                            </button>
-                        </div>
+            {/* Header */}
+            <div className="absolute top-0 inset-x-0 z-30 p-3 flex items-center justify-between pointer-events-none">
+                <div className="flex items-center gap-2 pointer-events-auto">
+                    <div className="px-3 py-1.5 bg-slate-900/90 backdrop-blur-sm rounded-md border border-white/10">
+                        <h2 className="text-xs font-semibold text-white">{projectName}</h2>
                     </div>
+                    <div className="hidden sm:block">
+                        <MapStats
+                            total={filteredLots.length}
+                            libre={counts.libre}
+                            separado={counts.separado}
+                            vendido={counts.vendido}
+                        />
+                    </div>
+                </div>
 
-                    {/* Row 2: Etapa filters (only if exist) */}
-                    {etapas.length > 0 && (
-                        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar w-max">
-                            <span className="text-[9px] font-semibold text-slate-600 uppercase tracking-wider px-1 shrink-0">ET</span>
-                            <button
-                                onClick={() => setSelectedEtapa('all')}
-                                className={cn('px-2.5 py-1 text-[11px] rounded-md border transition-colors shrink-0',
-                                    selectedEtapa === 'all'
-                                        ? 'bg-white text-slate-950 border-white font-medium'
-                                        : 'bg-slate-900/80 border-white/10 text-slate-400 hover:text-white')}
-                            >Todas</button>
-                            {etapas.map(e => (
-                                <button key={e} onClick={() => setSelectedEtapa(e)}
-                                    className={cn('px-2.5 py-1 text-[11px] rounded-md border transition-colors shrink-0',
-                                        selectedEtapa === e
-                                            ? 'bg-white text-slate-950 border-white font-medium'
-                                            : 'bg-slate-900/80 border-white/10 text-slate-400 hover:text-white')}
-                                >{e}</button>
-                            ))}
-                        </div>
-                    )}
+                <div className="flex gap-1.5 pointer-events-auto">
+                    <button
+                        onClick={handleDownloadPdf}
+                        disabled={isDownloading}
+                        className="p-1.5 bg-slate-900/90 backdrop-blur-sm rounded-md border border-white/10 text-white/70 hover:text-white hover:bg-slate-800 transition-colors disabled:opacity-50"
+                        title="Descargar PDF"
+                    >
+                        {isDownloading ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white animate-spin rounded-full" /> : <Download className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
+                        onClick={handleFullscreen}
+                        className="p-1.5 bg-slate-900/90 backdrop-blur-sm rounded-md border border-white/10 text-white/70 hover:text-white hover:bg-slate-800 transition-colors"
+                        title={isFullscreen ? "Salir" : "Pantalla completa"}
+                    >
+                        {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                    </button>
+                </div>
+            </div>
+
+            {/* Filters */}
+            <div className="absolute top-12 inset-x-0 z-30 px-3 pointer-events-none">
+                <div className="pointer-events-auto">
+                    <MapFilters
+                        manzanas={manzanas}
+                        etapas={etapas}
+                        selectedManzana={selectedManzana}
+                        selectedEtapa={selectedEtapa}
+                        onManzanaChange={setSelectedManzana}
+                        onEtapaChange={setSelectedEtapa}
+                    />
                 </div>
             </div>
 
@@ -214,7 +189,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                                 contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             >
                                 <div className="relative inline-flex items-center justify-center p-2 w-full h-full">
-                                    {mapImageUrl && !imageError ? (
+                                    {mapImageUrl && (
                                         <div className="relative w-full max-w-full">
                                             <img
                                                 ref={imageRef}
@@ -223,7 +198,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                                                 className="w-full h-auto block select-none pointer-events-none"
                                                 draggable={false}
                                                 onLoad={() => setImageLoaded(true)}
-                                                onError={() => setImageError(true)}
                                             />
                                             
                                             {/* SVG overlay — fixed 1000x1000 coordinate system */}
@@ -246,18 +220,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                                                 </svg>
                                             )}
                                         </div>
-                                    ) : (
-                                        <div className="flex flex-col items-center justify-center gap-3 text-center p-8">
-                                            <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/8 flex items-center justify-center">
-                                                <svg className="w-8 h-8 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium text-slate-400">Plano no disponible</p>
-                                                <p className="text-xs text-slate-600 mt-1">El archivo del plano está en el servidor de producción</p>
-                                            </div>
-                                        </div>
                                     )}
                                 </div>
                             </TransformComponent>
@@ -279,7 +241,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             {/* Legend */}
             <div className="absolute bottom-0 inset-x-0 z-30 p-3 pointer-events-none flex justify-center">
                 <div className="pointer-events-auto">
-                    <MapLegend counts={counts} total={filteredLots.length} />
+                    <MapLegend counts={counts} />
                 </div>
             </div>
         </div>
