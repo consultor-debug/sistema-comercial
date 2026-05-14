@@ -92,31 +92,30 @@ export const MapPdf = ({ projectName, mapImagePath, lots }: MapPdfProps) => {
                                 // Convert 0-1 fraction to percentage
                                 const leftPct = `${x * 100}%`
                                 const topPct = `${y * 100}%`
-                                const markerW = 22
-                                const markerH = 12
+                                const markerSize = 16
 
                                 return (
-                                    <View 
+                                    <View
                                         key={lot.id}
                                         style={{
                                             position: 'absolute',
                                             left: leftPct,
                                             top: topPct,
-                                            marginLeft: -(markerW / 2),
-                                            marginTop: -(markerH / 2),
+                                            marginLeft: -(markerSize / 2),
+                                            marginTop: -(markerSize / 2),
                                             backgroundColor: color,
-                                            borderRadius: 2,
-                                            width: markerW,
-                                            height: markerH,
+                                            borderRadius: markerSize / 2,
+                                            width: markerSize,
+                                            height: markerSize,
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            borderWidth: 0.5,
-                                            borderColor: '#ffffff',
+                                            borderWidth: 0.8,
+                                            borderColor: 'rgba(255,255,255,0.7)',
                                         }}
                                     >
-                                        <Text style={{ 
-                                            fontSize: 5, 
-                                            color: '#ffffff', 
+                                        <Text style={{
+                                            fontSize: 5.5,
+                                            color: '#ffffff',
                                             fontWeight: 'bold',
                                             textAlign: 'center',
                                         }}>
