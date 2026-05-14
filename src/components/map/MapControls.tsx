@@ -1,9 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/Badge'
 import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-react'
 
 interface MapControlsProps {
@@ -27,41 +25,34 @@ export const MapControls: React.FC<MapControlsProps> = ({
     maxZoom = 5
 }) => {
     return (
-        <div className="absolute bottom-20 md:bottom-8 right-4 md:right-8 flex flex-col gap-2 md:gap-3 z-40">
-            <motion.div 
-                initial={{ x: 20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                className="flex flex-col glass-strong border border-white/10 rounded-xl md:rounded-2xl overflow-hidden shadow-2xl"
-            >
+        <div className="absolute bottom-20 md:bottom-8 right-4 md:right-8 flex flex-col gap-1.5 z-40">
+            <div className="flex flex-col bg-slate-900/90 backdrop-blur-sm border border-white/10 rounded-lg overflow-hidden">
                 <button
                     onClick={onZoomIn}
                     disabled={zoom >= maxZoom}
-                    className="p-2.5 md:p-3.5 text-slate-300 hover:bg-white/10 hover:text-white transition-all disabled:opacity-30 active:scale-90"
+                    className="p-2.5 text-slate-400 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-30"
                     title="Acercar"
                 >
-                    <ZoomIn className="w-4 h-4 md:w-5 md:h-5" />
+                    <ZoomIn className="w-4 h-4" />
                 </button>
-                <div className="h-px bg-white/10 mx-2 md:mx-3" />
+                <div className="h-px bg-white/5 mx-2" />
                 <button
                     onClick={onZoomOut}
                     disabled={zoom <= minZoom}
-                    className="p-2.5 md:p-3.5 text-slate-300 hover:bg-white/10 hover:text-white transition-all disabled:opacity-30 active:scale-90"
+                    className="p-2.5 text-slate-400 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-30"
                     title="Alejar"
                 >
-                    <ZoomOut className="w-4 h-4 md:w-5 md:h-5" />
+                    <ZoomOut className="w-4 h-4" />
                 </button>
-            </motion.div>
+            </div>
 
-            <motion.button
-                initial={{ x: 20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.1 }}
+            <button
                 onClick={onReset}
-                className="p-2.5 md:p-3.5 glass-strong border border-white/10 rounded-xl md:rounded-2xl text-slate-300 hover:bg-white/10 hover:text-white transition-all shadow-xl active:scale-90"
+                className="p-2.5 bg-slate-900/90 backdrop-blur-sm border border-white/10 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
                 title="Restablecer"
             >
-                <RotateCcw className="w-4 h-4 md:w-5 md:h-5" />
-            </motion.button>
+                <RotateCcw className="w-4 h-4" />
+            </button>
         </div>
     )
 }
@@ -84,18 +75,17 @@ export const MapFilters: React.FC<MapFiltersProps> = ({
     onEtapaChange
 }) => {
     return (
-        <div className="flex flex-col gap-3">
-            {/* Manzana filter */}
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-                <span className="text-[10px] font-black text-white/40 uppercase tracking-widest shrink-0 ml-1">MZ</span>
-                <div className="flex gap-1.5">
+        <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                <span className="text-[10px] font-medium text-slate-600 uppercase tracking-wider shrink-0">Mz</span>
+                <div className="flex gap-1">
                     <button
                         onClick={() => onManzanaChange('all')}
                         className={cn(
-                            'px-4 py-1.5 text-xs font-bold rounded-xl transition-all border shrink-0',
+                            'px-3 py-1 text-xs rounded-md transition-colors border shrink-0',
                             selectedManzana === 'all'
-                                ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]'
-                                : 'glass-strong border-white/5 text-slate-400 hover:border-white/20'
+                                ? 'bg-white text-slate-950 border-white'
+                                : 'bg-slate-900/80 border-white/10 text-slate-400 hover:text-white'
                         )}
                     >
                         Todas
@@ -105,10 +95,10 @@ export const MapFilters: React.FC<MapFiltersProps> = ({
                             key={m}
                             onClick={() => onManzanaChange(m)}
                             className={cn(
-                                'px-4 py-1.5 text-xs font-bold rounded-xl transition-all border shrink-0',
+                                'px-3 py-1 text-xs rounded-md transition-colors border shrink-0',
                                 selectedManzana === m
-                                    ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]'
-                                    : 'glass-strong border-white/5 text-slate-400 hover:border-white/20'
+                                    ? 'bg-white text-slate-950 border-white'
+                                    : 'bg-slate-900/80 border-white/10 text-slate-400 hover:text-white'
                             )}
                         >
                             {m}
@@ -117,18 +107,17 @@ export const MapFilters: React.FC<MapFiltersProps> = ({
                 </div>
             </div>
 
-            {/* Etapa filter */}
             {etapas.length > 0 && (
-                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-                    <span className="text-[10px] font-black text-white/40 uppercase tracking-widest shrink-0 ml-1">ET</span>
-                    <div className="flex gap-1.5">
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                    <span className="text-[10px] font-medium text-slate-600 uppercase tracking-wider shrink-0">Et</span>
+                    <div className="flex gap-1">
                         <button
                             onClick={() => onEtapaChange('all')}
                             className={cn(
-                                'px-4 py-1.5 text-xs font-bold rounded-xl transition-all border shrink-0',
+                                'px-3 py-1 text-xs rounded-md transition-colors border shrink-0',
                                 selectedEtapa === 'all'
-                                    ? 'bg-indigo-600 border-indigo-500 text-white shadow-[0_0_15px_rgba(79,70,229,0.4)]'
-                                    : 'glass-strong border-white/5 text-slate-400 hover:border-white/20'
+                                    ? 'bg-white text-slate-950 border-white'
+                                    : 'bg-slate-900/80 border-white/10 text-slate-400 hover:text-white'
                             )}
                         >
                             Todas
@@ -138,10 +127,10 @@ export const MapFilters: React.FC<MapFiltersProps> = ({
                                 key={e}
                                 onClick={() => onEtapaChange(e)}
                                 className={cn(
-                                    'px-4 py-1.5 text-xs font-bold rounded-xl transition-all border shrink-0',
+                                    'px-3 py-1 text-xs rounded-md transition-colors border shrink-0',
                                     selectedEtapa === e
-                                        ? 'bg-indigo-600 border-indigo-500 text-white shadow-[0_0_15px_rgba(79,70,229,0.4)]'
-                                        : 'glass-strong border-white/5 text-slate-400 hover:border-white/20'
+                                        ? 'bg-white text-slate-950 border-white'
+                                        : 'bg-slate-900/80 border-white/10 text-slate-400 hover:text-white'
                                 )}
                             >
                                 {e}
@@ -165,19 +154,19 @@ interface MapLegendProps {
 
 export const MapLegend: React.FC<MapLegendProps> = ({ counts }) => {
     const items = [
-        { label: 'Libre', color: 'bg-emerald-500', shadow: 'shadow-emerald-500/20', count: counts.libre },
-        { label: 'Separado', color: 'bg-amber-500', shadow: 'shadow-amber-500/20', count: counts.separado },
-        { label: 'Vendido', color: 'bg-rose-500', shadow: 'shadow-rose-500/20', count: counts.vendido },
-        { label: 'Bloqueado', color: 'bg-slate-500', shadow: 'shadow-slate-500/20', count: counts.noDisponible }
+        { label: 'Libre', color: 'bg-emerald-500', count: counts.libre },
+        { label: 'Separado', color: 'bg-amber-500', count: counts.separado },
+        { label: 'Vendido', color: 'bg-rose-500', count: counts.vendido },
+        { label: 'Bloqueado', color: 'bg-slate-500', count: counts.noDisponible }
     ]
 
     return (
-        <div className="flex flex-wrap justify-center gap-1.5 md:gap-2 items-center p-2 md:p-3 glass-strong border border-white/10 rounded-xl md:rounded-2xl shadow-2xl w-full max-w-sm md:max-w-none mx-auto">
+        <div className="flex gap-1.5 items-center p-2 bg-slate-900/90 backdrop-blur-sm border border-white/10 rounded-lg">
             {items.map(item => (
-                <div key={item.label} className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 bg-white/5 rounded-lg md:rounded-xl border border-white/5">
-                    <span className={cn('w-2 h-2 md:w-2.5 md:h-2.5 rounded-full shadow-lg shrink-0', item.color, item.shadow)} />
-                    <span className="text-[9px] md:text-[11px] font-bold text-slate-300 uppercase tracking-tight">{item.label}</span>
-                    <span className="text-[9px] md:text-[11px] font-black text-white/50">{item.count}</span>
+                <div key={item.label} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5">
+                    <span className={cn('w-2 h-2 rounded-full', item.color)} />
+                    <span className="text-[10px] text-slate-400">{item.label}</span>
+                    <span className="text-[10px] font-medium text-white">{item.count}</span>
                 </div>
             ))}
         </div>
@@ -193,24 +182,24 @@ interface MapStatsProps {
 
 export const MapStats: React.FC<MapStatsProps> = ({ total, libre, separado, vendido }) => {
     return (
-        <div className="flex items-center gap-2 md:gap-4 px-3 md:px-5 py-2 md:py-3 glass-strong border border-white/10 rounded-xl md:rounded-2xl shadow-2xl">
+        <div className="flex items-center gap-3 px-4 py-2 bg-slate-900/90 backdrop-blur-sm border border-white/10 rounded-lg">
             <div className="flex flex-col">
-                <span className="text-[8px] md:text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Total</span>
-                <span className="text-base md:text-xl font-black text-white leading-none">{total}</span>
+                <span className="text-[9px] text-slate-500 uppercase">Total</span>
+                <span className="text-lg font-semibold text-white leading-none">{total}</span>
             </div>
-            <div className="w-px h-6 md:h-8 bg-white/10" />
-            <div className="flex gap-2 md:gap-4">
+            <div className="w-px h-6 bg-white/10" />
+            <div className="flex gap-3">
                 <div className="flex flex-col">
-                    <span className="text-[8px] md:text-[9px] font-black text-emerald-500/60 uppercase tracking-[0.2em]">Libres</span>
-                    <span className="text-sm md:text-lg font-black text-emerald-400 leading-none">{libre}</span>
+                    <span className="text-[9px] text-emerald-500/70 uppercase">Libres</span>
+                    <span className="text-sm font-semibold text-emerald-400 leading-none">{libre}</span>
                 </div>
                 <div className="flex flex-col">
-                    <span className="text-[8px] md:text-[9px] font-black text-amber-500/60 uppercase tracking-[0.2em]">Sep.</span>
-                    <span className="text-sm md:text-lg font-black text-amber-400 leading-none">{separado}</span>
+                    <span className="text-[9px] text-amber-500/70 uppercase">Sep.</span>
+                    <span className="text-sm font-semibold text-amber-400 leading-none">{separado}</span>
                 </div>
                 <div className="flex flex-col">
-                    <span className="text-[8px] md:text-[9px] font-black text-rose-500/60 uppercase tracking-[0.2em]">Vend.</span>
-                    <span className="text-sm md:text-lg font-black text-rose-400 leading-none">{vendido}</span>
+                    <span className="text-[9px] text-rose-500/70 uppercase">Vend.</span>
+                    <span className="text-sm font-semibold text-rose-400 leading-none">{vendido}</span>
                 </div>
             </div>
         </div>

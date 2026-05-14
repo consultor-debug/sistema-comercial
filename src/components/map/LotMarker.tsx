@@ -1,7 +1,6 @@
 'use client'
 
 import * as React from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { LotStatus } from '@prisma/client'
 
@@ -15,7 +14,6 @@ interface LotMarkerProps {
     }
     onClick?: () => void
     isSelected?: boolean
-    /** Rendered pixel size of the map image — used to convert normalized (0-1) coordinates */
     imageSize?: { width: number; height: number }
 }
 
@@ -34,7 +32,7 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
 
     if (!shapeData) return null
 
-    const statusColors = {
+    const statusColors: Record<string, string> = {
         LIBRE: '#10B981',
         SEPARADO: '#F59E0B',
         VENDIDO: '#EF4444',
@@ -44,11 +42,6 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
     const color = statusColors[lot.estado] ?? '#64748B'
     const isClickable = lot.estado === 'LIBRE' || lot.estado === 'SEPARADO' || lot.estado === 'VENDIDO'
 
-    /**
-     * Convert a stored coordinate to a pixel value relative to the image.
-     * Stored coords between 0–1 are normalized fractions; values > 1 are
-     * treated as raw pixel values (legacy data).
-     */
     const toPixel = (value: number, dimension: number): number => {
         if (value >= 0 && value <= 1 && dimension > 0) {
             return value * dimension
@@ -56,53 +49,41 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
         return value
     }
 
-    // Render circle marker
     if (lot.mapShapeType === 'circle' && shapeData.x !== undefined && shapeData.y !== undefined) {
         const radius = shapeData.radius || 20
         const cx = toPixel(shapeData.x, imageSize.width)
         const cy = toPixel(shapeData.y, imageSize.height)
 
         return (
-            <motion.g
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                whileHover={isClickable ? { filter: 'brightness(1.2)' } : {}}
-                whileTap={isClickable ? { scale: 0.98 } : {}}
+            <g
                 onClick={isClickable ? onClick : undefined}
-                className={cn(
-                    'transition-all duration-200',
-                    isClickable && 'cursor-pointer'
-                )}
-                style={{ transformOrigin: `${cx}px ${cy}px` }}
+                className={cn(isClickable && 'cursor-pointer')}
+                style={{ pointerEvents: 'all' }}
             >
-                <motion.circle
+                <circle
                     cx={cx}
                     cy={cy}
                     r={radius}
                     fill={color}
-                    animate={{
-                        stroke: isSelected ? '#fff' : color,
-                        strokeWidth: isSelected ? 3 : 1.5,
-                        fillOpacity: isSelected ? 1 : 0.8,
-                    }}
-                    whileHover={{ strokeWidth: 3 }}
-                    className="transition-all duration-300"
+                    stroke={isSelected ? '#fff' : color}
+                    strokeWidth={isSelected ? 3 : 1.5}
+                    fillOpacity={isSelected ? 1 : 0.8}
                     style={{
-                        filter: isSelected ? `drop-shadow(0 0 12px ${color})` : 'none'
+                        filter: isSelected ? `drop-shadow(0 0 12px ${color})` : 'none',
+                        transition: 'stroke 0.2s, stroke-width 0.2s, fill-opacity 0.2s'
                     }}
                 />
 
                 {isSelected && (
-                    <motion.circle
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1.5, opacity: 0 }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
+                    <circle
                         cx={cx}
                         cy={cy}
-                        r={radius}
+                        r={radius * 1.6}
                         fill="none"
                         stroke={color}
-                        strokeWidth={2}
+                        strokeWidth={1.5}
+                        strokeOpacity={0.4}
+                        strokeDasharray="4 3"
                     />
                 )}
 
@@ -115,15 +96,14 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
                     fontSize={radius * 0.6}
                     fontWeight="bold"
                     className="pointer-events-none select-none"
-                    style={{ textShadow: '0 1.5px 3px rgba(0,0,0,0.6)' }}
+                    style={{ textShadow: '0 1px 2px rgba(0,0,0,0.7)' }}
                 >
                     {lot.code}
                 </text>
-            </motion.g>
+            </g>
         )
     }
 
-    // Render polygon marker
     if (lot.mapShapeType === 'polygon' && shapeData.points) {
         const pixelPoints = shapeData.points.map(p => ({
             x: toPixel(p.x, imageSize.width),
@@ -132,36 +112,26 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
 
         const pointsStr = pixelPoints.map(p => `${p.x},${p.y}`).join(' ')
 
-        // Calculate centroid
         const centroid = pixelPoints.reduce(
             (acc, p) => ({ x: acc.x + p.x / pixelPoints.length, y: acc.y + p.y / pixelPoints.length }),
             { x: 0, y: 0 }
         )
 
         return (
-            <motion.g
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                whileHover={isClickable ? { filter: 'brightness(1.2)' } : {}}
-                whileTap={isClickable ? { scale: 0.99 } : {}}
+            <g
                 onClick={isClickable ? onClick : undefined}
-                className={cn(
-                    'transition-all duration-200 origin-center',
-                    isClickable && 'cursor-pointer'
-                )}
-                style={{ transformOrigin: `${centroid.x}px ${centroid.y}px` }}
+                className={cn(isClickable && 'cursor-pointer')}
+                style={{ pointerEvents: 'all' }}
             >
-                <motion.polygon
+                <polygon
                     points={pointsStr}
                     fill={color}
-                    animate={{
-                        stroke: isSelected ? '#fff' : color,
-                        strokeWidth: isSelected ? 3 : 1,
-                        fillOpacity: isSelected ? 1 : 0.7,
-                    }}
-                    transition={{ duration: 0.3 }}
+                    stroke={isSelected ? '#fff' : color}
+                    strokeWidth={isSelected ? 3 : 1}
+                    fillOpacity={isSelected ? 1 : 0.7}
                     style={{
-                        filter: isSelected ? `drop-shadow(0 0 15px ${color}aa)` : 'none'
+                        filter: isSelected ? `drop-shadow(0 0 12px ${color}aa)` : 'none',
+                        transition: 'stroke 0.2s, stroke-width 0.2s, fill-opacity 0.2s'
                     }}
                 />
 
@@ -174,11 +144,11 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
                     fontSize={14}
                     fontWeight="bold"
                     className="pointer-events-none select-none"
-                    style={{ textShadow: '0 1.5px 3px rgba(0,0,0,0.6)' }}
+                    style={{ textShadow: '0 1px 2px rgba(0,0,0,0.7)' }}
                 >
                     {lot.code}
                 </text>
-            </motion.g>
+            </g>
         )
     }
 

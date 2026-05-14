@@ -1,38 +1,17 @@
 @import "tailwindcss";
 
 /* ============================================
-   Sistema Comercial - Dark Theme Design System
+   Sistema Comercial — Minimal Dark Theme
    ============================================ */
 
 :root {
-  /* Background colors - Deeper and more professional */
   --bg-primary: #020617;
   --bg-secondary: #0f172a;
-  --bg-tertiary: #1e293b;
-  
-  /* Text colors */
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
-  
-  /* Status colors - Refined with softer tones */
-  --status-libre: #22d3ee; /* Cyan */
-  --status-separado: #fbbf24; /* Amber */
-  --status-vendido: #f43f5e; /* Rose */
-  --status-no-disponible: #475569;
-  
-  /* Accent colors - Antigravity Signature */
-  --accent-primary: #06b6d4; /* Cyan */
-  --accent-secondary: #6366f1; /* Indigo */
-  
-  /* Borders - More subtle */
-  --border-default: rgba(51, 65, 85, 0.3);
-  --border-subtle: rgba(30, 41, 59, 0.5);
+  --border-default: rgba(255, 255, 255, 0.05);
 }
-
-/* ============================================
-   Base styles
-   ============================================ */
 
 html {
   color-scheme: dark;
@@ -40,70 +19,17 @@ html {
 }
 
 body {
-  background: radial-gradient(circle at top right, #0f172a 0%, #020617 100%);
+  background: #020617;
   min-height: 100vh;
   color: var(--text-primary);
-  font-family: 'Outfit', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ============================================
-   Glass morphism - Premium Refinement
-   ============================================ */
-
-.glass {
-  background: rgba(15, 23, 42, 0.4);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.glass-strong {
-  background: rgba(2, 6, 23, 0.6);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.glass-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.glass-card:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
-  border-color: rgba(6, 182, 212, 0.3);
-  transform: translateY(-4px);
-  box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.5);
-}
-
-/* ============================================
-   Typography & Accents
-   ============================================ */
-
-.gradient-text {
-  background: linear-gradient(135deg, #22d3ee 0%, #818cf8 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.antigravity-button {
-  background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 15px -5px rgba(6, 182, 212, 0.4);
-}
-
-.antigravity-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 25px -5px rgba(6, 182, 212, 0.5);
-  filter: brightness(1.1);
-}
-
-/* ============================================
-   Scrollbar styling
+   Scrollbar
    ============================================ */
 
 ::-webkit-scrollbar {
@@ -116,56 +42,39 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.2);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.4);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 /* ============================================
-   Background Effects
+   Glass (used by map overlays)
    ============================================ */
 
-.bg-grid {
-  background-image: 
-    linear-gradient(rgba(6, 182, 212, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(6, 182, 212, 0.05) 1px, transparent 1px);
-  background-size: 40px 40px;
+.glass-strong {
+  background: rgba(2, 6, 23, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
-.bg-mesh {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
-  background: 
-    radial-gradient(at 0% 0%, rgba(6, 182, 212, 0.15) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.1) 0px, transparent 50%);
-  pointer-events: none;
+.glass-card {
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 /* ============================================
-   Animations
+   Utilities
    ============================================ */
 
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-.page-transition {
-  animation: fadeIn 0.5s ease-out forwards;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
