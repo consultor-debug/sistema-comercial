@@ -66,7 +66,7 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
             <motion.g
                 initial={{ opacity: 0, scale: 0.5 }}
                 animate={{ opacity: 1, scale: 1 }}
-                whileHover={isClickable ? { brightness: 1.2 } : {}}
+                whileHover={isClickable ? { filter: 'brightness(1.2)' } : {}}
                 whileTap={isClickable ? { scale: 0.98 } : {}}
                 onClick={isClickable ? onClick : undefined}
                 className={cn(

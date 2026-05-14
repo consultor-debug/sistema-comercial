@@ -248,7 +248,7 @@ export default function UsersPage() {
             <UserModal
                 isOpen={isModalOpen}
                 user={selectedUser}
-                sessionInfo={sessionInfo}
+                sessionInfo={sessionInfo as any}
                 onClose={() => { setIsModalOpen(false); fetchUsers(); }}
             />
         </div>
