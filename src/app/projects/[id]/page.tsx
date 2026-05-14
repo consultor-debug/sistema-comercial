@@ -76,7 +76,7 @@ export default function ProjectPage() {
         <div className="min-h-screen bg-slate-950">
             <Sidebar />
 
-            <main className="pl-72 pr-4 min-h-screen flex flex-col">
+            <main className="pl-56 pr-4 min-h-screen flex flex-col">
                 {/* Header */}
                 <header className="h-14 sticky top-0 z-40 flex items-center justify-between px-4 bg-slate-950/80 backdrop-blur-md border-b border-white/5">
                     <div className="flex items-center gap-4">

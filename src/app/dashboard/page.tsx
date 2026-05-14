@@ -99,7 +99,7 @@ export default function DashboardPage() {
         <div className="min-h-screen bg-slate-950">
             <Sidebar />
 
-            <main className="pl-72 pr-8 min-h-screen">
+            <main className="pl-56 pr-6 min-h-screen">
                 {/* Header */}
                 <header className="h-16 sticky top-0 z-30 flex items-center justify-between px-6 bg-slate-950/80 backdrop-blur-md border-b border-white/5">
                     <div className="flex items-center gap-2 text-sm text-slate-400">

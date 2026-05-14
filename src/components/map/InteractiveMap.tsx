@@ -18,6 +18,12 @@ interface InteractiveMapProps {
     className?: string
 }
 
+/**
+ * Normalized coordinate system: all lot coordinates are stored as 0-1 fractions.
+ * We always use a 1000x1000 SVG viewBox so that markers have consistent sizing.
+ */
+const VIEW_SIZE = 1000
+
 export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     projectId,
     projectName,
@@ -32,8 +38,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     const [zoom, setZoom] = React.useState(1)
     const [isFullscreen, setIsFullscreen] = React.useState(false)
     const [isDownloading, setIsDownloading] = React.useState(false)
-    const [imageSize, setImageSize] = React.useState({ width: 0, height: 0 })
-    const [naturalSize, setNaturalSize] = React.useState({ width: 0, height: 0 })
+    const [imageLoaded, setImageLoaded] = React.useState(false)
 
     // Filters
     const [selectedManzana, setSelectedManzana] = React.useState<string | 'all'>('all')
@@ -87,16 +92,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
     }, [])
 
-    React.useEffect(() => {
-        const img = imageRef.current
-        if (!img) return
-        const update = () => setImageSize({ width: img.clientWidth, height: img.clientHeight })
-        update()
-        const observer = new ResizeObserver(update)
-        observer.observe(img)
-        return () => observer.disconnect()
-    }, [mapImageUrl])
-
     const handleDownloadPdf = async () => {
         setIsDownloading(true)
         try {
@@ -119,24 +114,20 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         }
     }
 
-    // Use natural image aspect ratio for SVG viewBox
-    const viewBoxWidth = naturalSize.width || 1000
-    const viewBoxHeight = naturalSize.height || 1000
-
     return (
         <div
             ref={containerRef}
             className={cn(
                 'relative flex flex-col bg-slate-950 overflow-hidden transition-all duration-300',
-                isFullscreen ? 'fixed inset-0 z-[9999]' : 'rounded-2xl border border-white/5',
+                isFullscreen ? 'fixed inset-0 z-[9999]' : 'rounded-xl border border-white/5',
                 className
             )}
         >
             {/* Header */}
-            <div className="absolute top-0 inset-x-0 z-30 p-4 flex items-center justify-between pointer-events-none">
-                <div className="flex items-center gap-3 pointer-events-auto">
-                    <div className="px-4 py-2 bg-slate-900/90 backdrop-blur-sm rounded-lg border border-white/10">
-                        <h2 className="text-sm font-semibold text-white">{projectName}</h2>
+            <div className="absolute top-0 inset-x-0 z-30 p-3 flex items-center justify-between pointer-events-none">
+                <div className="flex items-center gap-2 pointer-events-auto">
+                    <div className="px-3 py-1.5 bg-slate-900/90 backdrop-blur-sm rounded-md border border-white/10">
+                        <h2 className="text-xs font-semibold text-white">{projectName}</h2>
                     </div>
                     <div className="hidden sm:block">
                         <MapStats
@@ -148,27 +139,27 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                     </div>
                 </div>
 
-                <div className="flex gap-2 pointer-events-auto">
+                <div className="flex gap-1.5 pointer-events-auto">
                     <button
                         onClick={handleDownloadPdf}
                         disabled={isDownloading}
-                        className="p-2 bg-slate-900/90 backdrop-blur-sm rounded-lg border border-white/10 text-white/70 hover:text-white hover:bg-slate-800 transition-colors disabled:opacity-50"
+                        className="p-1.5 bg-slate-900/90 backdrop-blur-sm rounded-md border border-white/10 text-white/70 hover:text-white hover:bg-slate-800 transition-colors disabled:opacity-50"
                         title="Descargar PDF"
                     >
-                        {isDownloading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white animate-spin rounded-full" /> : <Download className="w-4 h-4" />}
+                        {isDownloading ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white animate-spin rounded-full" /> : <Download className="w-3.5 h-3.5" />}
                     </button>
                     <button
                         onClick={handleFullscreen}
-                        className="p-2 bg-slate-900/90 backdrop-blur-sm rounded-lg border border-white/10 text-white/70 hover:text-white hover:bg-slate-800 transition-colors"
+                        className="p-1.5 bg-slate-900/90 backdrop-blur-sm rounded-md border border-white/10 text-white/70 hover:text-white hover:bg-slate-800 transition-colors"
                         title={isFullscreen ? "Salir" : "Pantalla completa"}
                     >
-                        {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                        {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
                     </button>
                 </div>
             </div>
 
             {/* Filters */}
-            <div className="absolute top-14 inset-x-0 z-30 px-4 pointer-events-none">
+            <div className="absolute top-12 inset-x-0 z-30 px-3 pointer-events-none">
                 <div className="pointer-events-auto">
                     <MapFilters
                         manzanas={manzanas}
@@ -197,27 +188,23 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                                 wrapperStyle={{ width: '100%', height: '100%' }}
                                 contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             >
-                                <div className="relative inline-flex items-center justify-center p-4 w-full h-full">
+                                <div className="relative inline-flex items-center justify-center p-2 w-full h-full">
                                     {mapImageUrl && (
-                                        <div className="relative w-full max-w-5xl">
+                                        <div className="relative w-full max-w-full">
                                             <img
                                                 ref={imageRef}
                                                 src={mapImageUrl}
                                                 alt={projectName}
-                                                className="w-full h-auto rounded-lg block select-none pointer-events-none"
+                                                className="w-full h-auto block select-none pointer-events-none"
                                                 draggable={false}
-                                                onLoad={() => {
-                                                    if (imageRef.current) {
-                                                        setImageSize({ width: imageRef.current.clientWidth, height: imageRef.current.clientHeight })
-                                                        setNaturalSize({ width: imageRef.current.naturalWidth, height: imageRef.current.naturalHeight })
-                                                    }
-                                                }}
+                                                onLoad={() => setImageLoaded(true)}
                                             />
                                             
-                                            {imageSize.width > 0 && (
+                                            {/* SVG overlay — fixed 1000x1000 coordinate system */}
+                                            {imageLoaded && (
                                                 <svg
                                                     className="absolute inset-0 w-full h-full"
-                                                    viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}
+                                                    viewBox={`0 0 ${VIEW_SIZE} ${VIEW_SIZE}`}
                                                     preserveAspectRatio="none"
                                                     style={{ zIndex: 10 }}
                                                 >
@@ -227,7 +214,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                                                             lot={lot}
                                                             onClick={() => onLotClick(lot)}
                                                             isSelected={selectedLotId === lot.id}
-                                                            imageSize={{ width: viewBoxWidth, height: viewBoxHeight }}
+                                                            imageSize={{ width: VIEW_SIZE, height: VIEW_SIZE }}
                                                         />
                                                     ))}
                                                 </svg>
@@ -252,7 +239,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             </div>
 
             {/* Legend */}
-            <div className="absolute bottom-0 inset-x-0 z-30 p-4 pointer-events-none flex justify-center">
+            <div className="absolute bottom-0 inset-x-0 z-30 p-3 pointer-events-none flex justify-center">
                 <div className="pointer-events-auto">
                     <MapLegend counts={counts} />
                 </div>

@@ -21,7 +21,7 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
     lot,
     onClick,
     isSelected = false,
-    imageSize = { width: 0, height: 0 },
+    imageSize = { width: 1000, height: 1000 },
 }) => {
     const shapeData = lot.mapShapeData as {
         x?: number
@@ -42,6 +42,11 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
     const color = statusColors[lot.estado] ?? '#64748B'
     const isClickable = lot.estado === 'LIBRE' || lot.estado === 'SEPARADO' || lot.estado === 'VENDIDO'
 
+    /**
+     * Convert stored coordinate to viewBox pixel.
+     * 0-1 = normalized fraction → multiply by dimension.
+     * >1 = legacy raw pixel → keep as-is.
+     */
     const toPixel = (value: number, dimension: number): number => {
         if (value >= 0 && value <= 1 && dimension > 0) {
             return value * dimension
@@ -49,10 +54,14 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
         return value
     }
 
+    // Dynamic radius based on viewBox size — ensures visibility
+    const baseRadius = Math.max(8, imageSize.width * 0.012)
+
     if (lot.mapShapeType === 'circle' && shapeData.x !== undefined && shapeData.y !== undefined) {
-        const radius = shapeData.radius || 20
+        const radius = shapeData.radius ? Math.max(shapeData.radius, baseRadius) : baseRadius
         const cx = toPixel(shapeData.x, imageSize.width)
         const cy = toPixel(shapeData.y, imageSize.height)
+        const fontSize = Math.max(5, radius * 0.55)
 
         return (
             <g
@@ -65,12 +74,12 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
                     cy={cy}
                     r={radius}
                     fill={color}
-                    stroke={isSelected ? '#fff' : color}
-                    strokeWidth={isSelected ? 3 : 1.5}
-                    fillOpacity={isSelected ? 1 : 0.8}
+                    stroke={isSelected ? '#fff' : 'rgba(0,0,0,0.3)'}
+                    strokeWidth={isSelected ? 2.5 : 0.8}
+                    fillOpacity={isSelected ? 1 : 0.85}
                     style={{
-                        filter: isSelected ? `drop-shadow(0 0 12px ${color})` : 'none',
-                        transition: 'stroke 0.2s, stroke-width 0.2s, fill-opacity 0.2s'
+                        filter: isSelected ? `drop-shadow(0 0 8px ${color})` : 'none',
+                        transition: 'stroke 0.15s, stroke-width 0.15s, fill-opacity 0.15s'
                     }}
                 />
 
@@ -78,12 +87,12 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
                     <circle
                         cx={cx}
                         cy={cy}
-                        r={radius * 1.6}
+                        r={radius * 1.5}
                         fill="none"
                         stroke={color}
-                        strokeWidth={1.5}
+                        strokeWidth={1}
                         strokeOpacity={0.4}
-                        strokeDasharray="4 3"
+                        strokeDasharray="3 2"
                     />
                 )}
 
@@ -93,10 +102,11 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
                     textAnchor="middle"
                     dominantBaseline="central"
                     fill="#fff"
-                    fontSize={radius * 0.6}
+                    fontSize={fontSize}
                     fontWeight="bold"
+                    fontFamily="Inter, system-ui, sans-serif"
                     className="pointer-events-none select-none"
-                    style={{ textShadow: '0 1px 2px rgba(0,0,0,0.7)' }}
+                    style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}
                 >
                     {lot.code}
                 </text>
@@ -117,6 +127,8 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
             { x: 0, y: 0 }
         )
 
+        const fontSize = Math.max(5, baseRadius * 0.7)
+
         return (
             <g
                 onClick={isClickable ? onClick : undefined}
@@ -126,12 +138,12 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
                 <polygon
                     points={pointsStr}
                     fill={color}
-                    stroke={isSelected ? '#fff' : color}
-                    strokeWidth={isSelected ? 3 : 1}
-                    fillOpacity={isSelected ? 1 : 0.7}
+                    stroke={isSelected ? '#fff' : 'rgba(0,0,0,0.2)'}
+                    strokeWidth={isSelected ? 2.5 : 0.5}
+                    fillOpacity={isSelected ? 1 : 0.75}
                     style={{
-                        filter: isSelected ? `drop-shadow(0 0 12px ${color}aa)` : 'none',
-                        transition: 'stroke 0.2s, stroke-width 0.2s, fill-opacity 0.2s'
+                        filter: isSelected ? `drop-shadow(0 0 8px ${color}aa)` : 'none',
+                        transition: 'stroke 0.15s, stroke-width 0.15s, fill-opacity 0.15s'
                     }}
                 />
 
@@ -141,10 +153,11 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
                     textAnchor="middle"
                     dominantBaseline="central"
                     fill="#fff"
-                    fontSize={14}
+                    fontSize={fontSize}
                     fontWeight="bold"
+                    fontFamily="Inter, system-ui, sans-serif"
                     className="pointer-events-none select-none"
-                    style={{ textShadow: '0 1px 2px rgba(0,0,0,0.7)' }}
+                    style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}
                 >
                     {lot.code}
                 </text>
