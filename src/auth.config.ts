@@ -33,6 +33,7 @@ export const authConfig = {
                 token.role = (user as { role?: string }).role;
                 token.id = user.id;
                 token.tenantId = (user as { tenantId?: string }).tenantId;
+                token.assignedTenantIds = (user as { assignedTenantIds?: string[] }).assignedTenantIds || [];
             }
             return token;
         },
@@ -41,6 +42,7 @@ export const authConfig = {
                 (session.user as { role?: string }).role = token.role as string;
                 (session.user as { id?: string }).id = token.id as string;
                 (session.user as { tenantId?: string }).tenantId = token.tenantId as string;
+                (session.user as { assignedTenantIds?: string[] }).assignedTenantIds = token.assignedTenantIds as string[];
             }
             return session;
         },

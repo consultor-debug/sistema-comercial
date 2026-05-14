@@ -15,7 +15,12 @@ export async function getUsers() {
     const isSuperAdmin = (session.user as { role?: string }).role === 'SUPER_ADMIN'
 
     const users = await prisma.user.findMany({
-        where: isSuperAdmin ? {} : { tenantId: session.user.tenantId },
+        where: isSuperAdmin ? {} : { 
+            OR: [
+                { tenantId: session.user.tenantId },
+                { assignedTenantIds: { has: session.user.tenantId } }
+            ]
+        },
         orderBy: { createdAt: 'desc' },
         include: {
             tenant: {
@@ -32,7 +37,10 @@ export async function getUsers() {
         }
     })
 
-    return users
+    return users.map(u => ({
+        ...u,
+        assignedProjectIds: (u as any).assignedProjectIds || []
+    }))
 }
 
 export async function getSessionInfo() {
@@ -40,8 +48,25 @@ export async function getSessionInfo() {
     if (!session?.user) return null
 
     const tenants = (session.user as { role?: string }).role === 'SUPER_ADMIN'
-        ? await prisma.tenant.findMany({ select: { id: true, name: true } })
-        : []
+        ? await prisma.tenant.findMany({ 
+            select: { 
+                id: true, 
+                name: true,
+                projects: {
+                    select: { id: true, name: true }
+                }
+            } 
+        })
+        : await prisma.tenant.findMany({
+            where: { id: session.user.tenantId || undefined },
+            select: { 
+                id: true, 
+                name: true,
+                projects: {
+                    select: { id: true, name: true }
+                }
+            }
+        })
 
     return {
         role: (session.user as { role?: string }).role,
@@ -50,18 +75,30 @@ export async function getSessionInfo() {
     }
 }
 
-export async function upsertUser(data: { id?: string; name: string; email: string; role: UserRole; password?: string; tenantId?: string }) {
+export async function upsertUser(data: { 
+    id?: string; 
+    name: string; 
+    email: string; 
+    role: UserRole; 
+    password?: string; 
+    tenantIds?: string[];
+    projectIds?: string[];
+}) {
     const session = await auth()
     if (!session?.user) {
         return { success: false, error: 'No autorizado' }
     }
 
     const isSuperAdmin = (session.user as { role?: string }).role === 'SUPER_ADMIN'
-    const targetTenantId = isSuperAdmin ? (data.tenantId || session.user.tenantId) : session.user.tenantId
+    
+    // Si no es superadmin, solo puede crear usuarios en su propio tenant
+    const finalTenantIds = isSuperAdmin ? (data.tenantIds || []) : [session.user.tenantId].filter(Boolean) as string[]
 
-    if (!targetTenantId) {
-        return { success: false, error: 'Se requiere un Tenant' }
+    if (finalTenantIds.length === 0) {
+        return { success: false, error: 'Se requiere al menos una Empresa' }
     }
+
+    const primaryTenantId = finalTenantIds[0]
 
     try {
         if (data.id) {
@@ -70,10 +107,12 @@ export async function upsertUser(data: { id?: string; name: string; email: strin
                 name: data.name,
                 email: data.email,
                 role: data.role,
+                assignedTenantIds: finalTenantIds,
+                assignedProjectIds: data.projectIds || []
             }
 
-            if (isSuperAdmin && data.tenantId) {
-                updateData.tenantId = data.tenantId
+            if (isSuperAdmin) {
+                updateData.tenantId = primaryTenantId
             }
 
             if (data.password) {
@@ -95,7 +134,9 @@ export async function upsertUser(data: { id?: string; name: string; email: strin
                     name: data.name,
                     email: data.email,
                     role: data.role,
-                    tenantId: targetTenantId,
+                    tenantId: primaryTenantId,
+                    assignedTenantIds: finalTenantIds,
+                    assignedProjectIds: data.projectIds || [],
                     passwordHash: await hashPassword(data.password),
                     isActive: true
                 }

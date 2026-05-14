@@ -10,8 +10,10 @@ export async function GET(request: Request) {
         return NextResponse.json({ success: false, error: 'No autorizado' }, { status: 401 })
     }
 
-    const { tenantId, role } = session.user
+    const { tenantId, role, assignedTenantIds, assignedProjectIds } = session.user as any
     const isSuperAdmin = role === 'SUPER_ADMIN'
+    const allowedTenantIds = [tenantId, ...(assignedTenantIds || [])].filter(Boolean)
+    const specificProjectIds = (assignedProjectIds || []) as string[]
 
     // Parse optional project filter from query params
     const { searchParams } = new URL(request.url)
@@ -21,12 +23,34 @@ export async function GET(request: Request) {
     try {
         // Build project filter:
         // - SUPER_ADMIN: all projects (or subset if projectIds provided)
-        // - Others: only their tenant's projects
+        // - Others: only their allowed tenants' projects
         let projectWhere: Record<string, unknown> = {}
-        if (selectedIds.length > 0) {
+        
+        if (!isSuperAdmin) {
+            const conditions: any[] = [{ tenantId: { in: allowedTenantIds } }]
+            
+            // Si tiene proyectos específicos asignados, solo esos
+            if (specificProjectIds.length > 0) {
+                conditions.push({ id: { in: specificProjectIds } })
+            }
+            
+            // Advisors only see active projects
+            if (role === 'ASESOR') {
+                conditions.push({ isActive: true })
+            }
+            
+            if (selectedIds.length > 0) {
+                projectWhere = { 
+                    AND: [
+                        { id: { in: selectedIds } },
+                        ...conditions
+                    ]
+                }
+            } else {
+                projectWhere = { AND: conditions }
+            }
+        } else if (selectedIds.length > 0) {
             projectWhere = { id: { in: selectedIds } }
-        } else if (!isSuperAdmin && tenantId) {
-            projectWhere = { tenantId }
         }
 
         // Fetch Projects with lot counts
@@ -62,13 +86,18 @@ export async function GET(request: Request) {
             }
         })
 
-        // All projects list for the selector UI (only for SUPER_ADMIN)
-        const allProjects = isSuperAdmin
-            ? await prisma.project.findMany({
-                select: { id: true, name: true, tenant: { select: { name: true } } },
-                orderBy: { name: 'asc' }
-            })
-            : []
+        // All projects list for the selector UI
+        const allProjects = await prisma.project.findMany({
+            where: isSuperAdmin ? {} : { 
+                AND: [
+                    { tenantId: { in: allowedTenantIds } },
+                    ...(specificProjectIds.length > 0 ? [{ id: { in: specificProjectIds } }] : []),
+                    ...(role === 'ASESOR' ? [{ isActive: true }] : [])
+                ]
+            },
+            select: { id: true, name: true, tenant: { select: { name: true } } },
+            orderBy: { name: 'asc' }
+        })
 
         // Fetch Recent Quotations
         const quotationsWhere: Record<string, unknown> = {}

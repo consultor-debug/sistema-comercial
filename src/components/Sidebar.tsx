@@ -25,6 +25,7 @@ const navItems = [
     { name: 'Reportes', href: '/admin/reports', icon: BarChart3 },
     { name: 'Usuarios', href: '/admin/users', icon: Users },
     { name: 'Negocios', href: '/admin/tenants', icon: Building2 },
+    { name: 'Clientes', href: '/admin/clients', icon: Users },
     { name: 'Lotes', href: '/admin/lots', icon: Database },
 ]
 

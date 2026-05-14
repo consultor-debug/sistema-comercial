@@ -44,6 +44,8 @@ model User {
   role            UserRole    @default(ASESOR)
   canChangeStatus Boolean     @default(false) @map("can_change_status")
   isActive        Boolean     @default(true) @map("is_active")
+  assignedTenantIds String[]   @default([]) @map("assigned_tenant_ids")
+  assignedProjectIds String[]  @default([]) @map("assigned_project_ids")
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
   auditLogs       AuditLog[]

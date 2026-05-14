@@ -116,8 +116,8 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        {/* Multi-project selector — only for SUPER_ADMIN */}
-                        {data.user.role === 'SUPER_ADMIN' && data.allProjects.length > 0 && (
+                        {/* Multi-project selector */}
+                        {data?.allProjects && data.allProjects.length > 0 && (
                             <div className="relative" ref={selectorRef}>
                                 <button
                                     onClick={() => setSelectorOpen(o => !o)}

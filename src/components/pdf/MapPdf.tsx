@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { Document, Page, Image, View, Text, StyleSheet, Svg, Circle, Polygon } from '@react-pdf/renderer'
+import { Document, Page, Image, View, Text, StyleSheet } from '@react-pdf/renderer'
 import { LotStatus } from '@prisma/client'
 import * as React from 'react'
 
@@ -97,51 +97,71 @@ export const MapPdf = ({ projectName, mapImagePath, lots }: MapPdfProps) => {
         <Document>
             <Page size="A4" orientation="landscape" style={styles.page}>
                 <View style={styles.container}>
-                    {/* eslint-disable-next-line jsx-a11y/alt-text */}
-                    <Image 
-                        src={mapImagePath} 
-                        style={styles.mapImage} 
-                        cache={false}
-                    />
+                    <View style={{ position: 'relative', width: '100%' }}>
+                        {/* The image defines the aspect ratio of the container */}
+                        {/* eslint-disable-next-line jsx-a11y/alt-text */}
+                        <Image 
+                            src={mapImagePath} 
+                            style={{ width: '100%', height: 'auto' }} 
+                            cache={false}
+                        />
 
-                    <Svg style={styles.svgOverlay} viewBox="0 0 1000 1000" preserveAspectRatio="none">
-                        {lots.map((lot) => {
-                            if (!lot.mapShapeData) return null
-                            const data = lot.mapShapeData as { x?: number; y?: number; points?: { x: number; y: number }[] }
-                            const color = statusColors[lot.estado] || '#64748B'
+                        {/* Markers overlay using percentage positioning to avoid distortion */}
+                        <View style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                        }}>
+                            {lots.map((lot) => {
+                                if (!lot.mapShapeData) return null
+                                const data = lot.mapShapeData as { x?: number; y?: number; points?: { x: number; y: number }[] }
+                                const color = statusColors[lot.estado] || '#64748B'
+                                
+                                // Calculate position based on either centroid or circle center
+                                let x = 0
+                                let y = 0
+                                
+                                if (lot.mapShapeType === 'circle' && data.x !== undefined && data.y !== undefined) {
+                                    x = data.x
+                                    y = data.y
+                                } else if (lot.mapShapeType === 'polygon' && data.points) {
+                                    x = data.points.reduce((acc, p) => acc + p.x / data.points!.length, 0)
+                                    y = data.points.reduce((acc, p) => acc + p.y / data.points!.length, 0)
+                                } else {
+                                    return null
+                                }
 
-                            if (lot.mapShapeType === 'circle' && data.x !== undefined && data.y !== undefined) {
+                                // Adjust for percentage (stored as 0-1)
+                                const left = `${x * 100}%`
+                                const top = `${y * 100}%`
+
                                 return (
-                                    <React.Fragment key={lot.id}>
-                                        <Circle
-                                            cx={data.x * 1000}
-                                            cy={data.y * 1000}
-                                            r={10}
-                                            fill={color}
-                                            stroke="#ffffff"
-                                            strokeWidth={1}
-                                        />
-                                    </React.Fragment>
-                                )
-                            }
-
-                            if (lot.mapShapeType === 'polygon' && data.points) {
-                                const points = data.points.map((p) => `${p.x * 1000},${p.y * 1000}`).join(' ')
-                                return (
-                                    <Polygon
+                                    <View 
                                         key={lot.id}
-                                        points={points}
-                                        fill={color}
-                                        stroke="#ffffff"
-                                        strokeWidth={1}
-                                        fillOpacity={0.8}
-                                    />
+                                        style={{
+                                            position: 'absolute',
+                                            left,
+                                            top,
+                                            transform: 'translate(-50%, -50%)',
+                                            backgroundColor: color,
+                                            borderRadius: 4,
+                                            padding: 2,
+                                            minWidth: 12,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            borderWidth: 0.5,
+                                            borderColor: '#ffffff',
+                                            opacity: 0.9
+                                        }}
+                                    >
+                                        <Text style={{ fontSize: 4, color: '#ffffff', fontWeight: 'bold' }}>{lot.code}</Text>
+                                    </View>
                                 )
-                            }
-
-                            return null
-                        })}
-                    </Svg>
+                            })}
+                        </View>
+                    </View>
 
                     <View style={styles.header}>
                         <Text style={styles.title}>{projectName}</Text>

@@ -242,8 +242,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                                             {imageSize.width > 0 && (
                                                 <svg
                                                     className="absolute inset-0 w-full h-full"
-                                                    viewBox={`0 0 ${imageSize.width} ${imageSize.height}`}
-                                                    preserveAspectRatio="none"
+                                                    viewBox="0 0 1000 1000"
                                                     style={{ zIndex: 10, overflow: 'visible' }}
                                                 >
                                                     <AnimatePresence>
@@ -253,7 +252,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                                                                 lot={lot}
                                                                 onClick={() => onLotClick(lot)}
                                                                 isSelected={selectedLotId === lot.id}
-                                                                imageSize={imageSize}
+                                                                imageSize={{ width: 1000, height: 1000 }}
                                                             />
                                                         ))}
                                                     </AnimatePresence>

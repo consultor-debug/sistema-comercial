@@ -66,8 +66,8 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
             <motion.g
                 initial={{ opacity: 0, scale: 0.5 }}
                 animate={{ opacity: 1, scale: 1 }}
-                whileHover={isClickable ? { scale: 1.15 } : {}}
-                whileTap={isClickable ? { scale: 0.95 } : {}}
+                whileHover={isClickable ? { brightness: 1.2 } : {}}
+                whileTap={isClickable ? { scale: 0.98 } : {}}
                 onClick={isClickable ? onClick : undefined}
                 className={cn(
                     'transition-all duration-200',
@@ -85,6 +85,7 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
                         strokeWidth: isSelected ? 3 : 1.5,
                         fillOpacity: isSelected ? 1 : 0.8,
                     }}
+                    whileHover={{ strokeWidth: 3 }}
                     className="transition-all duration-300"
                     style={{
                         filter: isSelected ? `drop-shadow(0 0 12px ${color})` : 'none'
@@ -141,8 +142,8 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
             <motion.g
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                whileHover={isClickable ? { scale: 1.02, filter: 'brightness(1.2)' } : {}}
-                whileTap={isClickable ? { scale: 0.98 } : {}}
+                whileHover={isClickable ? { filter: 'brightness(1.2)' } : {}}
+                whileTap={isClickable ? { scale: 0.99 } : {}}
                 onClick={isClickable ? onClick : undefined}
                 className={cn(
                     'transition-all duration-200 origin-center',

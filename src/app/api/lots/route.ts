@@ -25,15 +25,18 @@ export async function GET(request: NextRequest) {
             )
         }
 
-        // Verify the project belongs to the user's tenant (unless SUPER_ADMIN)
-        const isSuperAdmin = (session.user as { role?: string }).role === 'SUPER_ADMIN'
+        // Verify the project belongs to the user's allowed tenants (unless SUPER_ADMIN)
+        const { role, tenantId, assignedTenantIds } = session.user as any
+        const allowedTenantIds = [tenantId, ...(assignedTenantIds || [])].filter(Boolean)
+        const isSuperAdmin = role === 'SUPER_ADMIN'
+        
         if (!isSuperAdmin) {
             const project = await prisma.project.findFirst({
-                where: { id: projectId, tenantId: session.user.tenantId! }
+                where: { id: projectId, tenantId: { in: allowedTenantIds } }
             })
             if (!project) {
                 return NextResponse.json(
-                    { success: false, error: 'Proyecto no encontrado' },
+                    { success: false, error: 'Proyecto no encontrado o sin acceso' },
                     { status: 404 }
                 )
             }

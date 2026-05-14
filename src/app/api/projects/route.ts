@@ -10,16 +10,28 @@ export async function GET() {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
         }
 
-        const userRole = (session.user as { role?: string }).role
-        const userTenantId = (session.user as { tenantId?: string }).tenantId
+        const { role: userRole, tenantId: userTenantId, assignedTenantIds, assignedProjectIds } = session.user as any
+        const allowedTenantIds = [userTenantId, ...(assignedTenantIds || [])].filter(Boolean)
 
-        const where = userRole === 'SUPER_ADMIN' ? {} : { tenantId: userTenantId }
+        let where: any = {}
+        
+        if (userRole !== 'SUPER_ADMIN') {
+            const conditions: any[] = [{ tenantId: { in: allowedTenantIds } }]
+            
+            // Si tiene proyectos específicos asignados, solo esos
+            if (assignedProjectIds && assignedProjectIds.length > 0) {
+                conditions.push({ id: { in: assignedProjectIds } })
+            }
+            
+            where = { AND: conditions }
+            
+            if (userRole === 'ASESOR') {
+                where.isActive = true
+            }
+        }
 
         const projects = await prisma.project.findMany({
-            where: {
-                ...where,
-                isActive: true
-            },
+            where,
             include: {
                 tenant: {
                     select: {
@@ -77,7 +89,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
         }
 
-        const userRole = (session.user as { role?: string }).role
+        const { role: userRole, tenantId: userTenantId, assignedTenantIds } = session.user as any
+        const allowedTenantIds = [userTenantId, ...(assignedTenantIds || [])].filter(Boolean)
         const body = await request.json()
         const { name, description, maxCuotas, minInicial, tenantId: bodyTenantId } = body
 
@@ -85,7 +98,11 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Nombre es requerido' }, { status: 400 })
         }
 
-        const tenantId = userRole === 'SUPER_ADMIN' ? bodyTenantId : (session.user as { tenantId?: string }).tenantId
+        // If super admin, use bodyTenantId. Otherwise, ensure bodyTenantId is within allowed tenants or use primary.
+        let tenantId = userRole === 'SUPER_ADMIN' ? bodyTenantId : userTenantId
+        if (userRole !== 'SUPER_ADMIN' && bodyTenantId && allowedTenantIds.includes(bodyTenantId)) {
+            tenantId = bodyTenantId
+        }
 
         if (!tenantId) {
             return NextResponse.json({ error: 'Tenant ID es requerido' }, { status: 400 })
@@ -117,8 +134,8 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
         }
 
-        const userRole = (session.user as { role?: string }).role
-        const userTenantId = (session.user as { tenantId?: string }).tenantId
+        const { role: userRole, tenantId: userTenantId, assignedTenantIds } = session.user as any
+        const allowedTenantIds = [userTenantId, ...(assignedTenantIds || [])].filter(Boolean)
         const { searchParams } = new URL(request.url)
         const id = searchParams.get('id')
 
@@ -127,13 +144,13 @@ export async function DELETE(request: NextRequest) {
         }
 
         // Verify project exists and belongs to tenant (or user is SUPER_ADMIN)
-        const where = userRole === 'SUPER_ADMIN' ? { id } : { id, tenantId: userTenantId }
+        const where = userRole === 'SUPER_ADMIN' ? { id } : { id, tenantId: { in: allowedTenantIds } }
         const project = await prisma.project.findFirst({
             where
         })
 
         if (!project) {
-            return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 })
+            return NextResponse.json({ error: 'Proyecto no encontrado o no tienes permisos' }, { status: 404 })
         }
 
         // Delete project (cascades to lots, quotations, etc. thanks to schema)
@@ -155,8 +172,8 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
         }
 
-        const userRole = (session.user as { role?: string }).role
-        const userTenantId = (session.user as { tenantId?: string }).tenantId
+        const { role: userRole, tenantId: userTenantId, assignedTenantIds } = session.user as any
+        const allowedTenantIds = [userTenantId, ...(assignedTenantIds || [])].filter(Boolean)
         const body = await request.json()
         const { id, name, description, maxCuotas, minInicial, isActive, tenantId: bodyTenantId } = body
 
@@ -165,13 +182,13 @@ export async function PUT(request: NextRequest) {
         }
 
         // Verify project exists and belongs to tenant (or user is SUPER_ADMIN)
-        const where = userRole === 'SUPER_ADMIN' ? { id } : { id, tenantId: userTenantId }
+        const where = userRole === 'SUPER_ADMIN' ? { id } : { id, tenantId: { in: allowedTenantIds } }
         const existingProject = await prisma.project.findFirst({
             where
         })
 
         if (!existingProject) {
-            return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 })
+            return NextResponse.json({ error: 'Proyecto no encontrado o no tienes permisos' }, { status: 404 })
         }
 
         const project = await prisma.project.update({

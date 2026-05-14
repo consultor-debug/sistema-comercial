@@ -20,7 +20,8 @@ import {
     Lock,
     ShieldCheck,
     Building2,
-    XCircle
+    XCircle,
+    Map as MapIcon
 } from 'lucide-react'
 
 interface UserModalProps {
@@ -30,12 +31,18 @@ interface UserModalProps {
         email: string;
         role: string;
         tenantId?: string | null;
+        assignedTenantIds?: string[];
+        assignedProjectIds?: string[];
     } | null
     isOpen: boolean
     sessionInfo?: {
         role?: string;
         tenantId?: string | null;
-        availableTenants: Array<{ id: string; name: string }>;
+        availableTenants: Array<{ 
+            id: string; 
+            name: string;
+            projects: Array<{ id: string; name: string }>;
+        }>;
     } | null
     onClose: () => void
 }
@@ -48,7 +55,8 @@ export function UserModal({ user, isOpen, sessionInfo, onClose }: UserModalProps
         email: '',
         password: '',
         role: 'ASESOR',
-        tenantId: ''
+        tenantIds: [] as string[],
+        projectIds: [] as string[]
     })
 
     const isSuperAdmin = sessionInfo?.role === 'SUPER_ADMIN'
@@ -60,7 +68,10 @@ export function UserModal({ user, isOpen, sessionInfo, onClose }: UserModalProps
                 email: user.email,
                 password: '', // Don't show password
                 role: user.role,
-                tenantId: user.tenantId || ''
+                tenantIds: user.assignedTenantIds && user.assignedTenantIds.length > 0 
+                    ? user.assignedTenantIds 
+                    : user.tenantId ? [user.tenantId] : [],
+                projectIds: user.assignedProjectIds || []
             })
         } else {
             setFormData({
@@ -68,7 +79,8 @@ export function UserModal({ user, isOpen, sessionInfo, onClose }: UserModalProps
                 email: '',
                 password: '',
                 role: 'ASESOR',
-                tenantId: sessionInfo?.tenantId || ''
+                tenantIds: sessionInfo?.tenantId ? [sessionInfo.tenantId] : [],
+                projectIds: []
             })
         }
         setError(null)
@@ -174,7 +186,7 @@ export function UserModal({ user, isOpen, sessionInfo, onClose }: UserModalProps
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-4">
                                     {/* Role Selection */}
                                     <div className="space-y-2">
                                         <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
@@ -201,27 +213,102 @@ export function UserModal({ user, isOpen, sessionInfo, onClose }: UserModalProps
                                         </Select>
                                     </div>
 
-                                    {/* Tenant Selection (SuperAdmin only) */}
+                                    {/* Tenant Selection (SuperAdmin only) - MULTI SELECT */}
                                     {isSuperAdmin && (
-                                        <div className="space-y-2 animate-in fade-in zoom-in-95 duration-300">
+                                        <div className="space-y-3 animate-in fade-in zoom-in-95 duration-300 bg-slate-800/20 p-4 rounded-2xl border border-slate-800/50">
                                             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                                                <Building2 className="w-3 h-3 text-emerald-500" /> Empresa Asignada
+                                                <Building2 className="w-3 h-3 text-emerald-500" /> Empresas Asignadas
                                             </label>
-                                            <Select
-                                                value={formData.tenantId}
-                                                onValueChange={(value) => setFormData({ ...formData, tenantId: value })}
-                                            >
-                                                <SelectTrigger className="h-11 bg-slate-800/40 border-slate-700/50 rounded-xl text-emerald-400 focus:ring-emerald-500/20">
-                                                    <SelectValue placeholder="Seleccionar...">
-                                                        {sessionInfo?.availableTenants.find(t => t.id === formData.tenantId)?.name}
-                                                    </SelectValue>
-                                                </SelectTrigger>
-                                                <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 shadow-2xl">
-                                                    {sessionInfo?.availableTenants.map(t => (
-                                                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                            
+                                            <div className="grid grid-cols-1 gap-2 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
+                                                {sessionInfo?.availableTenants.map(t => (
+                                                    <div 
+                                                        key={t.id}
+                                                        onClick={() => {
+                                                            const current = formData.tenantIds || []
+                                                            const next = current.includes(t.id)
+                                                                ? current.filter(id => id !== t.id)
+                                                                : [...current, t.id]
+                                                            setFormData({ ...formData, tenantIds: next })
+                                                        }}
+                                                        className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all cursor-pointer group ${
+                                                            (formData.tenantIds || []).includes(t.id)
+                                                                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                                                                : 'bg-slate-800/40 border-slate-700/50 text-slate-400 hover:border-slate-600'
+                                                        }`}
+                                                    >
+                                                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                                                            (formData.tenantIds || []).includes(t.id)
+                                                                ? 'bg-emerald-500 border-emerald-500'
+                                                                : 'border-slate-600 group-hover:border-slate-500'
+                                                        }`}>
+                                                            {(formData.tenantIds || []).includes(t.id) && (
+                                                                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
+                                                                    <path d="M5 13l4 4L19 7" />
+                                                                </svg>
+                                                            )}
+                                                        </div>
+                                                        <span className="text-sm font-medium">{t.name}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            
+                                            {(formData.tenantIds || []).length === 0 && (
+                                                <p className="text-[10px] text-rose-400 font-medium">Debes seleccionar al menos una empresa.</p>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Project Selection */}
+                                    {formData.tenantIds.length > 0 && (
+                                        <div className="space-y-3 animate-in fade-in zoom-in-95 duration-300 bg-slate-800/20 p-4 rounded-2xl border border-slate-800/50">
+                                            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                                <MapIcon className="w-3 h-3 text-blue-500" /> Proyectos Específicos
+                                            </label>
+                                            
+                                            <div className="grid grid-cols-1 gap-2 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
+                                                {sessionInfo?.availableTenants
+                                                    .filter(t => formData.tenantIds.includes(t.id))
+                                                    .flatMap(t => t.projects.map(p => ({ ...p, tenantName: t.name })))
+                                                    .map(p => (
+                                                        <div 
+                                                            key={p.id}
+                                                            onClick={() => {
+                                                                const current = formData.projectIds || []
+                                                                const next = current.includes(p.id)
+                                                                    ? current.filter(id => id !== p.id)
+                                                                    : [...current, p.id]
+                                                                setFormData({ ...formData, projectIds: next })
+                                                            }}
+                                                            className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all cursor-pointer group ${
+                                                                (formData.projectIds || []).includes(p.id)
+                                                                    ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
+                                                                    : 'bg-slate-800/40 border-slate-700/50 text-slate-400 hover:border-slate-600'
+                                                            }`}
+                                                        >
+                                                            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                                                                (formData.projectIds || []).includes(p.id)
+                                                                    ? 'bg-blue-500 border-blue-500'
+                                                                    : 'border-slate-600 group-hover:border-slate-500'
+                                                            }`}>
+                                                                {(formData.projectIds || []).includes(p.id) && (
+                                                                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
+                                                                        <path d="M5 13l4 4L19 7" />
+                                                                    </svg>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex flex-col">
+                                                                <span className="text-sm font-medium">{p.name}</span>
+                                                                <span className="text-[10px] text-slate-500">{p.tenantName}</span>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                }
+                                            </div>
+                                            
+                                            {formData.projectIds.length === 0 && (
+                                                <p className="text-[10px] text-slate-500 font-medium italic">Si no seleccionas proyectos, tendrá acceso a todos los de las empresas elegidas.</p>
+                                            )}
                                         </div>
                                     )}
                                 </div>

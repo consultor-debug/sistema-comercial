@@ -28,6 +28,7 @@ interface UserData {
     role: string;
     isActive: boolean;
     tenantId: string | null;
+    assignedTenantIds: string[];
     tenant?: {
         name: string;
         projects: {

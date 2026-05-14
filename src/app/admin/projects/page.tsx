@@ -348,6 +348,19 @@ export default function ProjectsManagementPage() {
                                 </select>
                             </div>
                         )}
+                        
+                        <div className="flex items-center space-x-2 py-2">
+                            <input
+                                type="checkbox"
+                                id="isActive"
+                                checked={projectToEdit?.isActive || false}
+                                onChange={(e) => setProjectToEdit((prev) => prev ? ({ ...prev, isActive: e.target.checked }) : null)}
+                                className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-blue-600 focus:ring-blue-500"
+                            />
+                            <label htmlFor="isActive" className="text-sm font-medium text-slate-300 cursor-pointer">
+                                Proyecto Activo (Visible para Asesores)
+                            </label>
+                        </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
