@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
     Building2, Map, FileText, TrendingUp, 
     Plus, Calendar, Users, ExternalLink,
-    ChevronDown, Check, Globe, Filter
+    ChevronDown, Check, Globe, Filter, Settings
 } from 'lucide-react'
 import { Sidebar } from '@/components/Sidebar'
 import { StatsChart } from '@/components/dashboard/StatsChart'
