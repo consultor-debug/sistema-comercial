@@ -107,6 +107,21 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
                     fill={`url(#${gradId})`}
                     style={{ pointerEvents: 'none' }}
                 />
+
+                {/* Lot code label */}
+                <text
+                    x={cx} y={cy}
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    fontSize={r * 0.72}
+                    fontWeight="700"
+                    fontFamily="system-ui, sans-serif"
+                    fill="#fff"
+                    fillOpacity={0.95}
+                    style={{ pointerEvents: 'none', userSelect: 'none' }}
+                >
+                    {lot.code}
+                </text>
             </g>
         )
     }
@@ -166,11 +181,20 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
                     style={{ pointerEvents: 'none' }}
                 />
 
-                {/* Subtle center dot */}
-                <circle cx={centroid.x} cy={centroid.y} r={dotR}
-                    fill="#fff" fillOpacity={isSelected ? 0.7 : 0.35}
-                    style={{ pointerEvents: 'none' }}
-                />
+                {/* Lot code label */}
+                <text
+                    x={centroid.x} y={centroid.y}
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    fontSize={baseRadius * 0.72}
+                    fontWeight="700"
+                    fontFamily="system-ui, sans-serif"
+                    fill="#fff"
+                    fillOpacity={0.95}
+                    style={{ pointerEvents: 'none', userSelect: 'none' }}
+                >
+                    {lot.code}
+                </text>
             </g>
         )
     }
