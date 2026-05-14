@@ -152,20 +152,39 @@ interface MapLegendProps {
     }
 }
 
-export const MapLegend: React.FC<MapLegendProps> = ({ counts }) => {
+interface MapLegendProps {
+    counts: {
+        libre: number
+        separado: number
+        vendido: number
+        noDisponible: number
+    }
+    total?: number
+}
+
+export const MapLegend: React.FC<MapLegendProps> = ({ counts, total }) => {
     const items = [
         { label: 'Libre', color: 'bg-emerald-500', count: counts.libre },
         { label: 'Separado', color: 'bg-amber-500', count: counts.separado },
         { label: 'Vendido', color: 'bg-rose-500', count: counts.vendido },
-        { label: 'Bloqueado', color: 'bg-slate-500', count: counts.noDisponible }
+        { label: 'Bloqueado', color: 'bg-slate-500', count: counts.noDisponible },
     ]
 
     return (
-        <div className="flex gap-1.5 items-center p-2 bg-slate-900/90 backdrop-blur-sm border border-white/10 rounded-lg">
+        <div className="flex items-center gap-1 p-1.5 bg-slate-900/90 backdrop-blur-sm border border-white/10 rounded-lg">
+            {total !== undefined && (
+                <>
+                    <div className="flex items-center gap-1 px-2 py-0.5">
+                        <span className="text-[10px] text-slate-500">Total</span>
+                        <span className="text-[11px] font-semibold text-white">{total}</span>
+                    </div>
+                    <div className="w-px h-3 bg-white/10" />
+                </>
+            )}
             {items.map(item => (
-                <div key={item.label} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5">
-                    <span className={cn('w-2 h-2 rounded-full', item.color)} />
-                    <span className="text-[10px] text-slate-400">{item.label}</span>
+                <div key={item.label} className="flex items-center gap-1 px-2 py-0.5 rounded-md">
+                    <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', item.color)} />
+                    <span className="text-[10px] text-slate-400 hidden sm:inline">{item.label}</span>
                     <span className="text-[10px] font-medium text-white">{item.count}</span>
                 </div>
             ))}
