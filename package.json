@@ -19,6 +19,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dotenv": "^17.2.4",
+    "framer-motion": "^11.11.17",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.563.0",
     "next": "16.1.6",
@@ -28,11 +29,11 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-zoom-pan-pinch": "^3.7.0",
+    "recharts": "^2.13.3",
+    "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "uuid": "^13.0.0",
-    "zod": "^4.3.6",
-    "framer-motion": "^11.11.17",
-    "recharts": "^2.13.3"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

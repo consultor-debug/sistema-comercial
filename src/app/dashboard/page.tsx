@@ -99,7 +99,7 @@ export default function DashboardPage() {
         <div className="min-h-screen bg-slate-950">
             <Sidebar />
 
-            <main className="pl-56 pr-6 min-h-screen">
+            <main className="md:pl-56 px-4 md:pr-6 min-h-screen pb-20 md:pb-0">
                 {/* Header */}
                 <header className="h-16 sticky top-0 z-30 flex items-center justify-between px-6 bg-slate-950/80 backdrop-blur-md border-b border-white/5">
                     <div className="flex items-center gap-2 text-sm text-slate-400">
@@ -197,16 +197,16 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Stats */}
-                    <div className="grid grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <StatCard title="Lotes Totales" value={data.stats.totalLots} icon={Map} />
                         <StatCard title="Vendidos" value={data.stats.vendido} icon={TrendingUp} />
                         <StatCard title="Cotizaciones Hoy" value={data.stats.quotationsToday} icon={FileText} />
                         <StatCard title="Tasa de Cierre" value={`${Math.round((data.stats.vendido / (data.stats.totalLots || 1)) * 100)}%`} icon={Users} />
                     </div>
 
-                    <div className="grid grid-cols-12 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                         {/* Chart */}
-                        <div className="col-span-4">
+                        <div className="md:col-span-4">
                             <div className="bg-slate-900/50 border border-white/5 rounded-xl p-6 h-full">
                                 <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-6">Inventario</h3>
                                 <StatsChart data={chartData} />
@@ -225,7 +225,7 @@ export default function DashboardPage() {
                         </div>
 
                         {/* Recent Activity */}
-                        <div className="col-span-8">
+                        <div className="md:col-span-8">
                             <div className="bg-slate-900/50 border border-white/5 rounded-xl overflow-hidden h-full">
                                 <div className="flex items-center justify-between p-6 border-b border-white/5">
                                     <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">Cotizaciones Recientes</h3>
@@ -275,7 +275,7 @@ export default function DashboardPage() {
                         <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-4">
                             Proyectos Activos
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {data.projects.map((project) => (
                                 <ProjectCard key={project.id} project={project} />
                             ))}

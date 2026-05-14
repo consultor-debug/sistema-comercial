@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { Toaster } from 'sonner'
 
 export const metadata: Metadata = {
   title: 'Sistema Comercial | Inmobiliaria SaaS',
@@ -21,6 +22,17 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         {children}
+        <Toaster
+          position="top-right"
+          theme="dark"
+          toastOptions={{
+            style: {
+              background: '#0f172a',
+              border: '1px solid rgba(255,255,255,0.08)',
+              color: '#f8fafc',
+            },
+          }}
+        />
       </body>
     </html>
   )
