@@ -89,49 +89,57 @@ export default function ProjectPage() {
         <div className="min-h-screen bg-slate-950">
             <Sidebar />
 
-            <main className="md:pl-64 min-h-screen bg-grid flex flex-col">
-                {/* Top Header */}
-                <header className="h-14 md:h-16 border-b border-slate-700/50 glass-strong sticky top-0 z-40 px-4 md:px-8 flex items-center justify-between">
-                    <div className="flex items-center gap-3 md:gap-6">
+            <main className="pl-72 pr-8 min-h-screen flex flex-col">
+                {/* Top Header - Floating Glass Style */}
+                <header className="h-20 sticky top-4 z-40 flex items-center justify-between px-8 glass-strong rounded-3xl mt-4 mb-8 shadow-2xl shadow-cyan-900/10">
+                    <div className="flex items-center gap-6">
                         <Link href="/dashboard">
                             <motion.button 
                                 whileHover={{ x: -4 }}
-                                className="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs font-bold text-slate-400 hover:text-white uppercase tracking-widest transition-colors"
+                                className="flex items-center gap-3 px-4 py-2 bg-white/5 border border-white/5 rounded-2xl text-xs font-bold text-slate-400 hover:text-white hover:border-cyan-500/30 transition-all uppercase tracking-widest"
                             >
-                                <ArrowLeft className="w-4 h-4" />
-                                <span className="hidden md:inline">Panel</span>
+                                <ArrowLeft className="w-4 h-4 text-cyan-400" />
+                                <span>Panel</span>
                             </motion.button>
                         </Link>
-                        <div className="h-4 w-px bg-slate-700/50" />
-                        <div className="flex items-center gap-2 md:gap-3">
-                            <Building2 className="w-4 h-4 text-blue-500" />
-                            <span className="text-xs md:text-sm font-black text-white uppercase tracking-tight truncate max-w-[150px] md:max-w-none">{project.name}</span>
+                        
+                        <div className="h-8 w-px bg-white/5" />
+                        
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20 shadow-lg shadow-cyan-500/10">
+                                <Building2 className="w-5 h-5 text-cyan-400" />
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-0.5">Proyecto Seleccionado</span>
+                                <span className="text-sm font-bold text-white uppercase tracking-tight">{project.name}</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2 md:gap-4">
-                        <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-slate-800/30 border border-slate-700/50 rounded-xl text-slate-400">
-                            <Info className="w-4 h-4 text-blue-400" />
-                            <span className="text-[10px] font-bold uppercase tracking-tight">Haz clic en un lote para cotizar</span>
+                    <div className="flex items-center gap-4">
+                        <div className="hidden lg:flex items-center gap-3 px-4 py-2 bg-white/5 border border-white/5 rounded-2xl">
+                            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Haz clic en un lote para cotizar</span>
                         </div>
-                        <div className="hidden md:block w-px h-6 bg-slate-800 mx-2" />
-                        <div className="flex gap-1 md:gap-2">
-                            <button className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all">
+                        
+                        <div className="flex gap-2">
+                            <button className="p-2.5 rounded-xl text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 border border-transparent hover:border-cyan-500/20 transition-all">
                                 <Search className="w-4 h-4" />
                             </button>
-                            <button className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all">
-                                <Bell className="w-4 h-4" />
+                            <button className="p-2.5 rounded-xl text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 border border-transparent hover:border-cyan-500/20 transition-all">
+                                <Settings className="w-4 h-4" />
                             </button>
                         </div>
                     </div>
                 </header>
 
                 {/* Map Content Container */}
-                <div className="flex-1 p-2 md:p-6 lg:p-8 flex flex-col min-h-0">
+                <div className="flex-1 pb-8 flex flex-col min-h-0">
                     <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="flex-1 relative rounded-2xl md:rounded-[2.5rem] overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.3)] border border-white/5"
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ type: "spring", damping: 20 }}
+                        className="flex-1 relative rounded-[3rem] overflow-hidden shadow-[0_30px_70px_rgba(0,0,0,0.4)] border border-white/5 bg-slate-900/50 backdrop-blur-sm"
                     >
                         <InteractiveMap
                             projectId={project.id}
