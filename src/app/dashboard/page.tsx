@@ -19,6 +19,7 @@ interface DashboardData {
     projects: any[]
     allProjects: ProjectOption[]
     recentQuotations: any[]
+    quotationScope: 'own' | 'tenant' | 'all'
     stats: {
         totalLots: number
         libre: number
@@ -260,7 +261,12 @@ export default function DashboardPage() {
                         <div className="md:col-span-8">
                             <div className="bg-slate-900/50 border border-white/5 rounded-xl overflow-hidden h-full">
                                 <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
-                                    <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">Cotizaciones Recientes</h3>
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">Cotizaciones Recientes</h3>
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-slate-500 font-medium">
+                                            {data.quotationScope === 'own' ? 'Mis cotizaciones' : data.quotationScope === 'tenant' ? 'Mi empresa' : 'Global'}
+                                        </span>
+                                    </div>
                                     <Link href="/quotations" className="text-xs text-slate-500 hover:text-white transition-colors flex items-center gap-1 shrink-0 ml-2">
                                         Ver todas <ExternalLink className="w-3 h-3" />
                                     </Link>

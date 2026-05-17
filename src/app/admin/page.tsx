@@ -80,7 +80,7 @@ const ADMIN_SECTIONS: {
             icon: <Globe className="w-6 h-6" />,
             href: '/admin/tenants',
             color: 'blue',
-            badge: 'SaaS'
+            badge: 'SisteMattika'
         },
         {
             title: 'Auditoría',

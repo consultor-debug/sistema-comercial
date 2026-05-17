@@ -3,9 +3,9 @@ import './globals.css'
 import { Toaster } from 'sonner'
 
 export const metadata: Metadata = {
-  title: 'Sistema Comercial | Inmobiliaria SaaS',
-  description: 'Sistema de gestión de inventario inmobiliario con plano interactivo, cotizador y automatizaciones',
-  keywords: ['inmobiliaria', 'lotes', 'cotizador', 'plano interactivo', 'SaaS'],
+  title: 'SisteMattika | Sistema Comercial Inmobiliario',
+  description: 'SisteMattika — Sistema de gestión de inventario inmobiliario con plano interactivo, cotizador y automatizaciones.',
+  keywords: ['inmobiliaria', 'lotes', 'cotizador', 'plano interactivo', 'SisteMattika', 'Mattika'],
 }
 
 export default function RootLayout({

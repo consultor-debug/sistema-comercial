@@ -99,17 +99,35 @@ export async function GET(request: Request) {
             orderBy: { name: 'asc' }
         })
 
-        // Fetch Recent Quotations
+        // Fetch Recent Quotations — scope depends on role
+        // SUPER_ADMIN → all | ADMIN → tenant | ASESOR → own user only
+        const isAdmin = role === 'ADMIN'
+        const isAsesor = role === 'ASESOR'
+
         const quotationsWhere: Record<string, unknown> = {}
+
         if (selectedIds.length > 0) {
+            // If a project filter is active, narrow to those lots
             const lotsInProjects = await prisma.lot.findMany({
                 where: { projectId: { in: selectedIds } },
                 select: { id: true }
             })
             quotationsWhere.lotId = { in: lotsInProjects.map(l => l.id) }
-        } else if (!isSuperAdmin && tenantId) {
+            // ASESORs still only see their own even within selected projects
+            if (isAsesor) {
+                quotationsWhere.userId = (session.user as any).id
+            }
+        } else if (isAsesor) {
+            // Asesores only see their own quotations
+            quotationsWhere.userId = (session.user as any).id
+        } else if (isAdmin && tenantId) {
+            // Admins see their whole tenant
             quotationsWhere.tenantId = tenantId
         }
+        // SUPER_ADMIN: no filter → sees everything
+
+        // Determine the scope label to send to the frontend
+        const quotationScope: 'own' | 'tenant' | 'all' = isAsesor ? 'own' : isAdmin ? 'tenant' : 'all'
 
         const recentQuotations = await prisma.quotation.findMany({
             where: quotationsWhere,
@@ -138,7 +156,10 @@ export async function GET(request: Request) {
                 select: { id: true }
             })
             todayWhere.lotId = { in: lotsInProjects.map(l => l.id) }
-        } else if (!isSuperAdmin && tenantId) {
+            if (isAsesor) todayWhere.userId = (session.user as any).id
+        } else if (isAsesor) {
+            todayWhere.userId = (session.user as any).id
+        } else if (isAdmin && tenantId) {
             todayWhere.tenantId = tenantId
         }
 
@@ -154,6 +175,7 @@ export async function GET(request: Request) {
                 projects: formattedProjects,
                 allProjects,
                 recentQuotations,
+                quotationScope,
                 stats: {
                     totalLots,
                     libre: totalLibre,
