@@ -5,13 +5,14 @@ import { auth } from '@/auth'
 // GET /api/lots/[id]/documents
 export async function GET(
     _req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params
     const session = await auth()
     if (!session?.user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
     const docs = await prisma.lotDocument.findMany({
-        where: { lotId: params.id },
+        where: { lotId: id },
         orderBy: { createdAt: 'desc' },
         include: { uploadedBy: { select: { name: true } } },
     })
@@ -22,8 +23,9 @@ export async function GET(
 // POST /api/lots/[id]/documents
 export async function POST(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params
     const session = await auth()
     if (!session?.user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
@@ -42,7 +44,7 @@ export async function POST(
 
     const doc = await prisma.lotDocument.create({
         data: {
-            lotId: params.id,
+            lotId: id,
             name,
             type: docType,
             fileUrl,
@@ -57,8 +59,9 @@ export async function POST(
 // DELETE /api/lots/[id]/documents?docId=xxx
 export async function DELETE(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params
     const session = await auth()
     if (!session?.user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
@@ -71,7 +74,7 @@ export async function DELETE(
     if (!docId) return NextResponse.json({ error: 'docId requerido' }, { status: 400 })
 
     await prisma.lotDocument.deleteMany({
-        where: { id: docId, lotId: params.id },
+        where: { id: docId, lotId: id },
     })
 
     return NextResponse.json({ success: true })

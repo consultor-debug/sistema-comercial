@@ -5,13 +5,14 @@ import { auth } from '@/auth'
 // GET /api/projects/[id]/updates
 export async function GET(
     _req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params
     const session = await auth()
     if (!session?.user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
     const updates = await prisma.projectUpdate.findMany({
-        where: { projectId: params.id },
+        where: { projectId: id },
         orderBy: { createdAt: 'desc' },
         include: { author: { select: { name: true } } },
     })
@@ -22,8 +23,9 @@ export async function GET(
 // POST /api/projects/[id]/updates
 export async function POST(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params
     const session = await auth()
     if (!session?.user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
@@ -37,7 +39,7 @@ export async function POST(
 
     const update = await prisma.projectUpdate.create({
         data: {
-            projectId: params.id,
+            projectId: id,
             title,
             description: description || null,
             percentage: Math.min(100, Math.max(0, Number(percentage) || 0)),
@@ -47,9 +49,8 @@ export async function POST(
         include: { author: { select: { name: true } } },
     })
 
-    // Also update project's updatedAt so dashboard reflects activity
     await prisma.project.update({
-        where: { id: params.id },
+        where: { id },
         data: { updatedAt: new Date() },
     })
 
@@ -59,8 +60,9 @@ export async function POST(
 // DELETE /api/projects/[id]/updates?updateId=xxx
 export async function DELETE(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params
     const session = await auth()
     if (!session?.user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
@@ -73,7 +75,7 @@ export async function DELETE(
     if (!updateId) return NextResponse.json({ error: 'updateId requerido' }, { status: 400 })
 
     await prisma.projectUpdate.deleteMany({
-        where: { id: updateId, projectId: params.id },
+        where: { id: updateId, projectId: id },
     })
 
     return NextResponse.json({ success: true })
