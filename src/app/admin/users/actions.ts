@@ -15,13 +15,13 @@ export async function getUsers() {
     const isSuperAdmin = (session.user as { role?: string }).role === 'SUPER_ADMIN'
 
     const users = await prisma.user.findMany({
-        where: isSuperAdmin ? {} : { 
+        where: isSuperAdmin ? {} : {
             OR: [
                 { tenantId: session.user.tenantId },
                 { assignedTenantIds: { has: session.user.tenantId } }
             ]
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ lastActiveAt: 'desc' }, { createdAt: 'desc' }],
         include: {
             tenant: {
                 select: {
@@ -33,13 +33,17 @@ export async function getUsers() {
                         }
                     }
                 }
+            },
+            _count: {
+                select: { quotations: true }
             }
         }
     })
 
     return users.map(u => ({
         ...u,
-        assignedProjectIds: (u as any).assignedProjectIds || []
+        assignedProjectIds: (u as any).assignedProjectIds || [],
+        quotationCount: u._count.quotations
     }))
 }
 

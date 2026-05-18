@@ -15,7 +15,9 @@ import {
     Loader2,
     ChevronLeft,
     Trash2,
-    Building2
+    Building2,
+    Clock,
+    FileText
 } from 'lucide-react'
 import { getUsers, toggleUserStatus, deleteUser, getSessionInfo } from './actions'
 import { UserModal } from '@/components/admin/UserModal'
@@ -29,6 +31,8 @@ interface UserData {
     isActive: boolean;
     tenantId: string | null;
     assignedTenantIds: string[];
+    lastActiveAt?: string | Date | null;
+    quotationCount?: number;
     tenant?: {
         name: string;
         projects: {
@@ -36,6 +40,30 @@ interface UserData {
             name: string;
         }[];
     } | null;
+}
+
+function formatRelativeTime(date: Date | string | null | undefined): string {
+    if (!date) return 'Nunca'
+    const d = typeof date === 'string' ? new Date(date) : date
+    const diff = Date.now() - d.getTime()
+    const mins = Math.floor(diff / 60_000)
+    const hours = Math.floor(diff / 3_600_000)
+    const days = Math.floor(diff / 86_400_000)
+    if (mins < 2) return 'Ahora mismo'
+    if (mins < 60) return `hace ${mins}m`
+    if (hours < 24) return `hace ${hours}h`
+    if (days === 1) return 'ayer'
+    if (days < 7) return `hace ${days}d`
+    return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+}
+
+function getOnlineStatus(lastActiveAt: Date | string | null | undefined): 'online' | 'recent' | 'away' | 'offline' | 'never' {
+    if (!lastActiveAt) return 'never'
+    const diff = Date.now() - new Date(lastActiveAt).getTime()
+    if (diff < 5 * 60_000) return 'online'          // < 5 min
+    if (diff < 30 * 60_000) return 'recent'         // < 30 min
+    if (diff < 24 * 3_600_000) return 'away'        // < 24h
+    return 'offline'
 }
 
 interface SessionInfo {
@@ -149,28 +177,46 @@ export default function UsersPage() {
                                 <tr className="bg-slate-800/30">
                                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Usuario</th>
                                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Empresa</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Proyectos</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider hidden lg:table-cell">Proyectos</th>
                                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Rol</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider hidden md:table-cell">Última actividad</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider hidden sm:table-cell">Cotiz.</th>
                                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-800">
-                                {filteredUsers.map((user) => (
+                                {filteredUsers.map((user) => {
+                                    const onlineStatus = getOnlineStatus(user.lastActiveAt)
+                                    const statusDot: Record<string, string> = {
+                                        online: 'bg-emerald-400 shadow-emerald-400/50 shadow-sm animate-pulse',
+                                        recent: 'bg-emerald-500/70',
+                                        away: 'bg-amber-400',
+                                        offline: 'bg-slate-600',
+                                        never: 'bg-slate-700',
+                                    }
+                                    return (
                                     <tr key={user.id} className="hover:bg-white/5 transition-colors">
                                         <td className="px-6 py-4">
-                                            <div className="flex flex-col">
-                                                <span className="font-semibold text-white">{user.name}</span>
-                                                <span className="text-xs text-slate-400">{user.email}</span>
+                                            <div className="flex items-center gap-3">
+                                                <div className="relative shrink-0">
+                                                    <div className="w-8 h-8 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center text-xs font-semibold text-slate-300">
+                                                        {user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                                                    </div>
+                                                    <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-slate-900 ${statusDot[onlineStatus]}`} />
+                                                </div>
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className="font-semibold text-white truncate">{user.name}</span>
+                                                    <span className="text-xs text-slate-400 truncate">{user.email}</span>
+                                                </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
-                                                <Building2 className="w-4 h-4 text-slate-500" />
-                                                <span className="text-sm text-slate-300">{user.tenant?.name || 'N/A'}</span>
+                                                <Building2 className="w-4 h-4 text-slate-500 shrink-0" />
+                                                <span className="text-sm text-slate-300 truncate">{user.tenant?.name || 'N/A'}</span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-6 py-4 hidden lg:table-cell">
                                             <div className="flex flex-wrap gap-1 max-w-[200px]">
                                                 {user.tenant?.projects && user.tenant.projects.length > 0 ? (
                                                     user.tenant.projects.slice(0, 2).map((p: { id: string; name: string }) => (
@@ -196,13 +242,23 @@ export default function UsersPage() {
                                                 {user.role}
                                             </Badge>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <Badge
-                                                variant={user.isActive ? 'success' : 'danger'}
-                                                size="sm"
-                                            >
-                                                {user.isActive ? 'Activo' : 'Inactivo'}
-                                            </Badge>
+                                        {/* Last active */}
+                                        <td className="px-6 py-4 hidden md:table-cell">
+                                            <div className="flex items-center gap-1.5">
+                                                <Clock className="w-3 h-3 text-slate-600 shrink-0" />
+                                                <span className={`text-xs ${onlineStatus === 'online' ? 'text-emerald-400 font-medium' : onlineStatus === 'never' ? 'text-slate-600 italic' : 'text-slate-400'}`}>
+                                                    {formatRelativeTime(user.lastActiveAt)}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        {/* Quotation count */}
+                                        <td className="px-6 py-4 hidden sm:table-cell">
+                                            <div className="flex items-center gap-1.5">
+                                                <FileText className="w-3 h-3 text-slate-600 shrink-0" />
+                                                <span className="text-sm font-semibold text-slate-300">
+                                                    {user.quotationCount ?? 0}
+                                                </span>
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
@@ -235,10 +291,11 @@ export default function UsersPage() {
                                             </div>
                                         </td>
                                     </tr>
-                                ))}
+                                    )
+                                })}
                                 {filteredUsers.length === 0 && (
                                     <tr>
-                                        <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                                        <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
                                             No se encontraron usuarios.
                                         </td>
                                     </tr>

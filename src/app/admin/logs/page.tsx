@@ -8,9 +8,13 @@ import {
     ChevronLeft,
     Clock,
     User as UserIcon,
-    Box
+    Box,
+    Trophy,
+    FileText,
+    Wifi,
+    WifiOff
 } from 'lucide-react'
-import { getAuditLogs } from './actions'
+import { getAuditLogs, getAdvisorRanking } from './actions'
 import { Badge } from '@/components/ui/Badge'
 import Link from 'next/link'
 
@@ -24,22 +28,61 @@ interface AuditLogEntry {
     lot: { code: string }
 }
 
+interface AdvisorRankEntry {
+    id: string
+    name: string
+    email: string
+    role: string
+    isActive: boolean
+    lastActiveAt: Date | string | null
+    quotationCount: number
+}
+
+function formatRelativeTime(date: Date | string | null | undefined): string {
+    if (!date) return 'Nunca'
+    const d = typeof date === 'string' ? new Date(date) : date
+    const diff = Date.now() - d.getTime()
+    const mins = Math.floor(diff / 60_000)
+    const hours = Math.floor(diff / 3_600_000)
+    const days = Math.floor(diff / 86_400_000)
+    if (mins < 2) return 'Ahora mismo'
+    if (mins < 60) return `hace ${mins}m`
+    if (hours < 24) return `hace ${hours}h`
+    if (days === 1) return 'ayer'
+    if (days < 7) return `hace ${days}d`
+    return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+}
+
+function getOnlineStatus(lastActiveAt: Date | string | null | undefined): 'online' | 'recent' | 'away' | 'offline' | 'never' {
+    if (!lastActiveAt) return 'never'
+    const diff = Date.now() - new Date(lastActiveAt).getTime()
+    if (diff < 5 * 60_000) return 'online'
+    if (diff < 30 * 60_000) return 'recent'
+    if (diff < 24 * 3_600_000) return 'away'
+    return 'offline'
+}
+
 export default function LogsPage() {
     const [logs, setLogs] = React.useState<AuditLogEntry[]>([])
+    const [ranking, setRanking] = React.useState<AdvisorRankEntry[]>([])
     const [isLoading, setIsLoading] = React.useState(true)
 
     React.useEffect(() => {
-        const fetchLogs = async () => {
+        const fetchData = async () => {
             try {
-                const data = await getAuditLogs()
-                setLogs(data)
+                const [logsData, rankingData] = await Promise.all([
+                    getAuditLogs(),
+                    getAdvisorRanking()
+                ])
+                setLogs(logsData)
+                setRanking(rankingData)
             } catch (error) {
                 console.error('Fetch logs error:', error)
             } finally {
                 setIsLoading(false)
             }
         }
-        fetchLogs()
+        fetchData()
     }, [])
 
     if (isLoading) {
@@ -71,6 +114,112 @@ export default function LogsPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Advisor Ranking */}
+            <Card className="bg-slate-900 border-slate-700/50 mb-6">
+                <CardHeader>
+                    <div className="flex items-center gap-2">
+                        <Trophy className="w-5 h-5 text-amber-400" />
+                        <CardTitle className="text-lg">Ranking de Asesores</CardTitle>
+                    </div>
+                    <CardDescription>Actividad y cotizaciones por asesor</CardDescription>
+                </CardHeader>
+                <CardContent className="p-0 overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-800/30">
+                                    <th className="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider w-8">#</th>
+                                    <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Asesor</th>
+                                    <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</th>
+                                    <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider hidden md:table-cell">Última actividad</th>
+                                    <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Cotizaciones</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-800">
+                                {ranking.map((advisor, idx) => {
+                                    const status = getOnlineStatus(advisor.lastActiveAt)
+                                    const maxCount = ranking[0]?.quotationCount || 1
+                                    const barWidth = Math.round((advisor.quotationCount / maxCount) * 100)
+                                    const statusConfig: Record<string, { dot: string; label: string; text: string }> = {
+                                        online: { dot: 'bg-emerald-400 animate-pulse shadow-emerald-400/50 shadow-sm', label: 'En línea', text: 'text-emerald-400' },
+                                        recent: { dot: 'bg-emerald-500/70', label: 'Reciente', text: 'text-emerald-500' },
+                                        away: { dot: 'bg-amber-400', label: 'Inactivo', text: 'text-amber-400' },
+                                        offline: { dot: 'bg-slate-600', label: 'Desconectado', text: 'text-slate-500' },
+                                        never: { dot: 'bg-slate-700', label: 'Sin actividad', text: 'text-slate-600' },
+                                    }
+                                    const sc = statusConfig[status]
+                                    const medalColors = ['text-amber-400', 'text-slate-300', 'text-amber-600']
+                                    return (
+                                        <tr key={advisor.id} className="hover:bg-white/5 transition-colors">
+                                            <td className="px-6 py-4 text-center">
+                                                <span className={`text-sm font-bold ${medalColors[idx] ?? 'text-slate-500'}`}>
+                                                    {idx + 1}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="relative shrink-0">
+                                                        <div className="w-8 h-8 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center text-xs font-semibold text-slate-300">
+                                                            {advisor.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                                                        </div>
+                                                        <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-slate-900 ${sc.dot}`} />
+                                                    </div>
+                                                    <div className="flex flex-col min-w-0">
+                                                        <span className="font-semibold text-white truncate text-sm">{advisor.name}</span>
+                                                        <span className="text-xs text-slate-500 truncate">{advisor.email}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                <div className="flex items-center gap-1.5">
+                                                    {(status === 'online' || status === 'recent') ? (
+                                                        <Wifi className={`w-3.5 h-3.5 ${sc.text}`} />
+                                                    ) : (
+                                                        <WifiOff className={`w-3.5 h-3.5 ${sc.text}`} />
+                                                    )}
+                                                    <span className={`text-xs font-medium ${sc.text}`}>{sc.label}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-4 hidden md:table-cell">
+                                                <div className="flex items-center gap-1.5">
+                                                    <Clock className="w-3 h-3 text-slate-600 shrink-0" />
+                                                    <span className={`text-xs ${status === 'online' ? 'text-emerald-400 font-medium' : status === 'never' ? 'text-slate-600 italic' : 'text-slate-400'}`}>
+                                                        {formatRelativeTime(advisor.lastActiveAt)}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-4 text-right">
+                                                <div className="flex items-center justify-end gap-3">
+                                                    <div className="hidden sm:flex items-center w-24">
+                                                        <div className="w-full bg-slate-800 rounded-full h-1.5">
+                                                            <div
+                                                                className="h-1.5 rounded-full bg-blue-500/70"
+                                                                style={{ width: `${barWidth}%` }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <FileText className="w-3.5 h-3.5 text-slate-500" />
+                                                        <span className="text-sm font-bold text-white">{advisor.quotationCount}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
+                                {ranking.length === 0 && (
+                                    <tr>
+                                        <td colSpan={5} className="px-6 py-10 text-center text-slate-500 italic text-sm">
+                                            No hay asesores registrados.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </CardContent>
+            </Card>
 
             <Card className="bg-slate-900 border-slate-700/50">
                 <CardHeader>

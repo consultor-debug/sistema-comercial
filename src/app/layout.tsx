@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { Toaster } from 'sonner'
 import { Providers } from '@/components/Providers'
+import { ActivityTracker } from '@/components/ActivityTracker'
+import { SecurityLayer } from '@/components/SecurityLayer'
 
 export const metadata: Metadata = {
   title: 'SisteMattika | Sistema Comercial Inmobiliario',
@@ -23,6 +25,8 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <Providers>
+          <ActivityTracker />
+          <SecurityLayer />
           {children}
           <ToasterWrapper />
         </Providers>
