@@ -195,7 +195,11 @@ export default function UsersPage() {
                                         never: 'bg-slate-700',
                                     }
                                     return (
-                                    <tr key={user.id} className="hover:bg-white/5 transition-colors">
+                                    <tr
+                                        key={user.id}
+                                        className="hover:bg-blue-500/5 transition-colors cursor-pointer group"
+                                        onClick={() => { setSelectedUser(user); setIsModalOpen(true); }}
+                                    >
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="relative shrink-0">
@@ -260,34 +264,33 @@ export default function UsersPage() {
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
+                                        <td className="px-4 py-4 text-right" onClick={e => e.stopPropagation()}>
+                                            <div className="flex items-center justify-end gap-1">
+                                                <button
                                                     onClick={() => { setSelectedUser(user); setIsModalOpen(true); }}
-                                                    className="h-8 w-8 p-0"
+                                                    title="Editar"
+                                                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 hover:text-blue-300 transition-colors"
                                                 >
                                                     <Edit2 className="w-3.5 h-3.5" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
+                                                </button>
+                                                <button
                                                     onClick={() => handleToggleStatus(user.id, user.isActive)}
-                                                    className={`h-8 w-8 p-0 ${user.isActive ? 'text-rose-400 hover:text-rose-300' : 'text-emerald-400 hover:text-emerald-300'}`}
                                                     title={user.isActive ? 'Desactivar' : 'Activar'}
+                                                    className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+                                                        user.isActive
+                                                            ? 'bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300'
+                                                            : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-300'
+                                                    }`}
                                                 >
                                                     {user.isActive ? <UserX className="w-3.5 h-3.5" /> : <UserCheck className="w-3.5 h-3.5" />}
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
+                                                </button>
+                                                <button
                                                     onClick={() => handleDeleteUser(user.id, user.name)}
-                                                    className="h-8 w-8 p-0 text-slate-500 hover:text-rose-500 hover:bg-rose-500/10"
                                                     title="Eliminar"
+                                                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-500/10 text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors"
                                                 >
                                                     <Trash2 className="w-3.5 h-3.5" />
-                                                </Button>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>

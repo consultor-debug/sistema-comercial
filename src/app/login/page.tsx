@@ -88,6 +88,14 @@ export default function LoginPage() {
 
                     </CardContent>
                 </Card>
+
+                {/* Link a registro */}
+                <p className="text-center mt-5 text-sm text-slate-400">
+                    ¿No tienes cuenta?{' '}
+                    <Link href="/register" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
+                        Crear cuenta
+                    </Link>
+                </p>
             </div>
         </div>
     )
