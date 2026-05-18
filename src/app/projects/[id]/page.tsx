@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { InteractiveMap } from '@/components/map'
 import { LotPanel } from '@/components/lot/LotPanel'
 import { Sidebar } from '@/components/Sidebar'
-import { ArrowLeft, Loader2, X, Search } from 'lucide-react'
+import { ArrowLeft, Loader2, Search } from 'lucide-react'
 import { Lot } from '@prisma/client'
 import { cn } from '@/lib/utils'
 
@@ -219,22 +219,27 @@ export default function ProjectPage() {
                                 />
                             </div>
 
-                            {/* Mobile: full-screen overlay */}
-                            <div className="md:hidden fixed inset-0 z-50 bg-slate-950 flex flex-col animate-in slide-in-from-right duration-200 pb-16">
-                                <div className="flex items-center gap-3 px-4 py-3 border-b border-white/5 shrink-0">
-                                    <button onClick={() => setSelectedLot(null)}
-                                        className="p-1.5 rounded-md bg-white/5 text-slate-400 hover:text-white transition-colors">
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                    <span className="text-xs text-slate-400">Volver al plano</span>
-                                </div>
-                                <div className="flex-1 overflow-hidden">
-                                    <LotPanel
-                                        lot={selectedLot}
-                                        onClose={() => setSelectedLot(null)}
-                                        onUpdate={handleUpdate}
-                                        projectSettings={{ maxCuotas: project.maxCuotas, minInicial: project.minInicial, interestRate: project.interestRate }}
-                                    />
+                            {/* Mobile: bottom sheet */}
+                            <div className="md:hidden fixed inset-0 z-[60]">
+                                {/* Backdrop */}
+                                <div
+                                    className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                                    onClick={() => setSelectedLot(null)}
+                                />
+                                {/* Sheet */}
+                                <div className="absolute inset-x-0 bottom-0 h-[90vh] flex flex-col bg-slate-950 border-t border-white/10 rounded-t-2xl animate-in slide-in-from-bottom duration-300">
+                                    {/* Drag handle */}
+                                    <div className="flex justify-center pt-2.5 pb-1 shrink-0">
+                                        <div className="w-10 h-1 bg-white/20 rounded-full" />
+                                    </div>
+                                    <div className="flex-1 overflow-hidden">
+                                        <LotPanel
+                                            lot={selectedLot}
+                                            onClose={() => setSelectedLot(null)}
+                                            onUpdate={handleUpdate}
+                                            projectSettings={{ maxCuotas: project.maxCuotas, minInicial: project.minInicial, interestRate: project.interestRate }}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </>

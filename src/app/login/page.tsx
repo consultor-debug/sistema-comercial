@@ -86,26 +86,8 @@ export default function LoginPage() {
                             <LoginButton />
                         </form>
 
-                        <div className="mt-6 pt-6 border-t border-slate-700 text-center">
-                            <p className="text-sm text-slate-400">
-                                ¿No tienes cuenta?{' '}
-                                <Link href="/register" className="text-blue-400 hover:underline font-medium">
-                                    Regístrate aquí
-                                </Link>
-                            </p>
-                        </div>
                     </CardContent>
                 </Card>
-
-                {/* Demo access */}
-                <div className="mt-6 text-center">
-                    <p className="text-sm text-slate-500 mb-3">O accede a la demostración</p>
-                    <Link href="/demo">
-                        <Button variant="outline" className="w-full">
-                            Ver Demo sin registro
-                        </Button>
-                    </Link>
-                </div>
             </div>
         </div>
     )
