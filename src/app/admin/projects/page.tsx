@@ -240,7 +240,13 @@ export default function ProjectsManagementPage() {
                                 </div>
 
                                 <div className="pt-4 border-t border-slate-800 flex items-center justify-between gap-2">
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-2 flex-wrap">
+                                        <Link href={`/admin/projects/${project.id}`}>
+                                            <Button variant="ghost" size="sm" className="h-9 px-3 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10">
+                                                <Building2 className="w-4 h-4 mr-2" />
+                                                Gestionar
+                                            </Button>
+                                        </Link>
                                         <Link href={`/admin/lots/map?projectId=${project.id}`}>
                                             <Button variant="ghost" size="sm" className="h-9 px-3">
                                                 <Map className="w-4 h-4 mr-2" />
