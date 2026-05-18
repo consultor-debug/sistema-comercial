@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Building2, Lock, ArrowLeft, CheckCircle2, AlertCircle, Eye, EyeOff } from 'lucide-react'
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
     const searchParams = useSearchParams()
     const router = useRouter()
     const token = searchParams.get('token')
@@ -157,5 +157,17 @@ export default function ResetPasswordPage() {
                 </div>
             </div>
         </div>
+    )
+}
+
+export default function ResetPasswordPage() {
+    return (
+        <React.Suspense fallback={
+            <div className="min-h-screen bg-grid flex items-center justify-center">
+                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+        }>
+            <ResetPasswordContent />
+        </React.Suspense>
     )
 }
