@@ -2,10 +2,12 @@
 
 import * as React from 'react'
 import Link from 'next/link'
+import { useSession } from 'next-auth/react'
 import { Sidebar } from '@/components/Sidebar'
 import {
     ArrowLeft, Plus, Upload, Download, Search, Pencil, Trash2,
-    Loader2, Check, AlertCircle, FileSpreadsheet, X, ChevronLeft, ChevronRight
+    Loader2, Check, AlertCircle, FileSpreadsheet, X, ChevronLeft, ChevronRight,
+    CheckSquare, Square, ChevronDown, Tag, Layers
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -48,6 +50,7 @@ interface ImportRow {
 
 type EstadoFilter = 'ALL' | 'LIBRE' | 'SEPARADO' | 'VENDIDO' | 'NO_DISPONIBLE'
 type ModalMode = 'new' | 'edit' | null
+type BulkAction = 'price_fixed' | 'price_pct' | 'status' | 'delete' | null
 
 const PAGE_SIZE = 50
 
@@ -76,7 +79,6 @@ function parseCSV(text: string): ImportRow[] {
     const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
     if (lines.length < 2) return []
 
-    // split a line honoring quoted fields
     const splitLine = (line: string) => {
         const vals: string[] = []
         let cur = ''
@@ -139,6 +141,56 @@ function Badge({ estado }: { estado: string }) {
         <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full', ESTADO_COLORS[estado] || ESTADO_COLORS.NO_DISPONIBLE)}>
             {ESTADO_LABELS[estado] || estado}
         </span>
+    )
+}
+
+// ─── Dropdown (generic) ───────────────────────────────────────────────────────
+
+function DropdownMenu({ label, icon: Icon, items, onSelect, colorClass = 'text-slate-400' }: {
+    label: string
+    icon: React.ElementType
+    items: string[]
+    onSelect: (val: string) => void
+    colorClass?: string
+}) {
+    const [open, setOpen] = React.useState(false)
+    const ref = React.useRef<HTMLDivElement>(null)
+
+    React.useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+        }
+        document.addEventListener('mousedown', handler)
+        return () => document.removeEventListener('mousedown', handler)
+    }, [])
+
+    if (items.length === 0) return null
+
+    return (
+        <div className="relative" ref={ref}>
+            <button
+                onClick={() => setOpen(o => !o)}
+                className={cn(
+                    'flex items-center gap-1.5 px-3 h-8 text-xs bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-colors',
+                    colorClass
+                )}>
+                <Icon className="w-3.5 h-3.5" />
+                {label}
+                <ChevronDown className={cn('w-3 h-3 transition-transform', open && 'rotate-180')} />
+            </button>
+            {open && (
+                <div className="absolute top-full left-0 mt-1 z-50 bg-slate-900 border border-white/10 rounded-xl shadow-2xl min-w-[160px] py-1 overflow-hidden">
+                    {items.map(item => (
+                        <button
+                            key={item}
+                            onClick={() => { onSelect(item); setOpen(false) }}
+                            className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-white/8 hover:text-white transition-colors">
+                            {item}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
     )
 }
 
@@ -331,7 +383,6 @@ function ImportPanel({ projectId, onImported, onClose }: ImportPanelProps) {
                 </div>
 
                 <div className="p-5 space-y-4">
-                    {/* Format reference */}
                     <div className="bg-white/3 rounded-xl p-4 border border-white/6">
                         <p className="text-[11px] text-slate-400 mb-2 font-medium uppercase tracking-wider">Formato esperado (10 columnas)</p>
                         <code className="text-[11px] text-slate-300 break-all leading-relaxed">
@@ -340,7 +391,6 @@ function ImportPanel({ projectId, onImported, onClose }: ImportPanelProps) {
                         <p className="text-[11px] text-slate-500 mt-2">Requeridos: manzana, lote, area_m2, precio_lista. El resto es opcional.</p>
                     </div>
 
-                    {/* File upload */}
                     <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-white/10 rounded-xl cursor-pointer hover:border-indigo-500/60 transition-colors group">
                         <Upload className="w-6 h-6 text-slate-500 group-hover:text-indigo-400 mb-2 transition-colors" />
                         <p className="text-sm text-slate-400 group-hover:text-white transition-colors">
@@ -349,7 +399,6 @@ function ImportPanel({ projectId, onImported, onClose }: ImportPanelProps) {
                         <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleFile} />
                     </label>
 
-                    {/* Preview */}
                     {rows.length > 0 && (
                         <div className="border border-white/8 rounded-xl overflow-hidden">
                             <div className="flex items-center justify-between px-4 py-2.5 bg-white/3 border-b border-white/8">
@@ -382,7 +431,6 @@ function ImportPanel({ projectId, onImported, onClose }: ImportPanelProps) {
                         </div>
                     )}
 
-                    {/* Result */}
                     {result && (
                         <div className={cn(
                             'rounded-xl p-4 text-sm',
@@ -424,9 +472,162 @@ function ImportPanel({ projectId, onImported, onClose }: ImportPanelProps) {
     )
 }
 
+// ─── Bulk Action Bar ──────────────────────────────────────────────────────────
+
+interface BulkBarProps {
+    count: number
+    onClear: () => void
+    onAction: (action: BulkAction, payload?: any) => Promise<void>
+    isBusy: boolean
+}
+
+function BulkBar({ count, onClear, onAction, isBusy }: BulkBarProps) {
+    const [mode, setMode] = React.useState<BulkAction>(null)
+    const [priceInput, setPriceInput] = React.useState('')
+    const [pctInput, setPctInput] = React.useState('')
+    const [estadoInput, setEstadoInput] = React.useState('LIBRE')
+
+    const closeMode = () => { setMode(null); setPriceInput(''); setPctInput('') }
+
+    return (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2">
+            {/* Action sub-panel */}
+            {mode && (
+                <div className="bg-slate-800 border border-white/15 rounded-2xl shadow-2xl px-5 py-4 flex items-end gap-3 animate-in slide-in-from-bottom-2 duration-200">
+                    {mode === 'price_fixed' && (
+                        <>
+                            <div>
+                                <label className="block text-[10px] text-slate-400 mb-1">Nuevo precio (S/)</label>
+                                <input
+                                    autoFocus
+                                    type="number"
+                                    value={priceInput}
+                                    onChange={e => setPriceInput(e.target.value)}
+                                    placeholder="ej. 85000"
+                                    className="h-8 w-36 px-3 bg-white/5 border border-white/15 rounded-lg text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/60"
+                                />
+                            </div>
+                            <button
+                                disabled={!priceInput || isBusy}
+                                onClick={() => onAction('price_fixed', { price: Number(priceInput) }).then(closeMode)}
+                                className="h-8 px-4 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 disabled:opacity-40 transition-colors flex items-center gap-1.5">
+                                {isBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                                Aplicar
+                            </button>
+                        </>
+                    )}
+                    {mode === 'price_pct' && (
+                        <>
+                            <div>
+                                <label className="block text-[10px] text-slate-400 mb-1">Variación (%)</label>
+                                <input
+                                    autoFocus
+                                    type="number"
+                                    value={pctInput}
+                                    onChange={e => setPctInput(e.target.value)}
+                                    placeholder="ej. 5 o -10"
+                                    className="h-8 w-28 px-3 bg-white/5 border border-white/15 rounded-lg text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/60"
+                                />
+                            </div>
+                            <button
+                                disabled={!pctInput || isBusy}
+                                onClick={() => onAction('price_pct', { percentChange: Number(pctInput) }).then(closeMode)}
+                                className="h-8 px-4 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 disabled:opacity-40 transition-colors flex items-center gap-1.5">
+                                {isBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                                Aplicar
+                            </button>
+                        </>
+                    )}
+                    {mode === 'status' && (
+                        <>
+                            <div>
+                                <label className="block text-[10px] text-slate-400 mb-1">Nuevo estado</label>
+                                <select
+                                    value={estadoInput}
+                                    onChange={e => setEstadoInput(e.target.value)}
+                                    className="h-8 px-2 bg-white/5 border border-white/15 rounded-lg text-xs text-white focus:outline-none">
+                                    <option value="LIBRE">Disponible</option>
+                                    <option value="SEPARADO">Separado</option>
+                                    <option value="VENDIDO">Vendido</option>
+                                    <option value="NO_DISPONIBLE">No Disponible</option>
+                                </select>
+                            </div>
+                            <button
+                                disabled={isBusy}
+                                onClick={() => onAction('status', { estado: estadoInput }).then(closeMode)}
+                                className="h-8 px-4 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 disabled:opacity-40 transition-colors flex items-center gap-1.5">
+                                {isBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                                Aplicar
+                            </button>
+                        </>
+                    )}
+                    <button onClick={closeMode} className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                        <X className="w-3.5 h-3.5" />
+                    </button>
+                </div>
+            )}
+
+            {/* Main bar */}
+            <div className="bg-slate-800 border border-white/15 rounded-2xl shadow-2xl px-4 py-2.5 flex items-center gap-3 animate-in slide-in-from-bottom-3 duration-200">
+                <span className="text-xs font-semibold text-white bg-indigo-600 px-2.5 py-1 rounded-lg">
+                    {count} seleccionado{count !== 1 ? 's' : ''}
+                </span>
+
+                <div className="h-4 w-px bg-white/10" />
+
+                {/* Price buttons */}
+                <div className="flex items-center gap-1.5">
+                    <button
+                        onClick={() => setMode(m => m === 'price_fixed' ? null : 'price_fixed')}
+                        className={cn(
+                            'px-3 h-7 text-xs rounded-lg transition-colors',
+                            mode === 'price_fixed' ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:text-white hover:bg-white/10'
+                        )}>
+                        Precio fijo
+                    </button>
+                    <button
+                        onClick={() => setMode(m => m === 'price_pct' ? null : 'price_pct')}
+                        className={cn(
+                            'px-3 h-7 text-xs rounded-lg transition-colors',
+                            mode === 'price_pct' ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:text-white hover:bg-white/10'
+                        )}>
+                        % Variación
+                    </button>
+                    <button
+                        onClick={() => setMode(m => m === 'status' ? null : 'status')}
+                        className={cn(
+                            'px-3 h-7 text-xs rounded-lg transition-colors',
+                            mode === 'status' ? 'bg-amber-600 text-white' : 'text-slate-300 hover:text-white hover:bg-white/10'
+                        )}>
+                        Estado
+                    </button>
+                </div>
+
+                <div className="h-4 w-px bg-white/10" />
+
+                <button
+                    onClick={() => onAction('delete')}
+                    disabled={isBusy}
+                    className="px-3 h-7 text-xs text-rose-400 hover:text-white hover:bg-rose-500/20 rounded-lg transition-colors disabled:opacity-40 flex items-center gap-1">
+                    <Trash2 className="w-3 h-3" /> Eliminar
+                </button>
+
+                <div className="h-4 w-px bg-white/10" />
+
+                <button onClick={onClear} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 hover:text-white transition-colors">
+                    <X className="w-3.5 h-3.5" />
+                </button>
+            </div>
+        </div>
+    )
+}
+
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function AdminLotsPage() {
+    const { data: session } = useSession()
+    const isSuperAdmin = (session?.user as any)?.role === 'SUPER_ADMIN'
+
     const [projects, setProjects] = React.useState<Project[]>([])
     const [selectedProjectId, setSelectedProjectId] = React.useState('')
     const [lots, setLots] = React.useState<LotRow[]>([])
@@ -456,6 +657,11 @@ export default function AdminLotsPage() {
     // Toast
     const [toast, setToast] = React.useState<{ msg: string; type: 'ok' | 'err' } | null>(null)
 
+    // ── Bulk selection (SUPER_ADMIN only) ──────────────────────────────────────
+    const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set())
+    const [bulkBusy, setBulkBusy] = React.useState(false)
+    const [deletingBulk, setDeletingBulk] = React.useState(false)
+
     // Load projects
     React.useEffect(() => {
         fetch('/api/projects').then(r => r.json()).then(d => {
@@ -470,6 +676,7 @@ export default function AdminLotsPage() {
     const fetchLots = React.useCallback(async () => {
         if (!selectedProjectId) return
         setLoadingLots(true)
+        setSelectedIds(new Set())
         try {
             const res = await fetch(`/api/lots?projectId=${selectedProjectId}`)
             const data = await res.json()
@@ -490,6 +697,8 @@ export default function AdminLotsPage() {
     }
 
     // Derived values
+    const manzanas = React.useMemo(() =>
+        [...new Set(lots.map(l => l.manzana).filter(Boolean))].sort(), [lots])
     const etapas = React.useMemo(() =>
         [...new Set(lots.map(l => l.etapa).filter(Boolean) as string[])].sort(), [lots])
     const tipologias = React.useMemo(() =>
@@ -515,6 +724,116 @@ export default function AdminLotsPage() {
         separado: lots.filter(l => l.estado === 'SEPARADO').length,
         vendido: lots.filter(l => l.estado === 'VENDIDO').length,
     }), [lots])
+
+    // ── Selection helpers ──────────────────────────────────────────────────────
+
+    const toggleRow = (id: string) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev)
+            if (next.has(id)) next.delete(id)
+            else next.add(id)
+            return next
+        })
+    }
+
+    const pageIds = paginated.map(l => l.id)
+    const allPageSelected = pageIds.length > 0 && pageIds.every(id => selectedIds.has(id))
+    const somePageSelected = pageIds.some(id => selectedIds.has(id))
+
+    const toggleAllPage = () => {
+        setSelectedIds(prev => {
+            const next = new Set(prev)
+            if (allPageSelected) {
+                pageIds.forEach(id => next.delete(id))
+            } else {
+                pageIds.forEach(id => next.add(id))
+            }
+            return next
+        })
+    }
+
+    const selectByManzana = (manzana: string) => {
+        const ids = lots.filter(l => l.manzana === manzana).map(l => l.id)
+        setSelectedIds(prev => {
+            const next = new Set(prev)
+            ids.forEach(id => next.add(id))
+            return next
+        })
+        showToast(`${ids.length} lotes de manzana "${manzana}" seleccionados`)
+    }
+
+    const selectByEtapa = (etapa: string) => {
+        const ids = lots.filter(l => l.etapa === etapa).map(l => l.id)
+        setSelectedIds(prev => {
+            const next = new Set(prev)
+            ids.forEach(id => next.add(id))
+            return next
+        })
+        showToast(`${ids.length} lotes de etapa "${etapa}" seleccionados`)
+    }
+
+    const selectAllFiltered = () => {
+        setSelectedIds(new Set(filtered.map(l => l.id)))
+        showToast(`${filtered.length} lotes seleccionados`)
+    }
+
+    // ── Bulk action handler ────────────────────────────────────────────────────
+
+    const handleBulkAction = async (action: BulkAction, payload?: any) => {
+        if (!action || selectedIds.size === 0) return
+
+        if (action === 'delete') {
+            setDeletingBulk(true)
+            return
+        }
+
+        setBulkBusy(true)
+        try {
+            const apiAction = action === 'price_fixed' ? 'price'
+                            : action === 'price_pct'   ? 'price'
+                            : action
+
+            const apiPayload = action === 'price_fixed' ? { price: payload.price }
+                             : action === 'price_pct'   ? { percentChange: payload.percentChange }
+                             : { estado: payload.estado }
+
+            const res = await fetch('/api/admin/lots/bulk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: Array.from(selectedIds), action: apiAction, payload: apiPayload })
+            })
+            const data = await res.json()
+            if (!res.ok || !data.success) throw new Error(data.error)
+            showToast(`${data.affected} lotes actualizados`)
+            setSelectedIds(new Set())
+            await fetchLots()
+        } catch (err) {
+            showToast(err instanceof Error ? err.message : 'Error en operación masiva', 'err')
+        } finally {
+            setBulkBusy(false)
+        }
+    }
+
+    const confirmBulkDelete = async () => {
+        setBulkBusy(true)
+        setDeletingBulk(false)
+        try {
+            const res = await fetch('/api/admin/lots/bulk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: Array.from(selectedIds), action: 'delete' })
+            })
+            const data = await res.json()
+            if (!res.ok || !data.success) throw new Error(data.error)
+            showToast(`${data.affected} lotes eliminados`)
+            setSelectedIds(new Set())
+            await fetchLots()
+        } catch (err) {
+            showToast(err instanceof Error ? err.message : 'Error al eliminar', 'err')
+        } finally {
+            setBulkBusy(false)
+        }
+    }
 
     // Inline price save
     const savePriceInline = async (lot: LotRow) => {
@@ -610,7 +929,7 @@ export default function AdminLotsPage() {
                             )}
                         </div>
 
-                        {/* Filters */}
+                        {/* Filters row */}
                         <div className="flex flex-wrap gap-2">
                             <div className="relative">
                                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
@@ -657,6 +976,62 @@ export default function AdminLotsPage() {
                             </span>
                         </div>
 
+                        {/* SUPER_ADMIN bulk selection controls */}
+                        {isSuperAdmin && lots.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-2">
+                                {/* Select all on page */}
+                                <button
+                                    onClick={toggleAllPage}
+                                    className="flex items-center gap-1.5 px-3 h-7 text-xs text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/8 rounded-lg transition-colors">
+                                    {allPageSelected
+                                        ? <CheckSquare className="w-3.5 h-3.5 text-indigo-400" />
+                                        : <Square className="w-3.5 h-3.5" />
+                                    }
+                                    {allPageSelected ? 'Deseleccionar página' : 'Seleccionar página'}
+                                </button>
+
+                                {/* Select all filtered */}
+                                {filtered.length > paginated.length && (
+                                    <button
+                                        onClick={selectAllFiltered}
+                                        className="flex items-center gap-1.5 px-3 h-7 text-xs text-indigo-400 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 rounded-lg transition-colors">
+                                        <CheckSquare className="w-3.5 h-3.5" />
+                                        Seleccionar todos ({filtered.length})
+                                    </button>
+                                )}
+
+                                {/* Select by manzana */}
+                                <DropdownMenu
+                                    label="Por manzana"
+                                    icon={Tag}
+                                    items={manzanas}
+                                    onSelect={selectByManzana}
+                                    colorClass="text-slate-400"
+                                />
+
+                                {/* Select by etapa */}
+                                {etapas.length > 0 && (
+                                    <DropdownMenu
+                                        label="Por etapa"
+                                        icon={Layers}
+                                        items={etapas}
+                                        onSelect={selectByEtapa}
+                                        colorClass="text-slate-400"
+                                    />
+                                )}
+
+                                {/* Clear selection */}
+                                {selectedIds.size > 0 && (
+                                    <button
+                                        onClick={() => setSelectedIds(new Set())}
+                                        className="flex items-center gap-1 px-2.5 h-7 text-xs text-slate-500 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                                        <X className="w-3 h-3" />
+                                        Limpiar ({selectedIds.size})
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
                         {/* Table */}
                         {loadingLots ? (
                             <div className="flex items-center justify-center py-20">
@@ -674,6 +1049,21 @@ export default function AdminLotsPage() {
                                     <table className="w-full text-sm border-collapse">
                                         <thead>
                                             <tr className="border-b border-white/8 bg-white/3">
+                                                {/* Checkbox col — SUPER_ADMIN only */}
+                                                {isSuperAdmin && (
+                                                    <th className="pl-3 pr-1 py-2.5 w-8">
+                                                        <button
+                                                            onClick={toggleAllPage}
+                                                            className="flex items-center justify-center text-slate-500 hover:text-indigo-400 transition-colors">
+                                                            {allPageSelected
+                                                                ? <CheckSquare className="w-4 h-4 text-indigo-400" />
+                                                                : somePageSelected
+                                                                    ? <CheckSquare className="w-4 h-4 text-indigo-400/50" />
+                                                                    : <Square className="w-4 h-4" />
+                                                            }
+                                                        </button>
+                                                    </th>
+                                                )}
                                                 {['Código', 'Etapa', 'Tipología', 'Área m²', 'Frente', 'Fondo', 'L.Der', 'L.Izq', 'Precio Lista', 'Estado', ''].map(h => (
                                                     <th key={h} className="px-3 py-2.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
                                                         {h}
@@ -682,61 +1072,82 @@ export default function AdminLotsPage() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/5">
-                                            {paginated.map(lot => (
-                                                <tr key={lot.id} className="hover:bg-white/3 transition-colors group">
-                                                    <td className="px-3 py-2.5 font-mono text-xs text-white whitespace-nowrap">{lot.code}</td>
-                                                    <td className="px-3 py-2.5 text-xs text-slate-400 whitespace-nowrap">{lot.etapa || '—'}</td>
-                                                    <td className="px-3 py-2.5 text-xs text-slate-400 whitespace-nowrap max-w-[120px] truncate">{lot.tipologia || '—'}</td>
-                                                    <td className="px-3 py-2.5 text-xs text-slate-300 whitespace-nowrap">{lot.areaM2} m²</td>
-                                                    <td className="px-3 py-2.5 text-xs text-slate-500 whitespace-nowrap">{lot.frenteM ?? '—'}</td>
-                                                    <td className="px-3 py-2.5 text-xs text-slate-500 whitespace-nowrap">{lot.fondoM ?? '—'}</td>
-                                                    <td className="px-3 py-2.5 text-xs text-slate-500 whitespace-nowrap">{lot.ladoDerM ?? '—'}</td>
-                                                    <td className="px-3 py-2.5 text-xs text-slate-500 whitespace-nowrap">{lot.ladoIzqM ?? '—'}</td>
-                                                    <td className="px-3 py-2.5 whitespace-nowrap">
-                                                        {editingPriceId === lot.id ? (
-                                                            <div className="flex items-center gap-1">
-                                                                <input
-                                                                    autoFocus
-                                                                    type="number"
-                                                                    value={priceInput}
-                                                                    onChange={e => setPriceInput(e.target.value)}
-                                                                    onBlur={() => savePriceInline(lot)}
-                                                                    onKeyDown={e => {
-                                                                        if (e.key === 'Enter') savePriceInline(lot)
-                                                                        if (e.key === 'Escape') setEditingPriceId(null)
-                                                                    }}
-                                                                    className="w-24 h-6 px-1.5 bg-white/10 border border-indigo-500/60 rounded text-xs text-white focus:outline-none"
-                                                                />
-                                                            </div>
-                                                        ) : (
-                                                            <button
-                                                                onClick={() => { setEditingPriceId(lot.id); setPriceInput(String(lot.precioLista)) }}
-                                                                className="text-xs text-emerald-400 hover:text-emerald-300 font-medium flex items-center gap-1 group/price">
-                                                                S/ {lot.precioLista.toLocaleString()}
-                                                                <Pencil className="w-2.5 h-2.5 opacity-0 group-hover/price:opacity-100 transition-opacity" />
-                                                            </button>
+                                            {paginated.map(lot => {
+                                                const isSelected = selectedIds.has(lot.id)
+                                                return (
+                                                    <tr
+                                                        key={lot.id}
+                                                        className={cn(
+                                                            'transition-colors group',
+                                                            isSelected ? 'bg-indigo-500/8 hover:bg-indigo-500/12' : 'hover:bg-white/3'
+                                                        )}>
+                                                        {/* Checkbox — SUPER_ADMIN only */}
+                                                        {isSuperAdmin && (
+                                                            <td className="pl-3 pr-1 py-2.5">
+                                                                <button
+                                                                    onClick={() => toggleRow(lot.id)}
+                                                                    className="flex items-center justify-center text-slate-600 hover:text-indigo-400 transition-colors">
+                                                                    {isSelected
+                                                                        ? <CheckSquare className="w-4 h-4 text-indigo-400" />
+                                                                        : <Square className="w-4 h-4" />
+                                                                    }
+                                                                </button>
+                                                            </td>
                                                         )}
-                                                    </td>
-                                                    <td className="px-3 py-2.5 whitespace-nowrap">
-                                                        <Badge estado={lot.estado} />
-                                                    </td>
-                                                    <td className="px-3 py-2.5 whitespace-nowrap">
-                                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <button
-                                                                onClick={() => { setEditingLot(lot); setModalMode('edit') }}
-                                                                className="p-1 rounded-md hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
-                                                                <Pencil className="w-3.5 h-3.5" />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => setDeletingId(lot.id)}
-                                                                disabled={lot.estado === 'VENDIDO'}
-                                                                className="p-1 rounded-md hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-                                                                <Trash2 className="w-3.5 h-3.5" />
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                                        <td className="px-3 py-2.5 font-mono text-xs text-white whitespace-nowrap">{lot.code}</td>
+                                                        <td className="px-3 py-2.5 text-xs text-slate-400 whitespace-nowrap">{lot.etapa || '—'}</td>
+                                                        <td className="px-3 py-2.5 text-xs text-slate-400 whitespace-nowrap max-w-[120px] truncate">{lot.tipologia || '—'}</td>
+                                                        <td className="px-3 py-2.5 text-xs text-slate-300 whitespace-nowrap">{lot.areaM2} m²</td>
+                                                        <td className="px-3 py-2.5 text-xs text-slate-500 whitespace-nowrap">{lot.frenteM ?? '—'}</td>
+                                                        <td className="px-3 py-2.5 text-xs text-slate-500 whitespace-nowrap">{lot.fondoM ?? '—'}</td>
+                                                        <td className="px-3 py-2.5 text-xs text-slate-500 whitespace-nowrap">{lot.ladoDerM ?? '—'}</td>
+                                                        <td className="px-3 py-2.5 text-xs text-slate-500 whitespace-nowrap">{lot.ladoIzqM ?? '—'}</td>
+                                                        <td className="px-3 py-2.5 whitespace-nowrap">
+                                                            {editingPriceId === lot.id ? (
+                                                                <div className="flex items-center gap-1">
+                                                                    <input
+                                                                        autoFocus
+                                                                        type="number"
+                                                                        value={priceInput}
+                                                                        onChange={e => setPriceInput(e.target.value)}
+                                                                        onBlur={() => savePriceInline(lot)}
+                                                                        onKeyDown={e => {
+                                                                            if (e.key === 'Enter') savePriceInline(lot)
+                                                                            if (e.key === 'Escape') setEditingPriceId(null)
+                                                                        }}
+                                                                        className="w-24 h-6 px-1.5 bg-white/10 border border-indigo-500/60 rounded text-xs text-white focus:outline-none"
+                                                                    />
+                                                                </div>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => { setEditingPriceId(lot.id); setPriceInput(String(lot.precioLista)) }}
+                                                                    className="text-xs text-emerald-400 hover:text-emerald-300 font-medium flex items-center gap-1 group/price">
+                                                                    S/ {lot.precioLista.toLocaleString()}
+                                                                    <Pencil className="w-2.5 h-2.5 opacity-0 group-hover/price:opacity-100 transition-opacity" />
+                                                                </button>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-3 py-2.5 whitespace-nowrap">
+                                                            <Badge estado={lot.estado} />
+                                                        </td>
+                                                        <td className="px-3 py-2.5 whitespace-nowrap">
+                                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <button
+                                                                    onClick={() => { setEditingLot(lot); setModalMode('edit') }}
+                                                                    className="p-1 rounded-md hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                                                                    <Pencil className="w-3.5 h-3.5" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setDeletingId(lot.id)}
+                                                                    disabled={lot.estado === 'VENDIDO'}
+                                                                    className="p-1 rounded-md hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            })}
                                         </tbody>
                                     </table>
                                 </div>
@@ -746,6 +1157,7 @@ export default function AdminLotsPage() {
                                     <div className="flex items-center justify-between px-4 py-2.5 border-t border-white/8 bg-white/2">
                                         <span className="text-[11px] text-slate-500">
                                             Pág. {page} de {totalPages} · {filtered.length} lotes
+                                            {selectedIds.size > 0 && ` · ${selectedIds.size} seleccionados`}
                                         </span>
                                         <div className="flex items-center gap-1">
                                             <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
@@ -764,6 +1176,16 @@ export default function AdminLotsPage() {
                     </div>
                 </div>
             </div>
+
+            {/* ── Floating bulk bar (SUPER_ADMIN) ─────────────────────────────── */}
+            {isSuperAdmin && selectedIds.size > 0 && (
+                <BulkBar
+                    count={selectedIds.size}
+                    onClear={() => setSelectedIds(new Set())}
+                    onAction={handleBulkAction}
+                    isBusy={bulkBusy}
+                />
+            )}
 
             {/* Lot form modal */}
             {modalMode && (
@@ -785,7 +1207,7 @@ export default function AdminLotsPage() {
                 />
             )}
 
-            {/* Delete confirm */}
+            {/* Single delete confirm */}
             {deletingId && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
                     <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-sm p-6 shadow-2xl">
@@ -799,6 +1221,31 @@ export default function AdminLotsPage() {
                             <button onClick={() => handleDelete(deletingId)}
                                 className="flex-1 h-9 text-sm font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-500 transition-colors flex items-center justify-center gap-2">
                                 <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Bulk delete confirm */}
+            {deletingBulk && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-sm p-6 shadow-2xl">
+                        <h3 className="text-sm font-semibold text-white mb-2">
+                            ¿Eliminar {selectedIds.size} lote{selectedIds.size !== 1 ? 's' : ''}?
+                        </h3>
+                        <p className="text-xs text-slate-400 mb-5">
+                            Esta acción no se puede deshacer. Los lotes vendidos serán omitidos.
+                        </p>
+                        <div className="flex gap-2">
+                            <button onClick={() => setDeletingBulk(false)}
+                                className="flex-1 h-9 text-sm text-slate-400 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
+                                Cancelar
+                            </button>
+                            <button onClick={confirmBulkDelete} disabled={bulkBusy}
+                                className="flex-1 h-9 text-sm font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-500 transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
+                                {bulkBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                                Eliminar {selectedIds.size}
                             </button>
                         </div>
                     </div>
