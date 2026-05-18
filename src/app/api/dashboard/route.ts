@@ -131,11 +131,14 @@ export async function GET(request: Request) {
 
         const recentQuotations = await prisma.quotation.findMany({
             where: quotationsWhere,
-            take: 5,
+            take: 8,
             orderBy: { createdAt: 'desc' },
             include: {
                 lot: {
-                    select: { code: true }
+                    select: { code: true, manzana: true }
+                },
+                user: {
+                    select: { id: true, name: true }
                 }
             }
         })

@@ -9,11 +9,16 @@ export async function GET() {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
         }
 
-        const { role: userRole, tenantId: userTenantId, assignedTenantIds } = session.user as any
+        const { role: userRole, tenantId: userTenantId, assignedTenantIds, id: userId } = session.user as any
         const allowedTenantIds = [userTenantId, ...(assignedTenantIds || [])].filter(Boolean)
 
-        // If super admin, see all. Otherwise, only for allowed tenants.
-        const where = userRole === 'SUPER_ADMIN' ? {} : { tenantId: { in: allowedTenantIds } }
+        // ASESOR: only their own quotations (they see anonymized anyway, but scope correctly)
+        // ADMIN: all their tenant's quotations
+        // SUPER_ADMIN: all
+        const where =
+            userRole === 'SUPER_ADMIN' ? {} :
+            userRole === 'ASESOR'      ? { userId } :
+                                         { tenantId: { in: allowedTenantIds } }
 
         // Fetch all quotations to extract client info
         const quotations = await prisma.quotation.findMany({

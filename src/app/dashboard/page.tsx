@@ -197,12 +197,14 @@ export default function DashboardPage() {
                             </h2>
                             <p className="text-slate-500 text-sm">Resumen de tus proyectos para hoy.</p>
                         </div>
-                        <Link href="/admin/projects/new" className="shrink-0">
-                            <Button className="w-full sm:w-auto bg-white text-slate-950 hover:bg-slate-100 font-medium rounded-lg px-4 py-2 text-sm">
-                                <Plus className="w-4 h-4 mr-1.5" />
-                                Nuevo Proyecto
-                            </Button>
-                        </Link>
+                        {data.user.role !== 'ASESOR' && (
+                            <Link href="/admin/projects/new" className="shrink-0">
+                                <Button className="w-full sm:w-auto bg-white text-slate-950 hover:bg-slate-100 font-medium rounded-lg px-4 py-2 text-sm">
+                                    <Plus className="w-4 h-4 mr-1.5" />
+                                    Nuevo Proyecto
+                                </Button>
+                            </Link>
+                        )}
                     </div>
 
                     {/* ── Stat Cards ── */}
@@ -272,32 +274,44 @@ export default function DashboardPage() {
                                     </Link>
                                 </div>
                                 <div className="divide-y divide-white/5">
-                                    {data.recentQuotations.map((q) => (
-                                        <div key={q.id} className="px-5 py-3.5 flex items-center gap-3 hover:bg-white/[0.02] transition-colors min-w-0">
-                                            {/* Lot badge */}
-                                            <div className="w-9 h-9 rounded-lg bg-slate-800 border border-white/5 flex items-center justify-center text-xs font-semibold text-slate-400 shrink-0">
-                                                {q.lot.code}
-                                            </div>
-                                            {/* Client info — truncated */}
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-white truncate">
-                                                    {q.clienteNombres} {q.clienteApellidos}
-                                                </p>
-                                                <div className="flex items-center gap-1.5 mt-0.5">
-                                                    <span className="text-xs text-slate-500 truncate">{q.codigo}</span>
-                                                    <span className="text-xs text-slate-600 shrink-0">·</span>
-                                                    <span className="text-xs text-slate-500 shrink-0">
-                                                        {new Date(q.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
-                                                    </span>
+                                    {data.recentQuotations.map((q) => {
+                                        const isAsesor = data.user.role === 'ASESOR'
+                                        const showClientName = !isAsesor
+                                        return (
+                                            <div key={q.id} className="px-5 py-3.5 flex items-center gap-3 hover:bg-white/[0.02] transition-colors min-w-0">
+                                                {/* Lot badge */}
+                                                <div className="w-10 h-10 rounded-lg bg-slate-800 border border-white/5 flex flex-col items-center justify-center shrink-0">
+                                                    <span className="text-[10px] font-bold text-slate-300 leading-tight">{q.lot.code}</span>
+                                                </div>
+                                                {/* Info */}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium text-white truncate">
+                                                        {showClientName
+                                                            ? `${q.clienteNombres} ${q.clienteApellidos}`
+                                                            : <span className="text-slate-400">Cotización {q.codigo}</span>
+                                                        }
+                                                    </p>
+                                                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                                        {/* Asesor name (always visible) */}
+                                                        {q.user?.name && !isAsesor && (
+                                                            <>
+                                                                <span className="text-[10px] text-indigo-400 font-medium truncate">{q.user.name}</span>
+                                                                <span className="text-xs text-slate-600 shrink-0">·</span>
+                                                            </>
+                                                        )}
+                                                        <span className="text-xs text-slate-500 shrink-0">
+                                                            {new Date(q.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                {/* Amount */}
+                                                <div className="text-right shrink-0">
+                                                    <p className="text-sm font-semibold text-emerald-400">{formatCurrency(q.precioFinal)}</p>
+                                                    <p className="text-xs text-slate-500">{q.cuotas} cuotas</p>
                                                 </div>
                                             </div>
-                                            {/* Amount */}
-                                            <div className="text-right shrink-0">
-                                                <p className="text-sm font-semibold text-emerald-400">{formatCurrency(q.precioFinal)}</p>
-                                                <p className="text-xs text-slate-500">{q.cuotas} cuotas</p>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        )
+                                    })}
                                 </div>
                                 {data.recentQuotations.length === 0 && (
                                     <div className="py-16 text-center">
