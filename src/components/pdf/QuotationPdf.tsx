@@ -369,21 +369,25 @@ export const QuotationPdf = ({ data }: QuotationPdfProps) => {
                     <Text style={styles.sectionTitle}>Propuesta Económica</Text>
 
                     {/* Price breakdown row */}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', borderRadius: 8, borderWidth: 1, borderColor: '#e2e8f0', paddingHorizontal: 14, paddingVertical: 10, marginBottom: 8, gap: 6 }}>
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 8, color: '#64748b', textTransform: 'uppercase', marginBottom: 2 }}>Precio Lista</Text>
+                    <View style={{ flexDirection: 'row', backgroundColor: 'white', borderRadius: 8, borderWidth: 1, borderColor: '#e2e8f0', paddingHorizontal: 14, paddingVertical: 10, marginBottom: 8 }}>
+                        <View style={{ flex: 1, marginRight: 8 }}>
+                            <Text style={{ fontSize: 8, color: '#64748b', textTransform: 'uppercase', marginBottom: 3 }}>Precio Lista</Text>
                             <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#0f172a' }}>{formatCurrency(data.financial.precioLista)}</Text>
                         </View>
-                        <Text style={{ fontSize: 14, color: '#cbd5e1', marginHorizontal: 4 }}>−</Text>
-                        <View style={{ flex: 1, alignItems: 'center' }}>
-                            <Text style={{ fontSize: 8, color: '#64748b', textTransform: 'uppercase', marginBottom: 2 }}>Descuento</Text>
+                        <View style={{ width: 20, justifyContent: 'flex-end', marginBottom: 1, marginRight: 8 }}>
+                            <Text style={{ fontSize: 14, color: '#cbd5e1' }}>−</Text>
+                        </View>
+                        <View style={{ flex: 1, marginRight: 8 }}>
+                            <Text style={{ fontSize: 8, color: '#64748b', textTransform: 'uppercase', marginBottom: 3 }}>Descuento</Text>
                             <Text style={{ fontSize: 12, fontWeight: 'bold', color: data.financial.descuento > 0 ? '#16a34a' : '#94a3b8' }}>
-                                {data.financial.descuento > 0 ? `- ${formatCurrency(data.financial.descuento)}` : '—'}
+                                {data.financial.descuento > 0 ? `- ${formatCurrency(data.financial.descuento)}` : 'S/ 0.00'}
                             </Text>
                         </View>
-                        <Text style={{ fontSize: 14, color: '#cbd5e1', marginHorizontal: 4 }}>=</Text>
-                        <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                            <Text style={{ fontSize: 8, color: '#64748b', textTransform: 'uppercase', marginBottom: 2 }}>Precio Final</Text>
+                        <View style={{ width: 20, justifyContent: 'flex-end', marginBottom: 1, marginRight: 8 }}>
+                            <Text style={{ fontSize: 14, color: '#cbd5e1' }}>=</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 8, color: '#64748b', textTransform: 'uppercase', marginBottom: 3 }}>Precio Final</Text>
                             <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#0f172a' }}>{formatCurrency(data.financial.precioFinal)}</Text>
                         </View>
                     </View>
