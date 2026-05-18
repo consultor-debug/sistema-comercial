@@ -15,7 +15,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="es" className="dark">
+    <html lang="es" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -23,20 +23,25 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <Providers>
-        {children}
-        <Toaster
-          position="top-right"
-          theme="dark"
-          toastOptions={{
-            style: {
-              background: '#0f172a',
-              border: '1px solid rgba(255,255,255,0.08)',
-              color: '#f8fafc',
-            },
-          }}
-        />
+          {children}
+          <ToasterWrapper />
         </Providers>
       </body>
     </html>
+  )
+}
+
+// Dynamic Toaster that reads the current theme
+function ToasterWrapper() {
+  return (
+    <Toaster
+      position="top-right"
+      theme="system"
+      toastOptions={{
+        classNames: {
+          toast: 'dark:!bg-slate-900 dark:!border-white/8 dark:!text-slate-100 !bg-white !border-slate-200 !text-slate-900',
+        },
+      }}
+    />
   )
 }
