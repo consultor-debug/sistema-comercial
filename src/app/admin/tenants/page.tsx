@@ -29,6 +29,9 @@ interface TenantData {
     logoUrl?: string | null;
     primaryColor?: string | null;
     isActive: boolean;
+    maxCuotas?: number | null;
+    interestRate?: number | null;
+    minInicial?: number | null;
     _count: { projects: number; users: number };
 }
 

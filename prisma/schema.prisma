@@ -26,6 +26,9 @@ model Tenant {
   reniecToken    String?       @map("reniec_token")
   reniecUrl      String?       @map("reniec_url")
   n8nWebhookUrl  String?       @map("n8n_webhook_url")
+  maxCuotas      Int           @default(18) @map("max_cuotas")
+  interestRate   Float         @default(12) @map("interest_rate")
+  minInicial     Float         @default(3500) @map("min_inicial")
   auditLogs      AuditLog[]
   projects       Project[]
   quotations     Quotation[]

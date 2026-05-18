@@ -25,13 +25,28 @@ export async function getTenants() {
     return tenants
 }
 
-export async function upsertTenant(data: { id?: string; name: string; slug: string; logoUrl?: string | null; primaryColor?: string | null }) {
+export async function upsertTenant(data: {
+    id?: string
+    name: string
+    slug: string
+    logoUrl?: string | null
+    primaryColor?: string | null
+    maxCuotas?: number
+    interestRate?: number
+    minInicial?: number
+}) {
     const session = await auth()
     if ((session?.user as { role?: string })?.role !== 'SUPER_ADMIN') {
         return { success: false, error: 'No autorizado' }
     }
 
     try {
+        const commercialFields = {
+            maxCuotas: data.maxCuotas ?? 18,
+            interestRate: data.interestRate ?? 12,
+            minInicial: data.minInicial ?? 3500,
+        }
+
         if (data.id) {
             // Update
             await prisma.tenant.update({
@@ -41,6 +56,7 @@ export async function upsertTenant(data: { id?: string; name: string; slug: stri
                     slug: data.slug,
                     logoUrl: data.logoUrl || null,
                     primaryColor: data.primaryColor || '#3B82F6',
+                    ...commercialFields,
                 }
             })
         } else {
@@ -51,7 +67,8 @@ export async function upsertTenant(data: { id?: string; name: string; slug: stri
                     slug: data.slug,
                     logoUrl: data.logoUrl || null,
                     primaryColor: data.primaryColor || '#3B82F6',
-                    isActive: true
+                    isActive: true,
+                    ...commercialFields,
                 }
             })
         }

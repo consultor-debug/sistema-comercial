@@ -17,6 +17,7 @@ interface ProjectData {
     mapImageUrl: string | null
     maxCuotas: number
     minInicial: number
+    interestRate: number
 }
 
 type StatusFilter = 'ALL' | 'LIBRE' | 'SEPARADO' | 'VENDIDO'
@@ -214,7 +215,7 @@ export default function ProjectPage() {
                                     lot={selectedLot}
                                     onClose={() => setSelectedLot(null)}
                                     onUpdate={handleUpdate}
-                                    projectSettings={{ maxCuotas: project.maxCuotas, minInicial: project.minInicial }}
+                                    projectSettings={{ maxCuotas: project.maxCuotas, minInicial: project.minInicial, interestRate: project.interestRate }}
                                 />
                             </div>
 
@@ -232,7 +233,7 @@ export default function ProjectPage() {
                                         lot={selectedLot}
                                         onClose={() => setSelectedLot(null)}
                                         onUpdate={handleUpdate}
-                                        projectSettings={{ maxCuotas: project.maxCuotas, minInicial: project.minInicial }}
+                                        projectSettings={{ maxCuotas: project.maxCuotas, minInicial: project.minInicial, interestRate: project.interestRate }}
                                     />
                                 </div>
                             </div>

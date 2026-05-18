@@ -42,7 +42,7 @@ interface ValidatedClient {
 interface LotPanelProps {
     lot: Lot | null
     onClose: () => void
-    projectSettings?: { maxCuotas?: number; minInicial?: number }
+    projectSettings?: { maxCuotas?: number; minInicial?: number; interestRate?: number }
     onUpdate?: () => void
 }
 
@@ -105,14 +105,14 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
 
     const [enganchePct, setEnganchePct] = React.useState(20)
     const [cuotas, setCuotas] = React.useState(18)
-    const [tasaAnual, setTasaAnual] = React.useState(12)
+    const [tasaAnual, setTasaAnual] = React.useState(projectSettings.interestRate ?? 12)
     const [descuento, setDescuento] = React.useState(0)
     const [unlocked24, setUnlocked24] = React.useState(false)
     const [show24Input, setShow24Input] = React.useState(false)
     const [pw24, setPw24] = React.useState('')
     const [pw24Error, setPw24Error] = React.useState(false)
 
-    const maxCuotas = projectSettings.maxCuotas ?? 60
+    const maxCuotas = projectSettings.maxCuotas ?? 18
 
     React.useEffect(() => {
         setClient(null)
@@ -120,8 +120,8 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
         setShowCronograma(false)
         setConfirmStatus(null)
         setEnganchePct(20)
-        setCuotas(18)
-        setTasaAnual(12)
+        setCuotas(Math.min(18, projectSettings.maxCuotas ?? 18))
+        setTasaAnual(projectSettings.interestRate ?? 12)
         setDescuento(0)
         setActiveTab('financiamiento')
         setUnlocked24(false)
