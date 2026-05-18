@@ -9,7 +9,7 @@ import { cn, LOT_STATUS_LABELS, formatCurrency } from '@/lib/utils'
 import { calculateQuotation } from '@/lib/quotation'
 import { LotStatus } from '@prisma/client'
 import {
-    X, FileText, Lock, Loader2, AlertTriangle, ChevronDown, KeyRound
+    X, FileText, Lock, Loader2, AlertTriangle, ChevronDown, KeyRound, Mail, CheckCircle2
 } from 'lucide-react'
 
 interface Lot {
@@ -100,6 +100,10 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
     const [updatingStatus, setUpdatingStatus] = React.useState<LotStatus | null>(null)
     const [confirmStatus, setConfirmStatus] = React.useState<LotStatus | null>(null)
     const [isDownloading, setIsDownloading] = React.useState(false)
+    const [lastQuotationId, setLastQuotationId] = React.useState<string | null>(null)
+    const [sendEmailTo, setSendEmailTo] = React.useState('')
+    const [isSendingEmail, setIsSendingEmail] = React.useState(false)
+    const [emailSent, setEmailSent] = React.useState(false)
     const [showCronograma, setShowCronograma] = React.useState(false)
     const [activeTab, setActiveTab] = React.useState<'contado' | 'financiamiento'>('financiamiento')
 
@@ -119,6 +123,10 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
         setIsDownloading(false)
         setShowCronograma(false)
         setConfirmStatus(null)
+        setLastQuotationId(null)
+        setSendEmailTo('')
+        setIsSendingEmail(false)
+        setEmailSent(false)
         setEnganchePct(20)
         setCuotas(Math.min(18, projectSettings.maxCuotas ?? 18))
         setTasaAnual(projectSettings.interestRate ?? 12)
@@ -192,11 +200,34 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
             const result = await response.json().catch(() => ({}))
             if (!response.ok || !result.success) throw new Error(result.error || 'Error')
             window.open(`/api/quotations/download?id=${result.quotationId}`, '_blank')
+            setLastQuotationId(result.quotationId)
+            setEmailSent(false)
             toast.success('Cotización generada correctamente')
         } catch {
             toast.error('No se pudo generar la cotización')
         } finally {
             setIsDownloading(false)
+        }
+    }
+
+    const handleSendEmail = async () => {
+        if (!lastQuotationId || !sendEmailTo.includes('@')) return
+        setIsSendingEmail(true)
+        try {
+            const res = await fetch(`/api/quotations/${lastQuotationId}/send-email`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: sendEmailTo })
+            })
+            const data = await res.json()
+            if (!res.ok || !data.success) throw new Error(data.error || 'Error')
+            setEmailSent(true)
+            toast.success(`PDF enviado a ${sendEmailTo}`)
+        } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : 'Error al enviar'
+            toast.error(msg)
+        } finally {
+            setIsSendingEmail(false)
         }
     }
 
@@ -556,16 +587,51 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
 
                 {/* ── Footer CTA ── */}
                 {isLibre && (
-                    <div className="shrink-0 px-5 py-4 border-t border-white/5">
+                    <div className="shrink-0 px-5 py-4 border-t border-white/5 space-y-3">
                         <Button onClick={handleDownloadPdf}
                             disabled={!canSend || isDownloading}
                             className="w-full bg-white text-slate-950 hover:bg-slate-100 font-semibold rounded-xl py-3 text-sm disabled:opacity-30">
                             {isDownloading
                                 ? <Loader2 className="w-4 h-4 animate-spin" />
-                                : <><FileText className="w-4 h-4 mr-2" />Generar Cotización PDF</>}
+                                : <><FileText className="w-4 h-4 mr-2" />{lastQuotationId ? 'Generar Nueva Cotización' : 'Generar Cotización PDF'}</>}
                         </Button>
+
+                        {/* Email send — appears after first PDF generation */}
+                        {lastQuotationId && !emailSent && (
+                            <div className="flex gap-2 animate-in fade-in slide-in-from-bottom-1 duration-200">
+                                <div className="relative flex-1">
+                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
+                                    <input
+                                        type="email"
+                                        placeholder="email@cliente.com"
+                                        value={sendEmailTo}
+                                        onChange={e => setSendEmailTo(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && handleSendEmail()}
+                                        className="w-full h-9 bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 text-xs text-white placeholder:text-slate-600 outline-none focus:ring-1 focus:ring-white/15 transition-colors"
+                                    />
+                                </div>
+                                <button
+                                    onClick={handleSendEmail}
+                                    disabled={isSendingEmail || !sendEmailTo.includes('@')}
+                                    className="h-9 px-3.5 text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5 shrink-0"
+                                >
+                                    {isSendingEmail
+                                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        : <><Mail className="w-3 h-3" />Enviar</>}
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Confirmation after send */}
+                        {emailSent && (
+                            <div className="flex items-center gap-2 px-3 py-2 bg-emerald-500/8 border border-emerald-500/15 rounded-lg animate-in fade-in duration-200">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                <p className="text-xs text-emerald-400">PDF enviado a {sendEmailTo}</p>
+                            </div>
+                        )}
+
                         {!canSend && quotation && (
-                            <p className="text-[11px] text-center mt-2 text-slate-600">
+                            <p className="text-[11px] text-center text-slate-600">
                                 {inicialBelowMin
                                     ? 'El inicial mínimo es S/ 3,500'
                                     : 'Completa los datos del cliente para continuar'}

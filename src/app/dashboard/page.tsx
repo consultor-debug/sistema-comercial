@@ -8,18 +8,24 @@ import {
     Plus, Calendar, Users, ExternalLink,
     ChevronDown, Check, Filter, Settings
 } from 'lucide-react'
+import {
+    BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell
+} from 'recharts'
 import { Sidebar } from '@/components/Sidebar'
 import { StatsChart } from '@/components/dashboard/StatsChart'
 import { Button } from '@/components/ui/Button'
 import { formatCurrency } from '@/lib/utils'
 
 interface ProjectOption { id: string; name: string; tenant?: { name: string } | null }
+interface QuotationDayPoint { date: string; label: string; count: number }
+
 interface DashboardData {
     user: { name: string; role: string }
     projects: any[]
     allProjects: ProjectOption[]
     recentQuotations: any[]
     quotationScope: 'own' | 'tenant' | 'all'
+    quotationsByDay: QuotationDayPoint[]
     stats: {
         totalLots: number
         libre: number
@@ -237,6 +243,11 @@ export default function DashboardPage() {
                         />
                     </div>
 
+                    {/* ── 14-day Trend Chart ── */}
+                    {data.quotationsByDay && data.quotationsByDay.length > 0 && (
+                        <TrendChart data={data.quotationsByDay} />
+                    )}
+
                     {/* ── Chart + Quotations ── */}
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6">
 
@@ -336,6 +347,73 @@ export default function DashboardPage() {
                     </div>
                 </div>
             </main>
+        </div>
+    )
+}
+
+// ── Trend Chart ──
+function TrendChart({ data }: { data: QuotationDayPoint[] }) {
+    const total = data.reduce((s, d) => s + d.count, 0)
+    const maxVal = Math.max(...data.map(d => d.count), 1)
+
+    // Custom tooltip
+    const CustomTooltip = ({ active, payload, label }: any) => {
+        if (!active || !payload?.length) return null
+        return (
+            <div className="bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-xs shadow-lg">
+                <p className="text-slate-400 mb-0.5">{label}</p>
+                <p className="font-semibold text-white">{payload[0].value} cotización{payload[0].value !== 1 ? 'es' : ''}</p>
+            </div>
+        )
+    }
+
+    return (
+        <div className="bg-slate-900/50 border border-white/5 rounded-xl p-5">
+            <div className="flex items-center justify-between mb-5">
+                <div>
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">Actividad — Últimos 14 días</h3>
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-lg font-bold text-white">{total}</span>
+                    <span className="text-xs text-slate-500">cotizaciones</span>
+                </div>
+            </div>
+            <ResponsiveContainer width="100%" height={100}>
+                <BarChart data={data} barSize={14} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                    <XAxis
+                        dataKey="label"
+                        tick={{ fontSize: 9, fill: '#475569' }}
+                        axisLine={false}
+                        tickLine={false}
+                        interval={1}
+                    />
+                    <YAxis hide domain={[0, maxVal + 1]} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)', radius: 4 }} />
+                    <Bar dataKey="count" radius={[3, 3, 0, 0]}>
+                        {data.map((entry, i) => (
+                            <Cell
+                                key={i}
+                                fill={entry.count === 0 ? '#1e293b' : entry.count === maxVal ? '#10b981' : '#0ea5e9'}
+                                opacity={entry.count === 0 ? 0.5 : 1}
+                            />
+                        ))}
+                    </Bar>
+                </BarChart>
+            </ResponsiveContainer>
+            <div className="flex items-center gap-4 mt-3">
+                <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="text-[10px] text-slate-500">Máximo del período</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-sky-500" />
+                    <span className="text-[10px] text-slate-500">Con actividad</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-slate-700" />
+                    <span className="text-[10px] text-slate-500">Sin actividad</span>
+                </div>
+            </div>
         </div>
     )
 }

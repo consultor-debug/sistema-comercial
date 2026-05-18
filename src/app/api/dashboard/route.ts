@@ -168,6 +168,49 @@ export async function GET(request: Request) {
 
         const quotationsToday = await prisma.quotation.count({ where: todayWhere })
 
+        // ── Last 14 days trend ──
+        const daysAgo14 = new Date()
+        daysAgo14.setDate(daysAgo14.getDate() - 13)
+        daysAgo14.setHours(0, 0, 0, 0)
+
+        const trendWhere: Record<string, unknown> = { createdAt: { gte: daysAgo14 } }
+        if (isAsesor) { trendWhere.userId = (session.user as any).id }
+        else if (isAdmin && tenantId) { trendWhere.tenantId = tenantId }
+        // SUPER_ADMIN sees all (no extra filter)
+        // If a project filter is active on dashboard, also apply it to trend
+        if (selectedIds.length > 0) {
+            const trendLots = await prisma.lot.findMany({
+                where: { projectId: { in: selectedIds } },
+                select: { id: true }
+            })
+            trendWhere.lotId = { in: trendLots.map(l => l.id) }
+        }
+
+        const trendRaw = await prisma.quotation.findMany({
+            where: trendWhere,
+            select: { createdAt: true }
+        })
+
+        // Build ordered day map for last 14 days
+        const dayMap: Record<string, number> = {}
+        const dayLabels: string[] = []
+        for (let i = 13; i >= 0; i--) {
+            const d = new Date()
+            d.setDate(d.getDate() - i)
+            const key = d.toISOString().split('T')[0]
+            dayMap[key] = 0
+            dayLabels.push(key)
+        }
+        trendRaw.forEach(q => {
+            const key = new Date(q.createdAt).toISOString().split('T')[0]
+            if (key in dayMap) dayMap[key]++
+        })
+        const quotationsByDay = dayLabels.map(date => ({
+            date,
+            label: new Date(date + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }),
+            count: dayMap[date]
+        }))
+
         return NextResponse.json({
             success: true,
             data: {
@@ -179,6 +222,7 @@ export async function GET(request: Request) {
                 allProjects,
                 recentQuotations,
                 quotationScope,
+                quotationsByDay,
                 stats: {
                     totalLots,
                     libre: totalLibre,
