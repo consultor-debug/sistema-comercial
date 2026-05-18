@@ -200,10 +200,15 @@ export default function ProjectPage() {
                         </div>
 
                         {/* Legend */}
-                        <div className="shrink-0 flex items-center gap-5 px-4 py-2.5 border-t border-white/5 bg-slate-950/90 backdrop-blur-sm overflow-x-auto no-scrollbar">
-                            <LegendItem dot="bg-emerald-500" label="Disponible" count={stats.libre} />
-                            <LegendItem dot="bg-amber-500"  label="Separado"   count={stats.separado} />
-                            <LegendItem dot="bg-rose-500"   label="Vendido"    count={stats.vendido} />
+                        <div className="shrink-0 flex items-center gap-4 px-4 py-2.5 border-t border-white/5 bg-slate-950/90 backdrop-blur-sm overflow-x-auto no-scrollbar">
+                            <LegendItem dot="bg-emerald-500" label="Disponible" count={stats.libre}     countColor="text-emerald-400" />
+                            <div className="w-px h-4 bg-white/10 shrink-0" />
+                            <LegendItem dot="bg-amber-500"  label="Separado"   count={stats.separado}  countColor="text-amber-400" />
+                            <div className="w-px h-4 bg-white/10 shrink-0" />
+                            <LegendItem dot="bg-rose-500"   label="Vendido"    count={stats.vendido}   countColor="text-rose-400" />
+                            <div className="ml-auto shrink-0 text-[11px] text-slate-500">
+                                {stats.total} lotes totales
+                            </div>
                         </div>
                     </div>
 
@@ -264,12 +269,14 @@ function StatPill({ value, label, color, dot }: {
     )
 }
 
-function LegendItem({ dot, label, count }: { dot: string; label: string; count: number }) {
+function LegendItem({ dot, label, count, countColor = 'text-white' }: {
+    dot: string; label: string; count: number; countColor?: string
+}) {
     return (
         <div className="flex items-center gap-1.5 shrink-0">
-            <span className={cn('w-2 h-2 rounded-full shrink-0', dot)} />
-            <span className="text-[11px] text-slate-500">{label}</span>
-            <span className="text-[11px] text-slate-600">({count})</span>
+            <span className={cn('w-2.5 h-2.5 rounded-full shrink-0', dot)} />
+            <span className="text-xs text-slate-400">{label}</span>
+            <span className={cn('text-xs font-bold', countColor)}>{count}</span>
         </div>
     )
 }
