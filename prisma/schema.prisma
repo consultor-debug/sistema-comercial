@@ -39,43 +39,46 @@ model Tenant {
 }
 
 model User {
-  id              String      @id @default(uuid())
-  tenantId        String?     @map("tenant_id")
-  email           String      @unique
-  passwordHash    String      @map("password_hash")
-  name            String
-  role            UserRole    @default(ASESOR)
-  canChangeStatus Boolean     @default(false) @map("can_change_status")
-  isActive        Boolean     @default(true) @map("is_active")
-  assignedTenantIds String[]   @default([]) @map("assigned_tenant_ids")
-  assignedProjectIds String[]  @default([]) @map("assigned_project_ids")
-  createdAt       DateTime    @default(now()) @map("created_at")
-  updatedAt       DateTime    @updatedAt @map("updated_at")
-  auditLogs       AuditLog[]
-  assignedLots    Lot[]       @relation("AsesorLots")
-  quotations      Quotation[]
-  tenant          Tenant?     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id                String          @id @default(uuid())
+  tenantId          String?         @map("tenant_id")
+  email             String          @unique
+  passwordHash      String          @map("password_hash")
+  name              String
+  role              UserRole        @default(ASESOR)
+  canChangeStatus   Boolean         @default(false) @map("can_change_status")
+  isActive          Boolean         @default(true) @map("is_active")
+  assignedTenantIds String[]        @default([]) @map("assigned_tenant_ids")
+  assignedProjectIds String[]       @default([]) @map("assigned_project_ids")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+  auditLogs         AuditLog[]
+  assignedLots      Lot[]           @relation("AsesorLots")
+  projectUpdates    ProjectUpdate[]
+  lotDocuments      LotDocument[]
+  quotations        Quotation[]
+  tenant            Tenant?         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@map("users")
 }
 
 model Project {
-  id           String      @id @default(uuid())
-  tenantId     String      @map("tenant_id")
+  id           String          @id @default(uuid())
+  tenantId     String          @map("tenant_id")
   name         String
   description  String?
-  mapImageUrl  String?     @map("map_image_url")
-  sheetsId     String?     @map("sheets_id")
-  isActive     Boolean     @default(true) @map("is_active")
-  createdAt    DateTime    @default(now()) @map("created_at")
-  updatedAt    DateTime    @updatedAt @map("updated_at")
-  maxCuotas    Int         @default(60) @map("max_cuotas")
-  minInicial   Float       @default(0) @map("min_inicial")
-  interestRate Float       @default(0) @map("interest_rate")
-  n8nWebhookUrl String?     @map("n8n_webhook_url")
+  mapImageUrl  String?         @map("map_image_url")
+  sheetsId     String?         @map("sheets_id")
+  isActive     Boolean         @default(true) @map("is_active")
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+  maxCuotas    Int             @default(60) @map("max_cuotas")
+  minInicial   Float           @default(0) @map("min_inicial")
+  interestRate Float           @default(0) @map("interest_rate")
+  n8nWebhookUrl String?        @map("n8n_webhook_url")
   lots         Lot[]
-  tenant       Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  updates      ProjectUpdate[]
+  tenant       Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   quotations   Quotation[]
 
   @@index([tenantId])
@@ -83,29 +86,30 @@ model Project {
 }
 
 model Lot {
-  id           String      @id @default(uuid())
-  projectId    String      @map("project_id")
+  id           String        @id @default(uuid())
+  projectId    String        @map("project_id")
   code         String
   manzana      String
-  loteNumero   Int         @map("lote_numero")
-  areaM2       Float       @map("area_m2")
+  loteNumero   Int           @map("lote_numero")
+  areaM2       Float         @map("area_m2")
   tipologia    String?
   etapa        String?
-  frenteM      Float?      @map("frente_m")
-  fondoM       Float?      @map("fondo_m")
-  ladoDerM     Float?      @map("lado_der_m")
-  ladoIzqM     Float?      @map("lado_izq_m")
-  precioLista  Float       @map("precio_lista")
-  descuentoMax Float       @default(0) @map("descuento_max")
-  estado       LotStatus   @default(LIBRE)
-  asesorId     String?     @map("asesor_id")
-  mapShapeType String?     @map("map_shape_type")
-  mapShapeData Json?       @map("map_shape_data")
-  createdAt    DateTime    @default(now()) @map("created_at")
-  updatedAt    DateTime    @updatedAt @map("updated_at")
+  frenteM      Float?        @map("frente_m")
+  fondoM       Float?        @map("fondo_m")
+  ladoDerM     Float?        @map("lado_der_m")
+  ladoIzqM     Float?        @map("lado_izq_m")
+  precioLista  Float         @map("precio_lista")
+  descuentoMax Float         @default(0) @map("descuento_max")
+  estado       LotStatus     @default(LIBRE)
+  asesorId     String?       @map("asesor_id")
+  mapShapeType String?       @map("map_shape_type")
+  mapShapeData Json?         @map("map_shape_data")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
   auditLogs    AuditLog[]
-  asesor       User?       @relation("AsesorLots", fields: [asesorId], references: [id])
-  project      Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  documents    LotDocument[]
+  asesor       User?         @relation("AsesorLots", fields: [asesorId], references: [id])
+  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   quotations   Quotation[]
 
   @@unique([projectId, code])
@@ -215,4 +219,43 @@ enum SubscriptionStatus {
   PAST_DUE
   CANCELLED
   SUSPENDED
+}
+
+model ProjectUpdate {
+  id          String   @id @default(uuid())
+  projectId   String   @map("project_id")
+  title       String
+  description String?
+  percentage  Int      @default(0)
+  imageUrl    String?  @map("image_url")
+  authorId    String   @map("author_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author      User     @relation(fields: [authorId], references: [id])
+
+  @@index([projectId])
+  @@map("project_updates")
+}
+
+model LotDocument {
+  id           String       @id @default(uuid())
+  lotId        String       @map("lot_id")
+  name         String
+  type         DocumentType @default(OTRO)
+  fileUrl      String       @map("file_url")
+  uploadedById String       @map("uploaded_by_id")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  lot          Lot          @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  uploadedBy   User         @relation(fields: [uploadedById], references: [id])
+
+  @@index([lotId])
+  @@map("lot_documents")
+}
+
+enum DocumentType {
+  PLANO
+  ESCRITURA
+  CONTRATO
+  FOTO
+  OTRO
 }
