@@ -420,10 +420,42 @@ function TrendChart({ data }: { data: QuotationDayPoint[] }) {
 
 // ── Accent config ──
 const ACCENT = {
-    blue:   { bg: 'bg-blue-500/10',   border: 'border-blue-500/20',   icon: 'text-blue-400',   value: 'text-blue-100' },
-    green:  { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', icon: 'text-emerald-400', value: 'text-emerald-100' },
-    amber:  { bg: 'bg-amber-500/10',  border: 'border-amber-500/20',  icon: 'text-amber-400',  value: 'text-amber-100' },
-    purple: { bg: 'bg-purple-500/10', border: 'border-purple-500/20', icon: 'text-purple-400', value: 'text-purple-100' },
+    blue: {
+        bg:     'bg-blue-50 dark:bg-blue-500/10',
+        border: 'border-blue-200 dark:border-blue-500/20',
+        icon:   'text-blue-600 dark:text-blue-400',
+        iconBg: 'bg-blue-100 dark:bg-white/5',
+        value:  'text-blue-700 dark:text-blue-100',
+        title:  'text-blue-500/80 dark:text-slate-500',
+        sub:    'text-blue-400/70 dark:text-slate-600',
+    },
+    green: {
+        bg:     'bg-emerald-50 dark:bg-emerald-500/10',
+        border: 'border-emerald-200 dark:border-emerald-500/20',
+        icon:   'text-emerald-600 dark:text-emerald-400',
+        iconBg: 'bg-emerald-100 dark:bg-white/5',
+        value:  'text-emerald-700 dark:text-emerald-100',
+        title:  'text-emerald-500/80 dark:text-slate-500',
+        sub:    'text-emerald-400/70 dark:text-slate-600',
+    },
+    amber: {
+        bg:     'bg-amber-50 dark:bg-amber-500/10',
+        border: 'border-amber-200 dark:border-amber-500/20',
+        icon:   'text-amber-600 dark:text-amber-400',
+        iconBg: 'bg-amber-100 dark:bg-white/5',
+        value:  'text-amber-700 dark:text-amber-100',
+        title:  'text-amber-500/80 dark:text-slate-500',
+        sub:    'text-amber-400/70 dark:text-slate-600',
+    },
+    purple: {
+        bg:     'bg-purple-50 dark:bg-purple-500/10',
+        border: 'border-purple-200 dark:border-purple-500/20',
+        icon:   'text-purple-600 dark:text-purple-400',
+        iconBg: 'bg-purple-100 dark:bg-white/5',
+        value:  'text-purple-700 dark:text-purple-100',
+        title:  'text-purple-500/80 dark:text-slate-500',
+        sub:    'text-purple-400/70 dark:text-slate-600',
+    },
 }
 
 function StatCard({
@@ -437,15 +469,15 @@ function StatCard({
 }) {
     const a = ACCENT[accent]
     return (
-        <div className={`${a.bg} border ${a.border} rounded-xl p-4 md:p-5 transition-colors hover:brightness-110`}>
+        <div className={`${a.bg} border ${a.border} rounded-xl p-4 md:p-5 transition-all hover:scale-[1.01]`}>
             <div className="flex items-center justify-between mb-3">
-                <div className={`w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center ${a.icon}`}>
+                <div className={`w-8 h-8 rounded-lg ${a.iconBg} flex items-center justify-center ${a.icon}`}>
                     <Icon className="w-4 h-4" />
                 </div>
             </div>
-            <h4 className={`text-2xl font-semibold tracking-tight ${a.value}`}>{value}</h4>
-            <p className="text-xs text-slate-500 mt-1">{title}</p>
-            {sub && <p className="text-[11px] text-slate-600 mt-0.5">{sub}</p>}
+            <h4 className={`text-2xl font-bold tracking-tight ${a.value}`}>{value}</h4>
+            <p className={`text-xs font-medium mt-1 ${a.title}`}>{title}</p>
+            {sub && <p className={`text-[11px] mt-0.5 ${a.sub}`}>{sub}</p>}
         </div>
     )
 }
