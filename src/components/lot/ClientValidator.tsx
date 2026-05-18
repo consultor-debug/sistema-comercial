@@ -11,6 +11,7 @@ interface ValidatedClient {
     nombres: string
     apellidos: string
     nombreCompleto: string
+    phone?: string
 }
 
 interface ClientValidatorProps {
@@ -73,7 +74,7 @@ export const ClientValidator: React.FC<ClientValidatorProps> = ({
 
     React.useEffect(() => {
         if (validatedClient && phone.trim().length > 5) {
-            onValidated({ ...validatedClient, dni })
+            onValidated({ ...validatedClient, dni, phone: phone.trim() })
         } else {
             onValidated(null)
         }

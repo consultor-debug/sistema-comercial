@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
                 clienteDni: client.dni,
                 clienteNombres: client.nombres,
                 clienteApellidos: client.apellidos,
-                clienteEmail: client.email || '',
+                clienteEmail: client.phone || client.email || '',
                 precioLista: quotation.precioLista,
                 descuento: quotation.descuento,
                 precioFinal: quotation.precioFinal,

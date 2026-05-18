@@ -36,6 +36,7 @@ interface ValidatedClient {
     nombres: string
     apellidos: string
     nombreCompleto: string
+    phone?: string
 }
 
 interface LotPanelProps {

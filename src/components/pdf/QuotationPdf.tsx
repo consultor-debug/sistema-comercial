@@ -230,7 +230,7 @@ interface QuotationPdfProps {
         client: {
             dni: string;
             nombreCompleto: string;
-            email: string;
+            email: string; // almacena teléfono (campo reutilizado)
         };
         financial: {
             precioLista: number;
@@ -248,11 +248,9 @@ const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(val);
 };
 
-const isValidEmail = (email?: string | null) => {
-    if (!email) return false;
-    const cleanEmail = email.trim().toLowerCase();
-    // Verifica texto + @ + dominio + . + extension
-    return /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(cleanEmail);
+const isValidPhone = (phone?: string | null) => {
+    if (!phone) return false;
+    return phone.trim().replace(/\s/g, '').length >= 6;
 };
 
 export const QuotationPdf = ({ data }: QuotationPdfProps) => {
@@ -293,13 +291,13 @@ export const QuotationPdf = ({ data }: QuotationPdfProps) => {
                                 <Text style={styles.value}>{data.client.dni}</Text>
                             </View>
                             <View style={[styles.gridItem, { width: '30%' }]}>
-                                <Text style={styles.label}>Correo Electrónico</Text>
-                                {isValidEmail(data.client.email) ? (
+                                <Text style={styles.label}>Nro de Teléfono</Text>
+                                {isValidPhone(data.client.email) ? (
                                     <Text style={styles.value}>{data.client.email}</Text>
                                 ) : (
                                     <View>
                                         <Text style={[styles.value, { color: '#ef4444' }]}>PENDIENTE</Text>
-                                        <Text style={{ fontSize: 7, color: '#ef4444', marginTop: 2 }}>Confirma tu correo para validar esta cotización.</Text>
+                                        <Text style={{ fontSize: 7, color: '#ef4444', marginTop: 2 }}>Ingresa el teléfono del cliente para completar la cotización.</Text>
                                     </View>
                                 )}
                             </View>
