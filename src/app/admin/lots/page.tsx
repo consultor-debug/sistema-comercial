@@ -636,6 +636,7 @@ export default function AdminLotsPage() {
     // Filters
     const [search, setSearch] = React.useState('')
     const [estadoFilter, setEstadoFilter] = React.useState<EstadoFilter>('ALL')
+    const [manzanaFilter, setManzanaFilter] = React.useState('')
     const [etapaFilter, setEtapaFilter] = React.useState('')
     const [tipologiaFilter, setTipologiaFilter] = React.useState('')
 
@@ -677,6 +678,8 @@ export default function AdminLotsPage() {
         if (!selectedProjectId) return
         setLoadingLots(true)
         setSelectedIds(new Set())
+        setManzanaFilter('')
+        setEtapaFilter('')
         try {
             const res = await fetch(`/api/lots?projectId=${selectedProjectId}`)
             const data = await res.json()
@@ -709,11 +712,12 @@ export default function AdminLotsPage() {
         return lots.filter(l => {
             if (q && !l.code.toLowerCase().includes(q) && !l.manzana.toLowerCase().includes(q)) return false
             if (estadoFilter !== 'ALL' && l.estado !== estadoFilter) return false
+            if (manzanaFilter && l.manzana !== manzanaFilter) return false
             if (etapaFilter && l.etapa !== etapaFilter) return false
             if (tipologiaFilter && l.tipologia !== tipologiaFilter) return false
             return true
         })
-    }, [lots, search, estadoFilter, etapaFilter, tipologiaFilter])
+    }, [lots, search, estadoFilter, manzanaFilter, etapaFilter, tipologiaFilter])
 
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
     const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -752,24 +756,14 @@ export default function AdminLotsPage() {
         })
     }
 
-    const selectByManzana = (manzana: string) => {
-        const ids = lots.filter(l => l.manzana === manzana).map(l => l.id)
-        setSelectedIds(prev => {
-            const next = new Set(prev)
-            ids.forEach(id => next.add(id))
-            return next
-        })
-        showToast(`${ids.length} lotes de manzana "${manzana}" seleccionados`)
+    const filterByManzana = (manzana: string) => {
+        setManzanaFilter(manzana)
+        setPage(1)
     }
 
-    const selectByEtapa = (etapa: string) => {
-        const ids = lots.filter(l => l.etapa === etapa).map(l => l.id)
-        setSelectedIds(prev => {
-            const next = new Set(prev)
-            ids.forEach(id => next.add(id))
-            return next
-        })
-        showToast(`${ids.length} lotes de etapa "${etapa}" seleccionados`)
+    const filterByEtapa = (etapa: string) => {
+        setEtapaFilter(etapa)
+        setPage(1)
     }
 
     const selectAllFiltered = () => {
@@ -955,9 +949,27 @@ export default function AdminLotsPage() {
                                 ))}
                             </div>
 
+                            {manzanas.length > 0 && (
+                                <select value={manzanaFilter} onChange={e => { setManzanaFilter(e.target.value); setPage(1) }}
+                                    className={cn(
+                                        'h-8 px-2 border rounded-lg text-xs focus:outline-none transition-colors',
+                                        manzanaFilter
+                                            ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300'
+                                            : 'bg-white/5 border-white/10 text-slate-300'
+                                    )}>
+                                    <option value="">Todas las manzanas</option>
+                                    {manzanas.map(m => <option key={m} value={m}>Manzana {m}</option>)}
+                                </select>
+                            )}
+
                             {etapas.length > 0 && (
                                 <select value={etapaFilter} onChange={e => { setEtapaFilter(e.target.value); setPage(1) }}
-                                    className="h-8 px-2 bg-white/5 border border-white/10 rounded-lg text-xs text-slate-300 focus:outline-none">
+                                    className={cn(
+                                        'h-8 px-2 border rounded-lg text-xs focus:outline-none transition-colors',
+                                        etapaFilter
+                                            ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300'
+                                            : 'bg-white/5 border-white/10 text-slate-300'
+                                    )}>
                                     <option value="">Todas las etapas</option>
                                     {etapas.map(e => <option key={e} value={e}>{e}</option>)}
                                 </select>
@@ -969,6 +981,18 @@ export default function AdminLotsPage() {
                                     <option value="">Todas las tipologías</option>
                                     {tipologias.map(t => <option key={t} value={t}>{t}</option>)}
                                 </select>
+                            )}
+
+                            {/* Clear all filters */}
+                            {(manzanaFilter || etapaFilter || tipologiaFilter || estadoFilter !== 'ALL' || search) && (
+                                <button
+                                    onClick={() => {
+                                        setSearch(''); setEstadoFilter('ALL')
+                                        setManzanaFilter(''); setEtapaFilter(''); setTipologiaFilter(''); setPage(1)
+                                    }}
+                                    className="flex items-center gap-1 px-2.5 h-8 text-xs text-slate-500 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                                    <X className="w-3 h-3" /> Limpiar filtros
+                                </button>
                             )}
 
                             <span className="ml-auto text-[11px] text-slate-500 self-center">
@@ -990,33 +1014,31 @@ export default function AdminLotsPage() {
                                     {allPageSelected ? 'Deseleccionar página' : 'Seleccionar página'}
                                 </button>
 
-                                {/* Select all filtered */}
-                                {filtered.length > paginated.length && (
-                                    <button
-                                        onClick={selectAllFiltered}
-                                        className="flex items-center gap-1.5 px-3 h-7 text-xs text-indigo-400 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 rounded-lg transition-colors">
-                                        <CheckSquare className="w-3.5 h-3.5" />
-                                        Seleccionar todos ({filtered.length})
-                                    </button>
-                                )}
+                                {/* Select all visible */}
+                                <button
+                                    onClick={selectAllFiltered}
+                                    className="flex items-center gap-1.5 px-3 h-7 text-xs text-indigo-400 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 rounded-lg transition-colors">
+                                    <CheckSquare className="w-3.5 h-3.5" />
+                                    Seleccionar todos ({filtered.length})
+                                </button>
 
-                                {/* Select by manzana */}
+                                {/* Filter by manzana */}
                                 <DropdownMenu
-                                    label="Por manzana"
+                                    label={manzanaFilter ? `Manzana ${manzanaFilter}` : 'Por manzana'}
                                     icon={Tag}
                                     items={manzanas}
-                                    onSelect={selectByManzana}
-                                    colorClass="text-slate-400"
+                                    onSelect={filterByManzana}
+                                    colorClass={manzanaFilter ? 'text-indigo-300 bg-indigo-500/10 border-indigo-500/30' : 'text-slate-400'}
                                 />
 
-                                {/* Select by etapa */}
+                                {/* Filter by etapa */}
                                 {etapas.length > 0 && (
                                     <DropdownMenu
-                                        label="Por etapa"
+                                        label={etapaFilter || 'Por etapa'}
                                         icon={Layers}
                                         items={etapas}
-                                        onSelect={selectByEtapa}
-                                        colorClass="text-slate-400"
+                                        onSelect={filterByEtapa}
+                                        colorClass={etapaFilter ? 'text-indigo-300 bg-indigo-500/10 border-indigo-500/30' : 'text-slate-400'}
                                     />
                                 )}
 
@@ -1026,7 +1048,7 @@ export default function AdminLotsPage() {
                                         onClick={() => setSelectedIds(new Set())}
                                         className="flex items-center gap-1 px-2.5 h-7 text-xs text-slate-500 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
                                         <X className="w-3 h-3" />
-                                        Limpiar ({selectedIds.size})
+                                        Limpiar selección ({selectedIds.size})
                                     </button>
                                 )}
                             </div>
