@@ -10,8 +10,6 @@ import {
 import { cn } from '@/lib/utils'
 import { Sidebar } from '@/components/Sidebar'
 
-// ─── Card definitions ─────────────────────────────────────────────────────────
-
 type CardColor = 'emerald' | 'purple' | 'blue' | 'amber' | 'slate' | 'pink' | 'rose'
 
 interface AdminCardDef {
@@ -26,7 +24,16 @@ interface AdminCardDef {
 
 const CARDS: AdminCardDef[] = [
     {
-        title: 'Administrador de Lotes',
+        title: 'Proyectos',
+        description: 'Gestionar proyectos, subir planos, avance de obra y documentos',
+        icon: Building2,
+        href: '/admin/projects',
+        color: 'blue',
+        badge: 'Proyectos',
+        roles: ['ADMIN', 'SUPER_ADMIN'],
+    },
+    {
+        title: 'Lotes',
         description: 'Importar, editar precios y gestionar el inventario de lotes',
         icon: Database,
         href: '/admin/lots',
@@ -40,30 +47,12 @@ const CARDS: AdminCardDef[] = [
         icon: Pencil,
         href: '/admin/lots/map/editor',
         color: 'pink',
-        badge: 'Mapa',
-        roles: ['ADMIN', 'SUPER_ADMIN'],
-    },
-    {
-        title: 'Subir Plano',
-        description: 'Cargar o reemplazar el archivo SVG o PNG del plano',
-        icon: Map,
-        href: '/admin/lots/map',
-        color: 'purple',
-        badge: 'Imagen',
-        roles: ['ADMIN', 'SUPER_ADMIN'],
-    },
-    {
-        title: 'Proyectos',
-        description: 'Crear, configurar y eliminar proyectos',
-        icon: Building2,
-        href: '/admin/projects',
-        color: 'blue',
-        badge: 'Proyectos',
+        badge: 'Coordenadas',
         roles: ['ADMIN', 'SUPER_ADMIN'],
     },
     {
         title: 'Usuarios',
-        description: 'Gestionar asesores, permisos y accesos',
+        description: 'Gestionar asesores, permisos y accesos al sistema',
         icon: Users,
         href: '/admin/users',
         color: 'blue',
@@ -80,8 +69,17 @@ const CARDS: AdminCardDef[] = [
         roles: ['ADMIN', 'SUPER_ADMIN'],
     },
     {
+        title: 'Auditoría',
+        description: 'Historial de cambios de estado, precios y acciones',
+        icon: Activity,
+        href: '/admin/logs',
+        color: 'slate',
+        badge: 'Seguridad',
+        roles: ['ADMIN', 'SUPER_ADMIN'],
+    },
+    {
         title: 'Configuración',
-        description: 'SMTP, RENIEC, integración n8n, webhooks y ajustes',
+        description: 'SMTP, RENIEC, integración n8n, webhooks y ajustes globales',
         icon: Settings,
         href: '/admin/settings',
         color: 'slate',
@@ -98,18 +96,7 @@ const CARDS: AdminCardDef[] = [
         badge: 'Multi-tenant',
         roles: ['SUPER_ADMIN'],
     },
-    {
-        title: 'Auditoría',
-        description: 'Historial de cambios de estado, precios y acciones',
-        icon: Activity,
-        href: '/admin/logs',
-        color: 'slate',
-        badge: 'Seguridad',
-        roles: ['SUPER_ADMIN'],
-    },
 ]
-
-// ─── Color map ────────────────────────────────────────────────────────────────
 
 const COLOR: Record<CardColor, { icon: string; border: string; bg: string }> = {
     emerald: { icon: 'text-emerald-400', border: 'border-emerald-500/25', bg: 'bg-emerald-500/8' },
@@ -120,8 +107,6 @@ const COLOR: Record<CardColor, { icon: string; border: string; bg: string }> = {
     pink:    { icon: 'text-pink-400',    border: 'border-pink-500/25',    bg: 'bg-pink-500/8'    },
     rose:    { icon: 'text-rose-400',    border: 'border-rose-500/25',    bg: 'bg-rose-500/8'    },
 }
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminPage() {
     const { data: session } = useSession()
@@ -135,7 +120,6 @@ export default function AdminPage() {
             <Sidebar />
 
             <div className="flex-1 md:pl-52 flex flex-col min-h-screen">
-                {/* Header */}
                 <header className="shrink-0 border-b border-white/5 bg-slate-950 z-40">
                     <div className="flex items-center justify-between px-4 md:px-6 py-3">
                         <div className="flex items-center gap-3">
@@ -149,7 +133,6 @@ export default function AdminPage() {
                                 </p>
                             </div>
                         </div>
-
                         <Link
                             href="/dashboard"
                             className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
@@ -161,17 +144,13 @@ export default function AdminPage() {
                 </header>
 
                 <main className="flex-1 px-4 md:px-6 py-6 max-w-4xl">
-                    {/* Welcome */}
                     <div className="mb-6">
-                        <h2 className="text-xl font-semibold text-white mb-1">
-                            Bienvenido, {name}
-                        </h2>
+                        <h2 className="text-xl font-semibold text-white mb-1">Bienvenido, {name}</h2>
                         <p className="text-sm text-slate-500">
                             Gestiona el sistema desde aquí. Solo ves lo que corresponde a tu rol.
                         </p>
                     </div>
 
-                    {/* Cards grid */}
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {visibleCards.map(card => {
                             const c = COLOR[card.color]
@@ -186,26 +165,21 @@ export default function AdminPage() {
                                             {card.badge}
                                         </span>
                                     </div>
-                                    <h3 className="text-sm font-semibold text-white mb-1 group-hover:text-white transition-colors">
-                                        {card.title}
-                                    </h3>
-                                    <p className="text-xs text-slate-500 leading-relaxed">
-                                        {card.description}
-                                    </p>
+                                    <h3 className="text-sm font-semibold text-white mb-1">{card.title}</h3>
+                                    <p className="text-xs text-slate-500 leading-relaxed">{card.description}</p>
                                 </Link>
                             )
                         })}
                     </div>
 
-                    {/* First steps — only shown if no data yet */}
                     {role === 'SUPER_ADMIN' && (
                         <div className="mt-8 bg-white/3 border border-white/8 rounded-xl p-5">
                             <h3 className="text-xs font-semibold text-white mb-3 uppercase tracking-wider">🚀 Primeros pasos</h3>
                             <ol className="space-y-2 text-xs text-slate-400">
                                 <li>1. Crea un <strong className="text-white">Negocio</strong> en Negocios y asígnale su slug único</li>
-                                <li>2. Crea un <strong className="text-white">Proyecto</strong> y sube el plano SVG/PNG</li>
-                                <li>3. <strong className="text-white">Importa tus lotes</strong> con el CSV (10 columnas)</li>
-                                <li>4. Configura las <strong className="text-white">coordenadas del mapa</strong> en el Editor</li>
+                                <li>2. Crea un <strong className="text-white">Proyecto</strong> → sube el plano desde su página de detalle</li>
+                                <li>3. <strong className="text-white">Importa tus lotes</strong> con el CSV desde el Administrador de Lotes</li>
+                                <li>4. Configura las <strong className="text-white">coordenadas del mapa</strong> en el Editor de Mapa</li>
                                 <li>5. Crea <strong className="text-white">usuarios asesores</strong> y asígnalos al proyecto</li>
                             </ol>
                         </div>

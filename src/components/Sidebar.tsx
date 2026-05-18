@@ -15,6 +15,7 @@ import {
     Database,
     Shield,
     UserCheck,
+    Activity,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { logout } from '@/lib/actions'
@@ -37,6 +38,7 @@ const NAV_ADMIN: NavItem[] = [
     { name: 'Usuarios',    href: '/admin/users',      icon: Users },
     { name: 'Clientes',    href: '/admin/clients',    icon: UserCheck },
     { name: 'Lotes',       href: '/admin/lots',       icon: Database },
+    { name: 'Auditoría',   href: '/admin/logs',       icon: Activity },
 ]
 
 const NAV_SUPER_ADMIN: NavItem[] = [
@@ -47,6 +49,7 @@ const NAV_SUPER_ADMIN: NavItem[] = [
     { name: 'Negocios',    href: '/admin/tenants',    icon: Building2 },
     { name: 'Clientes',    href: '/admin/clients',    icon: UserCheck },
     { name: 'Lotes',       href: '/admin/lots',       icon: Database },
+    { name: 'Auditoría',   href: '/admin/logs',       icon: Activity },
 ]
 
 const MOBILE_NAV_ASESOR: NavItem[] = [

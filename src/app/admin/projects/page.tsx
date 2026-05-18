@@ -212,7 +212,7 @@ export default function ProjectsManagementPage() {
                                                 Gestionar
                                             </Button>
                                         </Link>
-                                        <Link href={`/admin/lots/map?projectId=${project.id}`}>
+                                        <Link href={`/admin/lots/map/editor?projectId=${project.id}`}>
                                             <Button variant="ghost" size="sm" className="h-9 px-3">
                                                 <Map className="w-4 h-4 mr-1.5" />
                                                 Mapa
