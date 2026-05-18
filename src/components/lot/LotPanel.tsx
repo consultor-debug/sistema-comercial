@@ -9,7 +9,7 @@ import { cn, LOT_STATUS_LABELS, formatCurrency } from '@/lib/utils'
 import { calculateQuotation } from '@/lib/quotation'
 import { LotStatus } from '@prisma/client'
 import {
-    X, FileText, Lock, Loader2, AlertTriangle, ChevronDown
+    X, FileText, Lock, Loader2, AlertTriangle, ChevronDown, KeyRound
 } from 'lucide-react'
 
 interface Lot {
@@ -45,7 +45,7 @@ interface LotPanelProps {
     onUpdate?: () => void
 }
 
-const PLAZO_OPTIONS = [12, 24, 36, 48, 60]
+const BASE_PLAZO_OPTIONS = [6, 9, 12, 15, 18]
 
 function ConfirmDialog({
     status, lotCode, onConfirm, onCancel, isLoading
@@ -103,8 +103,12 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
     const [activeTab, setActiveTab] = React.useState<'contado' | 'financiamiento'>('financiamiento')
 
     const [enganchePct, setEnganchePct] = React.useState(20)
-    const [cuotas, setCuotas] = React.useState(60)
+    const [cuotas, setCuotas] = React.useState(18)
     const [tasaAnual, setTasaAnual] = React.useState(12)
+    const [unlocked24, setUnlocked24] = React.useState(false)
+    const [show24Input, setShow24Input] = React.useState(false)
+    const [pw24, setPw24] = React.useState('')
+    const [pw24Error, setPw24Error] = React.useState(false)
 
     const maxCuotas = projectSettings.maxCuotas ?? 60
 
@@ -114,9 +118,13 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
         setShowCronograma(false)
         setConfirmStatus(null)
         setEnganchePct(20)
-        setCuotas(Math.min(60, maxCuotas))
+        setCuotas(18)
         setTasaAnual(12)
         setActiveTab('financiamiento')
+        setUnlocked24(false)
+        setShow24Input(false)
+        setPw24('')
+        setPw24Error(false)
     }, [lot?.id, maxCuotas])
 
     if (!lot) return null
@@ -124,6 +132,33 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
     const isLibre = lot.estado === 'LIBRE'
     const precioM2 = lot.areaM2 > 0 ? Math.round(lot.precioLista / lot.areaM2) : 0
     const engancheAmount = Math.round(lot.precioLista * enganchePct / 100)
+    const inicialMinimo = 3500
+    const inicialBelowMin = engancheAmount < inicialMinimo
+    const canUse36 = lot.manzana.toUpperCase() === 'A' || lot.manzana.toUpperCase() === 'L'
+
+    const plazoOptions = [
+        ...BASE_PLAZO_OPTIONS.filter(n => n <= maxCuotas),
+        24,
+        ...(canUse36 && 36 <= maxCuotas ? [36] : []),
+    ]
+
+    const handle24Click = () => {
+        if (unlocked24) { setCuotas(24); return }
+        setShow24Input(v => !v)
+        setPw24('')
+        setPw24Error(false)
+    }
+
+    const handlePw24Submit = () => {
+        if (pw24 === 'napoles') {
+            setUnlocked24(true)
+            setShow24Input(false)
+            setCuotas(24)
+            setPw24Error(false)
+        } else {
+            setPw24Error(true)
+        }
+    }
 
     const quotation = (() => {
         if (!isLibre) return null
@@ -137,7 +172,7 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
         })
     })()
 
-    const canSend = isLibre && quotation && client
+    const canSend = isLibre && quotation && client && !inicialBelowMin
 
     const handleDownloadPdf = async () => {
         if (!canSend || !quotation || !client) return
@@ -278,11 +313,14 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
                             {activeTab === 'financiamiento' && (
                                 <div className="space-y-6">
 
-                                    {/* Enganche */}
+                                    {/* Inicial */}
                                     <div>
                                         <div className="flex items-center justify-between mb-3">
-                                            <span className="text-sm text-slate-300">Enganche</span>
-                                            <span className="text-sm font-semibold text-white">
+                                            <span className="text-sm text-slate-300">Inicial</span>
+                                            <span className={cn(
+                                                'text-sm font-semibold',
+                                                inicialBelowMin ? 'text-rose-400' : 'text-white'
+                                            )}>
                                                 {enganchePct}% · {formatCurrency(engancheAmount)}
                                             </span>
                                         </div>
@@ -294,6 +332,11 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
                                         <div className="flex justify-between text-[10px] text-slate-600 mt-1.5">
                                             <span>10%</span><span>30%</span><span>50%</span>
                                         </div>
+                                        {inicialBelowMin && (
+                                            <p className="text-[10px] text-rose-400 mt-1.5">
+                                                Mínimo S/ 3,500 de inicial
+                                            </p>
+                                        )}
                                     </div>
 
                                     {/* Plazo */}
@@ -302,19 +345,54 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
                                             <span className="text-sm text-slate-300">Plazo</span>
                                             <span className="text-sm font-semibold text-white">{cuotas} meses</span>
                                         </div>
-                                        <div className="grid grid-cols-5 gap-1.5">
-                                            {PLAZO_OPTIONS.filter(n => n <= maxCuotas).map(n => (
-                                                <button key={n} onClick={() => setCuotas(n)}
-                                                    className={cn(
-                                                        'py-2 rounded-lg text-xs font-semibold border transition-colors',
-                                                        cuotas === n
-                                                            ? 'bg-white text-slate-950 border-white'
-                                                            : 'border-white/10 text-slate-400 hover:border-white/20 hover:text-white'
-                                                    )}>
-                                                    {n}
-                                                </button>
-                                            ))}
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {plazoOptions.map(n => {
+                                                const is24 = n === 24
+                                                const locked = is24 && !unlocked24
+                                                return (
+                                                    <button key={n} onClick={() => is24 ? handle24Click() : setCuotas(n)}
+                                                        className={cn(
+                                                            'flex-1 min-w-[40px] py-2 rounded-lg text-xs font-semibold border transition-colors flex items-center justify-center gap-1',
+                                                            cuotas === n && !locked
+                                                                ? 'bg-white text-slate-950 border-white'
+                                                                : locked
+                                                                    ? 'border-white/10 text-slate-600 hover:border-white/20 hover:text-slate-400'
+                                                                    : 'border-white/10 text-slate-400 hover:border-white/20 hover:text-white'
+                                                        )}>
+                                                        {n}
+                                                        {locked && <Lock className="w-2.5 h-2.5" />}
+                                                    </button>
+                                                )
+                                            })}
                                         </div>
+                                        {/* 24-month password unlock */}
+                                        {show24Input && (
+                                            <div className="mt-2 flex gap-2 animate-in fade-in duration-150">
+                                                <div className="relative flex-1">
+                                                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-500 pointer-events-none" />
+                                                    <input
+                                                        type="password"
+                                                        placeholder="Clave de acceso"
+                                                        value={pw24}
+                                                        onChange={e => { setPw24(e.target.value); setPw24Error(false) }}
+                                                        onKeyDown={e => e.key === 'Enter' && handlePw24Submit()}
+                                                        className={cn(
+                                                            'w-full h-9 bg-white/5 border rounded-lg pl-8 pr-3 text-xs text-white placeholder:text-slate-700 outline-none focus:ring-1 transition-all',
+                                                            pw24Error
+                                                                ? 'border-rose-500/40 focus:ring-rose-500/30'
+                                                                : 'border-white/10 focus:ring-white/20'
+                                                        )}
+                                                    />
+                                                </div>
+                                                <button onClick={handlePw24Submit}
+                                                    className="h-9 px-3 text-xs font-medium bg-white/5 border border-white/10 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors">
+                                                    OK
+                                                </button>
+                                            </div>
+                                        )}
+                                        {pw24Error && (
+                                            <p className="text-[10px] text-rose-400 mt-1">Clave incorrecta</p>
+                                        )}
                                     </div>
 
                                     {/* Tasa anual */}
@@ -426,8 +504,10 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
                                 : <><FileText className="w-4 h-4 mr-2" />Generar Cotización PDF</>}
                         </Button>
                         {!canSend && quotation && (
-                            <p className="text-[11px] text-slate-600 text-center mt-2">
-                                Completa los datos del cliente para continuar
+                            <p className="text-[11px] text-center mt-2 text-slate-600">
+                                {inicialBelowMin
+                                    ? 'El inicial mínimo es S/ 3,500'
+                                    : 'Completa los datos del cliente para continuar'}
                             </p>
                         )}
                     </div>

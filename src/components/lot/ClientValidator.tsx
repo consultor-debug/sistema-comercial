@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { Button } from '@/components/ui/Button'
 import { validateDNI } from '@/lib/utils'
-import { CheckCircle2, AlertCircle, Loader2, User, Mail, Search } from 'lucide-react'
+import { CheckCircle2, AlertCircle, Loader2, User, Phone, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface ValidatedClient {
@@ -23,7 +23,7 @@ export const ClientValidator: React.FC<ClientValidatorProps> = ({
     disabled = false
 }) => {
     const [dni, setDni] = React.useState('')
-    const [email, setEmail] = React.useState('')
+    const [phone, setPhone] = React.useState('')
     const [validatedClient, setValidatedClient] = React.useState<ValidatedClient | null>(null)
     const [isValidating, setIsValidating] = React.useState(false)
     const [error, setError] = React.useState<string | null>(null)
@@ -72,15 +72,15 @@ export const ClientValidator: React.FC<ClientValidatorProps> = ({
     }
 
     React.useEffect(() => {
-        if (validatedClient && email.trim().length > 3) {
+        if (validatedClient && phone.trim().length > 5) {
             onValidated({ ...validatedClient, dni })
         } else {
             onValidated(null)
         }
-    }, [validatedClient, email, dni, onValidated])
+    }, [validatedClient, phone, dni, onValidated])
 
     const dniState = isValidating ? 'loading' : validatedClient ? 'success' : error ? 'error' : 'idle'
-    const isReady = validatedClient && email.trim().length > 3
+    const isReady = validatedClient && phone.trim().length > 5
 
     return (
         <div className="space-y-3">
@@ -147,17 +147,17 @@ export const ClientValidator: React.FC<ClientValidatorProps> = ({
                 )}
             </div>
 
-            {/* Email input — only show after DNI validated */}
+            {/* Phone input — only show after DNI validated */}
             {validatedClient && (
                 <div className="space-y-1.5 animate-in fade-in duration-200">
-                    <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Correo del Cliente</label>
+                    <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">N° Teléfono</label>
                     <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-600" />
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-600" />
                         <input
-                            type="email"
-                            placeholder="cliente@email.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            type="tel"
+                            placeholder="+51 900 000 000"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
                             disabled={disabled}
                             className="w-full h-10 bg-white/5 border border-white/8 rounded-lg pl-9 pr-3 text-sm text-white placeholder:text-slate-700 outline-none focus:ring-1 focus:ring-white/20 focus:bg-white/[0.07] disabled:opacity-50 transition-all"
                         />

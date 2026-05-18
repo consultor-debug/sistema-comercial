@@ -85,7 +85,7 @@ export default function ProjectPage() {
     const filterTabs: { key: StatusFilter; label: string; count: number; color: string }[] = [
         { key: 'ALL',      label: 'Todos',       count: stats.total,    color: '' },
         { key: 'LIBRE',    label: 'Disponibles', count: stats.libre,    color: 'text-emerald-400' },
-        { key: 'SEPARADO', label: 'Apartados',   count: stats.separado, color: 'text-amber-400' },
+        { key: 'SEPARADO', label: 'Separados',    count: stats.separado, color: 'text-amber-400' },
         { key: 'VENDIDO',  label: 'Vendidos',    count: stats.vendido,  color: 'text-rose-400' },
     ]
 
@@ -131,7 +131,7 @@ export default function ProjectPage() {
                         <div className="flex items-center gap-4 sm:gap-6 shrink-0">
                             <StatPill value={stats.libre}    label="Disponibles" color="text-emerald-400" dot="bg-emerald-400" />
                             <div className="h-4 w-px bg-white/10" />
-                            <StatPill value={stats.separado} label="Apartados"   color="text-amber-400"   dot="bg-amber-400" />
+                            <StatPill value={stats.separado} label="Separados"   color="text-amber-400"   dot="bg-amber-400" />
                             <div className="h-4 w-px bg-white/10" />
                             <StatPill value={stats.vendido}  label="Vendidos"    color="text-rose-400"    dot="bg-rose-400" />
                         </div>
@@ -201,7 +201,7 @@ export default function ProjectPage() {
                         {/* Legend */}
                         <div className="shrink-0 flex items-center gap-5 px-4 py-2.5 border-t border-white/5 bg-slate-950/90 backdrop-blur-sm overflow-x-auto no-scrollbar">
                             <LegendItem dot="bg-emerald-500" label="Disponible" count={stats.libre} />
-                            <LegendItem dot="bg-amber-500"  label="Apartado"   count={stats.separado} />
+                            <LegendItem dot="bg-amber-500"  label="Separado"   count={stats.separado} />
                             <LegendItem dot="bg-rose-500"   label="Vendido"    count={stats.vendido} />
                         </div>
                     </div>
