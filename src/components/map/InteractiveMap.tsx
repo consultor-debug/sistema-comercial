@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
+import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'react-zoom-pan-pinch'
 import { cn } from '@/lib/utils'
 import { LotMarker } from './LotMarker'
 import { MapControls, MapLegend } from './MapControls'
@@ -35,14 +35,30 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 }) => {
     const containerRef = React.useRef<HTMLDivElement>(null)
     const imageRef = React.useRef<HTMLImageElement>(null)
+    const transformRef = React.useRef<ReactZoomPanPinchRef>(null)
     const [zoom, setZoom] = React.useState(1)
     const [isFullscreen, setIsFullscreen] = React.useState(false)
     const [isDownloading, setIsDownloading] = React.useState(false)
     const [imageLoaded, setImageLoaded] = React.useState(false)
     const [imageError, setImageError] = React.useState(false)
     // Natural image dimensions → used to build a proportional SVG viewBox
-    // so markers render as circles (not ovals) regardless of container size
     const [naturalDims, setNaturalDims] = React.useState({ w: 1000, h: 1000 })
+    // Dynamic min scale — updated when image loads so you can't zoom out past fit
+    const [minScale, setMinScale] = React.useState(0.1)
+
+    /** Calculate the scale that makes the image fit the visible map area and center it. */
+    const fitToContainer = React.useCallback((imgW: number, imgH: number) => {
+        if (!containerRef.current) return
+        const rect = containerRef.current.getBoundingClientRect()
+        // Reserve space for toolbar (~90px) + legend (~48px) + padding (16px)
+        const availW = rect.width - 16
+        const availH = rect.height - 154
+        if (availW <= 0 || availH <= 0) return
+        const scale = Math.min(availW / imgW, availH / imgH)
+        const safeScale = Math.max(0.05, scale)
+        setMinScale(safeScale * 0.7) // allow 30% more zoom-out for context
+        transformRef.current?.centerView(safeScale, 0)
+    }, [])
 
     // Filters
     const [selectedManzana, setSelectedManzana] = React.useState<string | 'all'>('all')
@@ -90,11 +106,14 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
     React.useEffect(() => {
         const handleFullscreenChange = () => {
-            setIsFullscreen(!!document.fullscreenElement)
+            const entering = !!document.fullscreenElement
+            setIsFullscreen(entering)
+            // Re-fit after fullscreen transition (300ms) so the image fills the new size
+            setTimeout(() => fitToContainer(naturalDims.w, naturalDims.h), 350)
         }
         document.addEventListener('fullscreenchange', handleFullscreenChange)
         return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
-    }, [])
+    }, [fitToContainer, naturalDims])
 
     const handleDownloadPdf = async () => {
         setIsDownloading(true)
@@ -203,14 +222,16 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             {/* Map */}
             <div className="relative flex-1 cursor-grab active:cursor-grabbing overflow-hidden">
                 <TransformWrapper
+                    ref={transformRef}
                     initialScale={1}
-                    minScale={0.3}
-                    maxScale={5}
-                    centerOnInit
+                    minScale={minScale}
+                    maxScale={8}
                     onTransformed={(ref) => setZoom(ref.state.scale)}
                     doubleClick={{ disabled: false }}
+                    limitToBounds={false}
+                    centerOnInit={false}
                 >
-                    {({ zoomIn, zoomOut, resetTransform }) => (
+                    {({ zoomIn, zoomOut }) => (
                         <>
                             <TransformComponent
                                 wrapperStyle={{ width: '100%', height: '100%' }}
@@ -227,8 +248,12 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                                                 draggable={false}
                                                 onLoad={(e) => {
                                                     const img = e.currentTarget
-                                                    setNaturalDims({ w: img.naturalWidth || 1000, h: img.naturalHeight || 1000 })
+                                                    const w = img.naturalWidth || 1000
+                                                    const h = img.naturalHeight || 1000
+                                                    setNaturalDims({ w, h })
                                                     setImageLoaded(true)
+                                                    // Fit the whole map into the visible area on first load
+                                                    setTimeout(() => fitToContainer(w, h), 80)
                                                 }}
                                                 onError={() => setImageError(true)}
                                             />
@@ -273,7 +298,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                                 zoom={zoom}
                                 onZoomIn={() => zoomIn()}
                                 onZoomOut={() => zoomOut()}
-                                onReset={() => resetTransform()}
+                                onReset={() => fitToContainer(naturalDims.w, naturalDims.h)}
                                 onFullscreen={handleFullscreen}
                                 onDownloadPdf={handleDownloadPdf}
                                 isDownloading={isDownloading}

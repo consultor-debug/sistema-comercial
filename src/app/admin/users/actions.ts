@@ -98,11 +98,17 @@ export async function upsertUser(data: {
     // Si no es superadmin, solo puede crear usuarios en su propio tenant
     const finalTenantIds = isSuperAdmin ? (data.tenantIds || []) : [session.user.tenantId].filter(Boolean) as string[]
 
-    if (finalTenantIds.length === 0) {
+    // Require a tenant when:
+    // - Session is not SUPER_ADMIN (must use their own tenant), OR
+    // - SUPER_ADMIN is creating a new non-SUPER_ADMIN user
+    const isUpdate = Boolean(data.id)
+    const shouldRequireTenant = !isSuperAdmin || (!isUpdate && data.role !== UserRole.SUPER_ADMIN)
+
+    if (shouldRequireTenant && finalTenantIds.length === 0) {
         return { success: false, error: 'Se requiere al menos una Empresa' }
     }
 
-    const primaryTenantId = finalTenantIds[0]
+    const primaryTenantId = finalTenantIds[0] ?? null
 
     try {
         if (data.id) {
