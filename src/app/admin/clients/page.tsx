@@ -2,10 +2,9 @@
 
 import * as React from 'react'
 import { useSession } from 'next-auth/react'
-import { Sidebar } from '@/components/Sidebar'
 import { Input } from '@/components/ui/Input'
 import {
-    Users, Search, Mail, FileText, ChevronLeft, Loader2, ArrowLeft,
+    Users, Search, Mail, FileText, Loader2, ArrowLeft,
     Calendar, EyeOff
 } from 'lucide-react'
 import Link from 'next/link'
@@ -50,12 +49,9 @@ export default function ClientsPage() {
     })
 
     return (
-        <div className="min-h-screen bg-slate-950 flex">
-            <Sidebar />
-
-            <div className="flex-1 md:pl-52 flex flex-col min-h-screen">
-                {/* Header */}
-                <header className="shrink-0 border-b border-white/5 bg-slate-950 z-40">
+        <div className="flex flex-col min-h-[calc(100vh-0px)]">
+            {/* Header */}
+            <header className="shrink-0 border-b border-white/5 bg-slate-950 z-40">
                     <div className="flex items-center gap-3 px-4 md:px-6 py-3">
                         <Link href="/dashboard"
                             className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-white transition-colors shrink-0">
@@ -217,7 +213,6 @@ export default function ClientsPage() {
                         </p>
                     )}
                 </div>
-            </div>
         </div>
     )
 }
