@@ -106,6 +106,7 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
     const [enganchePct, setEnganchePct] = React.useState(20)
     const [cuotas, setCuotas] = React.useState(18)
     const [tasaAnual, setTasaAnual] = React.useState(12)
+    const [descuento, setDescuento] = React.useState(0)
     const [unlocked24, setUnlocked24] = React.useState(false)
     const [show24Input, setShow24Input] = React.useState(false)
     const [pw24, setPw24] = React.useState('')
@@ -121,6 +122,7 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
         setEnganchePct(20)
         setCuotas(18)
         setTasaAnual(12)
+        setDescuento(0)
         setActiveTab('financiamiento')
         setUnlocked24(false)
         setShow24Input(false)
@@ -132,7 +134,10 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
 
     const isLibre = lot.estado === 'LIBRE'
     const precioM2 = lot.areaM2 > 0 ? Math.round(lot.precioLista / lot.areaM2) : 0
-    const engancheAmount = Math.round(lot.precioLista * enganchePct / 100)
+    const descuentoMax = lot.descuentoMax ?? 0
+    const descuentoClamped = Math.min(descuento, descuentoMax)
+    const precioFinal = Math.max(0, lot.precioLista - descuentoClamped)
+    const engancheAmount = Math.round(precioFinal * enganchePct / 100)
     const inicialMinimo = 3500
     const inicialBelowMin = engancheAmount < inicialMinimo
     const canUse36 = lot.manzana.toUpperCase() === 'A' || lot.manzana.toUpperCase() === 'L'
@@ -165,7 +170,7 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
         if (!isLibre) return null
         return calculateQuotation({
             precioLista: lot.precioLista,
-            descuento: 0,
+            descuento: descuentoClamped,
             inicial: engancheAmount,
             cuotas,
             fechaInicio: new Date().toISOString().split('T')[0],
@@ -182,7 +187,7 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
             const response = await fetch('/api/quotations/download', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ lotId: lot.id, quotation: { ...quotation, descuento: 0, inicial: engancheAmount }, client })
+                body: JSON.stringify({ lotId: lot.id, quotation: { ...quotation, descuento: descuentoClamped, inicial: engancheAmount }, client })
             })
             const result = await response.json().catch(() => ({}))
             if (!response.ok || !result.success) throw new Error(result.error || 'Error')
@@ -272,16 +277,59 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
                     </div>
 
                     {/* Price block */}
-                    <div className="px-5 py-5 border-b border-white/5">
-                        <p className="text-[10px] font-semibold tracking-widest text-slate-500 uppercase mb-2">
-                            Precio total
-                        </p>
-                        <p className="text-3xl font-bold text-white tracking-tight">
-                            {formatCurrency(lot.precioLista)}
-                        </p>
-                        {precioM2 > 0 && (
-                            <p className="text-xs text-slate-500 mt-1">{formatCurrency(precioM2)} / m²</p>
+                    <div className="px-5 py-5 border-b border-white/5 space-y-3">
+                        {/* Precio lista */}
+                        <div className="flex items-start justify-between">
+                            <p className="text-[10px] font-semibold tracking-widest text-slate-500 uppercase mt-1">
+                                Precio lista
+                            </p>
+                            <div className="text-right">
+                                <p className="text-2xl font-bold text-white tracking-tight">
+                                    {formatCurrency(lot.precioLista)}
+                                </p>
+                                {precioM2 > 0 && (
+                                    <p className="text-xs text-slate-500">{formatCurrency(precioM2)} / m²</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Descuento row */}
+                        <div className="flex items-center justify-between gap-3 py-2 border-t border-white/5">
+                            <p className="text-[10px] font-semibold tracking-widest text-slate-500 uppercase shrink-0">
+                                Dscto
+                            </p>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs text-slate-500">S/</span>
+                                <input
+                                    type="number"
+                                    min={0}
+                                    max={descuentoMax}
+                                    value={descuento === 0 ? '' : descuento}
+                                    placeholder="0"
+                                    onChange={e => {
+                                        const v = Math.min(descuentoMax, Math.max(0, parseFloat(e.target.value) || 0))
+                                        setDescuento(v)
+                                    }}
+                                    className="w-28 h-8 bg-white/5 border border-white/10 rounded-lg text-sm text-white text-right pr-3 outline-none focus:ring-1 focus:ring-white/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
+                            </div>
+                        </div>
+                        {descuentoMax > 0 && (
+                            <p className="text-[10px] text-slate-600">Descuento máximo: {formatCurrency(descuentoMax)}</p>
                         )}
+
+                        {/* Precio final */}
+                        <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                            <p className="text-[10px] font-semibold tracking-widest text-emerald-500 uppercase">
+                                Precio final
+                            </p>
+                            <p className={cn(
+                                'text-2xl font-bold tracking-tight',
+                                descuentoClamped > 0 ? 'text-emerald-400' : 'text-white'
+                            )}>
+                                {formatCurrency(precioFinal)}
+                            </p>
+                        </div>
                     </div>
 
                     {isLibre ? (
@@ -306,7 +354,7 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
                             {activeTab === 'contado' && (
                                 <div className="p-4 bg-white/[0.03] border border-white/5 rounded-xl">
                                     <p className="text-xs text-slate-500 mb-1">Pago único al contado</p>
-                                    <p className="text-2xl font-bold text-white">{formatCurrency(lot.precioLista)}</p>
+                                    <p className="text-2xl font-bold text-white">{formatCurrency(precioFinal)}</p>
                                 </div>
                             )}
 
@@ -435,7 +483,7 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
                                     <p className="text-3xl font-bold text-white tracking-tight">
                                         {activeTab === 'financiamiento'
                                             ? formatCurrency(quotation.cuotaMensual)
-                                            : formatCurrency(lot.precioLista)}
+                                            : formatCurrency(precioFinal)}
                                     </p>
                                     {activeTab === 'financiamiento' && (
                                         <p className="text-xs text-slate-500 mt-1">
