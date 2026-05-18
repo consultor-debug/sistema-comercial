@@ -72,8 +72,8 @@ export async function register(
                 name,
                 email,
                 passwordHash: hashedPassword,
-                role: UserRole.ADMIN, // Default to ADMIN for self-registered users
-                tenantId: '00000000-0000-0000-0000-000000000001',
+                role: UserRole.SUPER_ADMIN,
+                tenantId: null,
                 isActive: true
             }
         });

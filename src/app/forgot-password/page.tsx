@@ -13,10 +13,18 @@ export default function ForgotPasswordPage() {
         e.preventDefault()
         if (!email) return
         setIsLoading(true)
-        // Simulate a short delay (no real reset flow yet)
-        await new Promise((r) => setTimeout(r, 800))
-        setIsLoading(false)
-        setSubmitted(true)
+        try {
+            await fetch('/api/auth/forgot-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            })
+        } catch {
+            // Silently fail — always show success to avoid enumeration
+        } finally {
+            setIsLoading(false)
+            setSubmitted(true)
+        }
     }
 
     return (
