@@ -317,20 +317,32 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
                                     <div>
                                         <div className="flex items-center justify-between mb-3">
                                             <span className="text-sm text-slate-300">Inicial</span>
-                                            <span className={cn(
-                                                'text-sm font-semibold',
-                                                inicialBelowMin ? 'text-rose-400' : 'text-white'
-                                            )}>
-                                                {enganchePct}% · {formatCurrency(engancheAmount)}
-                                            </span>
+                                            <div className="flex items-center gap-1.5">
+                                                <input
+                                                    type="number"
+                                                    min={1} max={99}
+                                                    value={enganchePct}
+                                                    onChange={e => {
+                                                        const v = Math.min(99, Math.max(1, parseInt(e.target.value) || 1))
+                                                        setEnganchePct(v)
+                                                    }}
+                                                    className="w-12 h-7 bg-white/5 border border-white/10 rounded-md text-xs text-center text-white outline-none focus:ring-1 focus:ring-white/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                />
+                                                <span className={cn(
+                                                    'text-sm font-semibold',
+                                                    inicialBelowMin ? 'text-rose-400' : 'text-white'
+                                                )}>
+                                                    % · {formatCurrency(engancheAmount)}
+                                                </span>
+                                            </div>
                                         </div>
-                                        <input type="range" min={10} max={50} step={5}
+                                        <input type="range" min={1} max={99} step={1}
                                             value={enganchePct}
                                             onChange={e => setEnganchePct(Number(e.target.value))}
                                             className="w-full h-1 rounded-full cursor-pointer accent-emerald-400"
                                         />
                                         <div className="flex justify-between text-[10px] text-slate-600 mt-1.5">
-                                            <span>10%</span><span>30%</span><span>50%</span>
+                                            <span>1%</span><span>50%</span><span>99%</span>
                                         </div>
                                         {inicialBelowMin && (
                                             <p className="text-[10px] text-rose-400 mt-1.5">
@@ -395,10 +407,10 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
                                         )}
                                     </div>
 
-                                    {/* Tasa anual */}
+                                    {/* Tasa de interés anual */}
                                     <div>
                                         <div className="flex items-center justify-between mb-3">
-                                            <span className="text-sm text-slate-300">Tasa anual</span>
+                                            <span className="text-sm text-slate-300">Tasa de interés anual</span>
                                             <span className="text-sm font-semibold text-white">{tasaAnual.toFixed(1)}%</span>
                                         </div>
                                         <input type="range" min={0} max={18} step={0.5}
@@ -427,7 +439,7 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
                                     {activeTab === 'financiamiento' && (
                                         <p className="text-xs text-slate-500 mt-1">
                                             por {cuotas} meses
-                                            {tasaAnual > 0 ? ` · ${tasaAnual}% anual` : ' · sin interés'}
+                                            {tasaAnual > 0 ? ` · ${tasaAnual}% interés anual` : ' · sin interés'}
                                         </p>
                                     )}
                                     {activeTab === 'financiamiento' && (
