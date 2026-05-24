@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { StatusBadge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { ClientValidator } from './ClientValidator'
+import { ContractModal } from './ContractModal'
 import { cn, LOT_STATUS_LABELS, formatCurrency } from '@/lib/utils'
 import { calculateQuotation } from '@/lib/quotation'
 import { LotStatus } from '@prisma/client'
@@ -99,6 +100,7 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
     const [client, setClient] = React.useState<ValidatedClient | null>(null)
     const [updatingStatus, setUpdatingStatus] = React.useState<LotStatus | null>(null)
     const [confirmStatus, setConfirmStatus] = React.useState<LotStatus | null>(null)
+    const [contractModalTipo, setContractModalTipo] = React.useState<'SEPARACION' | 'COMPRAVENTA' | null>(null)
     const [isDownloading, setIsDownloading] = React.useState(false)
     const [lastQuotationId, setLastQuotationId] = React.useState<string | null>(null)
     const [sendEmailTo, setSendEmailTo] = React.useState('')
@@ -269,6 +271,18 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
                 <ConfirmDialog status={confirmStatus} lotCode={lot.code}
                     onConfirm={handleConfirmStatusChange} onCancel={() => setConfirmStatus(null)}
                     isLoading={!!updatingStatus} />
+            )}
+            {contractModalTipo && (
+                <ContractModal
+                    lot={lot}
+                    tipo={contractModalTipo}
+                    onClose={() => setContractModalTipo(null)}
+                    onSuccess={(newStatus) => {
+                        setContractModalTipo(null)
+                        onUpdate?.()
+                        toast.success(`Lote ${lot.code} → ${LOT_STATUS_LABELS[newStatus]}`)
+                    }}
+                />
             )}
 
             <div className="h-full flex flex-col bg-slate-950 overflow-hidden">
@@ -570,7 +584,11 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
                         </p>
                         <div className="flex gap-2">
                             {statusActions.map(status => (
-                                <button key={status} onClick={() => setConfirmStatus(status)}
+                                <button key={status} onClick={() => {
+                                    if (status === 'SEPARADO') setContractModalTipo('SEPARACION')
+                                    else if (status === 'VENDIDO') setContractModalTipo('COMPRAVENTA')
+                                    else setConfirmStatus(status)
+                                }}
                                     disabled={!!updatingStatus}
                                     className={cn(
                                         'flex-1 py-2 px-2 text-[11px] font-medium rounded-lg border transition-colors',
