@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { auth } from '@/auth'
 import { generateQuotationCode } from '@/lib/auth'
-import path from 'path'
-import fs from 'fs'
 import {
     Document, Packer, Paragraph, TextRun, AlignmentType, BorderStyle,
     Table, TableRow, TableCell, WidthType, ShadingType, HeadingLevel
@@ -402,17 +400,9 @@ export async function POST(request: NextRequest) {
         })
 
         const buffer = await Packer.toBuffer(doc)
+        const base64 = buffer.toString('base64')
 
-        // Save to public/contracts/
-        const contractsDir = path.join(process.cwd(), 'public', 'contracts')
-        if (!fs.existsSync(contractsDir)) fs.mkdirSync(contractsDir, { recursive: true })
-
-        const filename = `contrato-${codigo}.docx`
-        const filePath = path.join(contractsDir, filename)
-        fs.writeFileSync(filePath, buffer)
-        const docxUrl = `/contracts/${filename}`
-
-        // Save to DB
+        // Save to DB (without file URL — file is streamed directly)
         const contract = await prisma.contract.create({
             data: {
                 codigo,
@@ -432,11 +422,11 @@ export async function POST(request: NextRequest) {
                 inicial: financialData?.inicial ?? null,
                 cuotas: financialData?.cuotas ?? null,
                 cronograma: financialData?.cronograma ?? undefined,
-                docxUrl,
+                docxUrl: null,
             }
         })
 
-        return NextResponse.json({ success: true, contractId: contract.id, docxUrl, codigo })
+        return NextResponse.json({ success: true, contractId: contract.id, codigo, docxBase64: base64 })
     } catch (error) {
         console.error('Error generating contract:', error)
         return NextResponse.json({ success: false, error: 'Error interno del servidor' }, { status: 500 })

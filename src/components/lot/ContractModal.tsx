@@ -149,11 +149,17 @@ export const ContractModal: React.FC<ContractModalProps> = ({
             const result = await res.json()
             if (!res.ok || !result.success) throw new Error(result.error || 'Error al generar')
 
-            // Download the DOCX
+            // Download the DOCX from base64
+            const byteArray = Uint8Array.from(atob(result.docxBase64), c => c.charCodeAt(0))
+            const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })
+            const url = URL.createObjectURL(blob)
             const link = document.createElement('a')
-            link.href = result.docxUrl
+            link.href = url
             link.download = `contrato-${result.codigo}.docx`
+            document.body.appendChild(link)
             link.click()
+            document.body.removeChild(link)
+            URL.revokeObjectURL(url)
 
             // Update lot status
             const newStatus: LotStatus = esSeparacion ? 'SEPARADO' : 'VENDIDO'
