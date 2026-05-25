@@ -17,6 +17,9 @@ import {
     UserCheck,
     Activity,
     FileText,
+    Calendar,
+    Layers,
+    PenSquare,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { logout } from '@/lib/actions'
@@ -27,46 +30,52 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 type NavItem = { name: string; href: string; icon: React.ElementType }
 
 const NAV_ASESOR: NavItem[] = [
-    { name: 'Dashboard',   href: '/dashboard',             icon: LayoutDashboard },
-    { name: 'Proyectos',   href: '/admin/projects',        icon: MapIcon },
-    { name: 'Contratos',   href: '/dashboard/contracts',   icon: FileText },
-    { name: 'Clientes',    href: '/admin/clients',         icon: UserCheck },
+    { name: 'Dashboard',    href: '/dashboard',              icon: LayoutDashboard },
+    { name: 'Contratos',    href: '/dashboard/contratos',    icon: FileText },
+    { name: 'Clientes',     href: '/dashboard/clientes',     icon: UserCheck },
+    { name: 'Inmuebles',    href: '/dashboard/inmuebles',    icon: Database },
+    { name: 'Cronogramas',  href: '/dashboard/cronogramas',  icon: Calendar },
 ]
 
 const NAV_ADMIN: NavItem[] = [
-    { name: 'Dashboard',   href: '/dashboard',             icon: LayoutDashboard },
-    { name: 'Proyectos',   href: '/admin/projects',        icon: MapIcon },
-    { name: 'Contratos',   href: '/dashboard/contracts',   icon: FileText },
-    { name: 'Reportes',    href: '/admin/reports',         icon: BarChart3 },
-    { name: 'Usuarios',    href: '/admin/users',           icon: Users },
-    { name: 'Clientes',    href: '/admin/clients',         icon: UserCheck },
-    { name: 'Lotes',       href: '/admin/lots',            icon: Database },
-    { name: 'Auditoría',   href: '/admin/logs',            icon: Activity },
+    { name: 'Dashboard',    href: '/dashboard',              icon: LayoutDashboard },
+    { name: 'Contratos',    href: '/dashboard/contratos',    icon: FileText },
+    { name: 'Clientes',     href: '/dashboard/clientes',     icon: UserCheck },
+    { name: 'Inmuebles',    href: '/dashboard/inmuebles',    icon: Database },
+    { name: 'Cronogramas',  href: '/dashboard/cronogramas',  icon: Calendar },
+    { name: 'Proyectos',    href: '/admin/projects',         icon: MapIcon },
+    { name: 'Reportes',     href: '/admin/reports',          icon: BarChart3 },
+    { name: 'Asesores',     href: '/dashboard/asesores',     icon: Users },
+    { name: 'Plantillas',   href: '/dashboard/plantillas',   icon: Layers },
+    { name: 'Auditoría',    href: '/admin/logs',             icon: Activity },
 ]
 
 const NAV_SUPER_ADMIN: NavItem[] = [
-    { name: 'Dashboard',   href: '/dashboard',             icon: LayoutDashboard },
-    { name: 'Proyectos',   href: '/admin/projects',        icon: MapIcon },
-    { name: 'Contratos',   href: '/dashboard/contracts',   icon: FileText },
-    { name: 'Reportes',    href: '/admin/reports',         icon: BarChart3 },
-    { name: 'Usuarios',    href: '/admin/users',           icon: Users },
-    { name: 'Negocios',    href: '/admin/tenants',         icon: Building2 },
-    { name: 'Clientes',    href: '/admin/clients',         icon: UserCheck },
-    { name: 'Lotes',       href: '/admin/lots',            icon: Database },
-    { name: 'Auditoría',   href: '/admin/logs',            icon: Activity },
+    { name: 'Dashboard',    href: '/dashboard',              icon: LayoutDashboard },
+    { name: 'Contratos',    href: '/dashboard/contratos',    icon: FileText },
+    { name: 'Clientes',     href: '/dashboard/clientes',     icon: UserCheck },
+    { name: 'Inmuebles',    href: '/dashboard/inmuebles',    icon: Database },
+    { name: 'Cronogramas',  href: '/dashboard/cronogramas',  icon: Calendar },
+    { name: 'Proyectos',    href: '/admin/projects',         icon: MapIcon },
+    { name: 'Reportes',     href: '/admin/reports',          icon: BarChart3 },
+    { name: 'Asesores',     href: '/dashboard/asesores',     icon: Users },
+    { name: 'Negocios',     href: '/admin/tenants',          icon: Building2 },
+    { name: 'Plantillas',   href: '/dashboard/plantillas',   icon: Layers },
+    { name: 'Auditoría',    href: '/admin/logs',             icon: Activity },
 ]
 
 const MOBILE_NAV_ASESOR: NavItem[] = [
-    { name: 'Dashboard',  href: '/dashboard',        icon: LayoutDashboard },
-    { name: 'Proyectos',  href: '/admin/projects',   icon: MapIcon },
-    { name: 'Clientes',   href: '/admin/clients',    icon: UserCheck },
+    { name: 'Dashboard',   href: '/dashboard',             icon: LayoutDashboard },
+    { name: 'Contratos',   href: '/dashboard/contratos',   icon: FileText },
+    { name: 'Clientes',    href: '/dashboard/clientes',    icon: UserCheck },
+    { name: 'Inmuebles',   href: '/dashboard/inmuebles',   icon: Database },
 ]
 
 const MOBILE_NAV_ADMIN: NavItem[] = [
-    { name: 'Dashboard',  href: '/dashboard',        icon: LayoutDashboard },
-    { name: 'Proyectos',  href: '/admin/projects',   icon: MapIcon },
-    { name: 'Reportes',   href: '/admin/reports',    icon: BarChart3 },
-    { name: 'Lotes',      href: '/admin/lots',       icon: Database },
+    { name: 'Dashboard',   href: '/dashboard',             icon: LayoutDashboard },
+    { name: 'Contratos',   href: '/dashboard/contratos',   icon: FileText },
+    { name: 'Clientes',    href: '/dashboard/clientes',    icon: UserCheck },
+    { name: 'Inmuebles',   href: '/dashboard/inmuebles',   icon: Database },
 ]
 
 function getNavItems(role?: string): { main: NavItem[]; mobile: NavItem[] } {
