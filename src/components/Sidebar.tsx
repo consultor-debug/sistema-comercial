@@ -28,68 +28,109 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 // ─── Nav items by role ────────────────────────────────────────────────────────
 
 type NavItem = { name: string; href: string; icon: React.ElementType }
+type NavGroup = { label: string; items: NavItem[] }
 
-const NAV_ASESOR: NavItem[] = [
-    { name: 'Dashboard',    href: '/dashboard',              icon: LayoutDashboard },
-    { name: 'Contratos',    href: '/dashboard/contratos',    icon: FileText },
-    { name: 'Clientes',     href: '/dashboard/clientes',     icon: UserCheck },
-    { name: 'Inmuebles',    href: '/dashboard/inmuebles',    icon: Database },
-    { name: 'Cronogramas',  href: '/dashboard/cronogramas',  icon: Calendar },
-    { name: 'Proyectos',    href: '/admin/projects',         icon: MapIcon },
-    { name: 'Plano',        href: '/admin/lots/map',         icon: MapPinned },
+const GROUPS_ASESOR: NavGroup[] = [
+    {
+        label: 'Principal',
+        items: [
+            { name: 'Dashboard',   href: '/dashboard',             icon: LayoutDashboard },
+            { name: 'Contratos',   href: '/dashboard/contratos',   icon: FileText },
+            { name: 'Clientes',    href: '/dashboard/clientes',    icon: UserCheck },
+            { name: 'Cronogramas', href: '/dashboard/cronogramas', icon: Calendar },
+        ],
+    },
+    {
+        label: 'Proyectos',
+        items: [
+            { name: 'Inmuebles',   href: '/dashboard/inmuebles',   icon: Database },
+            { name: 'Proyectos',   href: '/admin/projects',        icon: MapIcon },
+            { name: 'Plano',       href: '/admin/lots/map',        icon: MapPinned },
+        ],
+    },
 ]
 
-const NAV_ADMIN: NavItem[] = [
-    { name: 'Dashboard',    href: '/dashboard',              icon: LayoutDashboard },
-    { name: 'Contratos',    href: '/dashboard/contratos',    icon: FileText },
-    { name: 'Clientes',     href: '/dashboard/clientes',     icon: UserCheck },
-    { name: 'Inmuebles',    href: '/dashboard/inmuebles',    icon: Database },
-    { name: 'Cronogramas',  href: '/dashboard/cronogramas',  icon: Calendar },
-    { name: 'Proyectos',    href: '/admin/projects',         icon: MapIcon },
-    { name: 'Plano',        href: '/admin/lots/map',         icon: MapPinned },
-    { name: 'Reportes',     href: '/admin/reports',          icon: BarChart3 },
-    { name: 'Usuarios',     href: '/admin/users',            icon: Users },
-    { name: 'Lotes',        href: '/admin/lots',             icon: Database },
-    { name: 'Asesores',     href: '/dashboard/asesores',     icon: UserCheck },
-    { name: 'Plantillas',   href: '/dashboard/plantillas',   icon: Layers },
-    { name: 'Auditoría',    href: '/admin/logs',             icon: Activity },
+const GROUPS_ADMIN: NavGroup[] = [
+    {
+        label: 'Principal',
+        items: [
+            { name: 'Dashboard',   href: '/dashboard',             icon: LayoutDashboard },
+            { name: 'Contratos',   href: '/dashboard/contratos',   icon: FileText },
+            { name: 'Clientes',    href: '/dashboard/clientes',    icon: UserCheck },
+            { name: 'Cronogramas', href: '/dashboard/cronogramas', icon: Calendar },
+            { name: 'Reportes',    href: '/admin/reports',         icon: BarChart3 },
+        ],
+    },
+    {
+        label: 'Proyectos',
+        items: [
+            { name: 'Inmuebles',   href: '/dashboard/inmuebles',   icon: Database },
+            { name: 'Proyectos',   href: '/admin/projects',        icon: MapIcon },
+            { name: 'Plano',       href: '/admin/lots/map',        icon: MapPinned },
+            { name: 'Lotes',       href: '/admin/lots',            icon: Database },
+        ],
+    },
+    {
+        label: 'Administración',
+        items: [
+            { name: 'Usuarios',    href: '/admin/users',           icon: Users },
+            { name: 'Asesores',    href: '/dashboard/asesores',    icon: UserCheck },
+            { name: 'Plantillas',  href: '/dashboard/plantillas',  icon: Layers },
+            { name: 'Auditoría',   href: '/admin/logs',            icon: Activity },
+        ],
+    },
 ]
 
-const NAV_SUPER_ADMIN: NavItem[] = [
-    { name: 'Dashboard',    href: '/dashboard',              icon: LayoutDashboard },
-    { name: 'Contratos',    href: '/dashboard/contratos',    icon: FileText },
-    { name: 'Clientes',     href: '/dashboard/clientes',     icon: UserCheck },
-    { name: 'Inmuebles',    href: '/dashboard/inmuebles',    icon: Database },
-    { name: 'Cronogramas',  href: '/dashboard/cronogramas',  icon: Calendar },
-    { name: 'Proyectos',    href: '/admin/projects',         icon: MapIcon },
-    { name: 'Plano',        href: '/admin/lots/map',         icon: MapPinned },
-    { name: 'Reportes',     href: '/admin/reports',          icon: BarChart3 },
-    { name: 'Usuarios',     href: '/admin/users',            icon: Users },
-    { name: 'Lotes',        href: '/admin/lots',             icon: Database },
-    { name: 'Negocios',     href: '/admin/tenants',          icon: Building2 },
-    { name: 'Asesores',     href: '/dashboard/asesores',     icon: UserCheck },
-    { name: 'Plantillas',   href: '/dashboard/plantillas',   icon: Layers },
-    { name: 'Auditoría',    href: '/admin/logs',             icon: Activity },
+const GROUPS_SUPER_ADMIN: NavGroup[] = [
+    {
+        label: 'Principal',
+        items: [
+            { name: 'Dashboard',   href: '/dashboard',             icon: LayoutDashboard },
+            { name: 'Contratos',   href: '/dashboard/contratos',   icon: FileText },
+            { name: 'Clientes',    href: '/dashboard/clientes',    icon: UserCheck },
+            { name: 'Cronogramas', href: '/dashboard/cronogramas', icon: Calendar },
+            { name: 'Reportes',    href: '/admin/reports',         icon: BarChart3 },
+        ],
+    },
+    {
+        label: 'Proyectos',
+        items: [
+            { name: 'Inmuebles',   href: '/dashboard/inmuebles',   icon: Database },
+            { name: 'Proyectos',   href: '/admin/projects',        icon: MapIcon },
+            { name: 'Plano',       href: '/admin/lots/map',        icon: MapPinned },
+            { name: 'Lotes',       href: '/admin/lots',            icon: Database },
+        ],
+    },
+    {
+        label: 'Administración',
+        items: [
+            { name: 'Usuarios',    href: '/admin/users',           icon: Users },
+            { name: 'Asesores',    href: '/dashboard/asesores',    icon: UserCheck },
+            { name: 'Negocios',    href: '/admin/tenants',         icon: Building2 },
+            { name: 'Plantillas',  href: '/dashboard/plantillas',  icon: Layers },
+            { name: 'Auditoría',   href: '/admin/logs',            icon: Activity },
+        ],
+    },
 ]
 
 const MOBILE_NAV_ASESOR: NavItem[] = [
-    { name: 'Dashboard',   href: '/dashboard',             icon: LayoutDashboard },
-    { name: 'Contratos',   href: '/dashboard/contratos',   icon: FileText },
-    { name: 'Plano',       href: '/admin/lots/map',        icon: MapPinned },
-    { name: 'Clientes',    href: '/dashboard/clientes',    icon: UserCheck },
+    { name: 'Dashboard',  href: '/dashboard',           icon: LayoutDashboard },
+    { name: 'Contratos',  href: '/dashboard/contratos', icon: FileText },
+    { name: 'Plano',      href: '/admin/lots/map',      icon: MapPinned },
+    { name: 'Clientes',   href: '/dashboard/clientes',  icon: UserCheck },
 ]
 
 const MOBILE_NAV_ADMIN: NavItem[] = [
-    { name: 'Dashboard',   href: '/dashboard',             icon: LayoutDashboard },
-    { name: 'Contratos',   href: '/dashboard/contratos',   icon: FileText },
-    { name: 'Plano',       href: '/admin/lots/map',        icon: MapPinned },
-    { name: 'Usuarios',    href: '/admin/users',           icon: Users },
+    { name: 'Dashboard',  href: '/dashboard',           icon: LayoutDashboard },
+    { name: 'Contratos',  href: '/dashboard/contratos', icon: FileText },
+    { name: 'Plano',      href: '/admin/lots/map',      icon: MapPinned },
+    { name: 'Usuarios',   href: '/admin/users',         icon: Users },
 ]
 
-function getNavItems(role?: string): { main: NavItem[]; mobile: NavItem[] } {
-    if (role === 'SUPER_ADMIN') return { main: NAV_SUPER_ADMIN, mobile: MOBILE_NAV_ADMIN }
-    if (role === 'ADMIN')       return { main: NAV_ADMIN,       mobile: MOBILE_NAV_ADMIN }
-    return { main: NAV_ASESOR, mobile: MOBILE_NAV_ASESOR }
+function getNavGroups(role?: string): { groups: NavGroup[]; mobile: NavItem[] } {
+    if (role === 'SUPER_ADMIN') return { groups: GROUPS_SUPER_ADMIN, mobile: MOBILE_NAV_ADMIN }
+    if (role === 'ADMIN')       return { groups: GROUPS_ADMIN,       mobile: MOBILE_NAV_ADMIN }
+    return { groups: GROUPS_ASESOR, mobile: MOBILE_NAV_ASESOR }
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -98,7 +139,7 @@ export function Sidebar() {
     const pathname = usePathname()
     const { data: session } = useSession()
     const role = (session?.user as any)?.role as string | undefined
-    const { main: navItems, mobile: mobileNavItems } = getNavItems(role)
+    const { groups, mobile: mobileNavItems } = getNavGroups(role)
 
     const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN'
 
@@ -119,28 +160,37 @@ export function Sidebar() {
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 px-2 space-y-0.5 overflow-y-auto">
-                    {navItems.map((item) => {
-                        const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
-                        return (
-                            <Link
-                                key={item.name}
-                                href={item.href}
-                                className={cn(
-                                    "flex items-center gap-2.5 px-3 py-2 rounded-md text-xs transition-colors",
-                                    isActive
-                                        ? "bg-slate-100 dark:bg-white/8 text-slate-900 dark:text-white font-medium"
-                                        : "text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/[0.03]"
-                                )}
-                            >
-                                <item.icon className={cn(
-                                    "w-3.5 h-3.5 shrink-0",
-                                    isActive ? "text-slate-800 dark:text-white" : "text-slate-400 dark:text-slate-600"
-                                )} />
-                                <span>{item.name}</span>
-                            </Link>
-                        )
-                    })}
+                <nav className="flex-1 px-2 overflow-y-auto space-y-4 pb-2">
+                    {groups.map((group) => (
+                        <div key={group.label}>
+                            <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-600">
+                                {group.label}
+                            </p>
+                            <div className="space-y-0.5">
+                                {group.items.map((item) => {
+                                    const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
+                                    return (
+                                        <Link
+                                            key={item.name}
+                                            href={item.href}
+                                            className={cn(
+                                                "flex items-center gap-2.5 px-3 py-2 rounded-md text-xs transition-colors",
+                                                isActive
+                                                    ? "bg-slate-100 dark:bg-white/8 text-slate-900 dark:text-white font-medium"
+                                                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/[0.03]"
+                                            )}
+                                        >
+                                            <item.icon className={cn(
+                                                "w-3.5 h-3.5 shrink-0",
+                                                isActive ? "text-slate-800 dark:text-white" : "text-slate-400 dark:text-slate-600"
+                                            )} />
+                                            <span>{item.name}</span>
+                                        </Link>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    ))}
                 </nav>
 
                 {/* Footer */}
