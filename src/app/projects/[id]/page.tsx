@@ -3,12 +3,26 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { InteractiveMap } from '@/components/map'
 import { LotPanel } from '@/components/lot/LotPanel'
 import { Sidebar } from '@/components/Sidebar'
-import { ArrowLeft, Loader2, Search } from 'lucide-react'
+import { ArrowLeft, Loader2, Search, Map, Satellite } from 'lucide-react'
 import { Lot } from '@prisma/client'
 import { cn } from '@/lib/utils'
+
+// SatelliteMap requiere Leaflet que solo funciona en cliente
+const SatelliteMap = dynamic(
+    () => import('@/components/map/SatelliteMap').then(m => m.SatelliteMap),
+    { ssr: false, loading: () => <div className="flex-1 flex items-center justify-center bg-slate-950"><Loader2 className="w-5 h-5 text-slate-600 animate-spin" /></div> }
+)
+
+interface SatCorners {
+    tl: { lat: number; lng: number }
+    tr: { lat: number; lng: number }
+    br: { lat: number; lng: number }
+    bl: { lat: number; lng: number }
+}
 
 interface ProjectData {
     id: string
@@ -18,9 +32,11 @@ interface ProjectData {
     maxCuotas: number
     minInicial: number
     interestRate: number
+    satCorners?: SatCorners | null
 }
 
 type StatusFilter = 'ALL' | 'LIBRE' | 'SEPARADO' | 'VENDIDO'
+type MapView = '2d' | 'satelite'
 
 export default function ProjectPage() {
     const params = useParams()
@@ -31,22 +47,36 @@ export default function ProjectPage() {
     const [isLoading, setIsLoading] = React.useState(true)
     const [search, setSearch] = React.useState('')
     const [statusFilter, setStatusFilter] = React.useState<StatusFilter>('ALL')
+    const [mapView, setMapView] = React.useState<MapView>('2d')
+    const [satCorners, setSatCorners] = React.useState<SatCorners | null>(null)
+    const [isAdmin, setIsAdmin] = React.useState(false)
 
     const fetchProjectData = React.useCallback(async () => {
         setIsLoading(true)
         try {
-            const [projRes, lotsRes] = await Promise.all([
+            const [projRes, lotsRes, sessionRes] = await Promise.all([
                 fetch(`/api/projects`),
-                fetch(`/api/lots?projectId=${params.id}`)
+                fetch(`/api/lots?projectId=${params.id}`),
+                fetch(`/api/auth/session`)
             ])
             const projData = await projRes.json()
             if (projData.success) {
                 const found = projData.projects.find((p: ProjectData) => p.id === params.id)
-                if (found) setProject(found)
-                else { router.push('/dashboard'); return }
+                if (found) {
+                    setProject(found)
+                    setSatCorners(found.satCorners ?? null)
+                } else {
+                    router.push('/dashboard')
+                    return
+                }
             }
             const lotsData = await lotsRes.json()
             if (lotsData.success) setLots(lotsData.lots)
+
+            try {
+                const sess = await sessionRes.json()
+                setIsAdmin(sess?.user?.role === 'SUPER_ADMIN' || sess?.user?.role === 'ADMIN')
+            } catch { /* no crítico */ }
         } catch (error) {
             console.error('Error fetching project data:', error)
         } finally {
@@ -109,7 +139,7 @@ export default function ProjectPage() {
 
             <div className="flex-1 md:pl-52 flex flex-col min-h-screen">
 
-                {/* ── Header: project identity + live stats ── */}
+                {/* ── Header ── */}
                 <header className="shrink-0 border-b border-white/5 bg-slate-950 z-40">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 md:px-6 py-3 gap-3">
                         <div className="flex items-center gap-3 min-w-0">
@@ -142,22 +172,52 @@ export default function ProjectPage() {
                 {/* ── Body ── */}
                 <div className="flex-1 flex min-h-0 relative">
 
-                    {/* Left: search + filters + map + legend */}
+                    {/* Left: map area */}
                     <div className={cn(
                         'flex flex-col min-w-0 transition-all duration-300',
                         selectedLot ? 'hidden md:flex flex-1' : 'flex-1'
                     )}>
-                        {/* Search + filter tabs */}
+                        {/* Search + filters + view toggle */}
                         <div className="px-3 pt-3 pb-2 space-y-2 shrink-0 border-b border-white/5 bg-slate-950">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
-                                <input
-                                    type="text"
-                                    placeholder="Buscar lote o manzana (ej. A-03 o B)…"
-                                    value={search}
-                                    onChange={e => setSearch(e.target.value)}
-                                    className="w-full pl-9 pr-3 h-9 bg-white/5 border border-white/8 rounded-lg text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-white/20 transition-colors"
-                                />
+                            <div className="flex items-center gap-2">
+                                <div className="relative flex-1">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
+                                    <input
+                                        type="text"
+                                        placeholder="Buscar lote o manzana (ej. A-03 o B)…"
+                                        value={search}
+                                        onChange={e => setSearch(e.target.value)}
+                                        className="w-full pl-9 pr-3 h-9 bg-white/5 border border-white/8 rounded-lg text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-white/20 transition-colors"
+                                    />
+                                </div>
+
+                                {/* Toggle 2D / Satélite */}
+                                <div className="flex items-center bg-white/5 border border-white/8 rounded-lg p-0.5 shrink-0">
+                                    <button
+                                        onClick={() => setMapView('2d')}
+                                        className={cn(
+                                            'flex items-center gap-1.5 px-3 h-7 rounded-md text-xs font-medium transition-colors',
+                                            mapView === '2d'
+                                                ? 'bg-white text-slate-900'
+                                                : 'text-slate-400 hover:text-white'
+                                        )}
+                                    >
+                                        <Map className="w-3 h-3" />
+                                        <span className="hidden sm:inline">Plano</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setMapView('satelite')}
+                                        className={cn(
+                                            'flex items-center gap-1.5 px-3 h-7 rounded-md text-xs font-medium transition-colors',
+                                            mapView === 'satelite'
+                                                ? 'bg-white text-slate-900'
+                                                : 'text-slate-400 hover:text-white'
+                                        )}
+                                    >
+                                        <Satellite className="w-3 h-3" />
+                                        <span className="hidden sm:inline">Satélite</span>
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
@@ -186,33 +246,50 @@ export default function ProjectPage() {
                             </div>
                         </div>
 
-                        {/* Map */}
-                        <div className="flex-1 relative">
-                            <InteractiveMap
-                                projectId={project.id}
-                                projectName={project.name}
-                                mapImageUrl={project.mapImageUrl || '/maps/Lumina_SVG2.svg'}
-                                lots={filteredLots}
-                                onLotClick={(lot) => setSelectedLot(lot)}
-                                selectedLotId={selectedLot?.id}
-                                className="absolute inset-0"
-                            />
+                        {/* Map — 2D o Satélite */}
+                        <div className="flex-1 relative flex flex-col">
+                            {mapView === '2d' ? (
+                                <InteractiveMap
+                                    projectId={project.id}
+                                    projectName={project.name}
+                                    mapImageUrl={project.mapImageUrl || '/maps/Lumina_SVG2.svg'}
+                                    lots={filteredLots}
+                                    onLotClick={(lot) => setSelectedLot(lot)}
+                                    selectedLotId={selectedLot?.id}
+                                    className="absolute inset-0"
+                                />
+                            ) : (
+                                <SatelliteMap
+                                    projectId={project.id}
+                                    projectName={project.name}
+                                    mapImageUrl={project.mapImageUrl || ''}
+                                    lots={filteredLots}
+                                    onLotClick={(lot) => setSelectedLot(lot)}
+                                    selectedLotId={selectedLot?.id}
+                                    satCorners={satCorners}
+                                    onSatCornersChange={setSatCorners}
+                                    isAdmin={isAdmin}
+                                    className="absolute inset-0"
+                                />
+                            )}
                         </div>
 
-                        {/* Legend */}
-                        <div className="shrink-0 flex items-center gap-4 px-4 py-2.5 border-t border-white/5 bg-slate-950/90 backdrop-blur-sm overflow-x-auto no-scrollbar">
-                            <LegendItem dot="bg-emerald-500" label="Disponible" count={stats.libre}     countColor="text-emerald-400" />
-                            <div className="w-px h-4 bg-white/10 shrink-0" />
-                            <LegendItem dot="bg-amber-500"  label="Separado"   count={stats.separado}  countColor="text-amber-400" />
-                            <div className="w-px h-4 bg-white/10 shrink-0" />
-                            <LegendItem dot="bg-rose-500"   label="Vendido"    count={stats.vendido}   countColor="text-rose-400" />
-                            <div className="ml-auto shrink-0 text-[11px] text-slate-500">
-                                {stats.total} lotes totales
+                        {/* Legend — solo en vista 2D */}
+                        {mapView === '2d' && (
+                            <div className="shrink-0 flex items-center gap-4 px-4 py-2.5 border-t border-white/5 bg-slate-950/90 backdrop-blur-sm overflow-x-auto no-scrollbar">
+                                <LegendItem dot="bg-emerald-500" label="Disponible" count={stats.libre}     countColor="text-emerald-400" />
+                                <div className="w-px h-4 bg-white/10 shrink-0" />
+                                <LegendItem dot="bg-amber-500"  label="Separado"   count={stats.separado}  countColor="text-amber-400" />
+                                <div className="w-px h-4 bg-white/10 shrink-0" />
+                                <LegendItem dot="bg-rose-500"   label="Vendido"    count={stats.vendido}   countColor="text-rose-400" />
+                                <div className="ml-auto shrink-0 text-[11px] text-slate-500">
+                                    {stats.total} lotes totales
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
 
-                    {/* Right panel — desktop side column */}
+                    {/* Panel lateral — lote seleccionado */}
                     {selectedLot && (
                         <>
                             <div className="hidden md:block w-80 lg:w-96 shrink-0 border-l border-white/5 animate-in slide-in-from-right duration-200">
@@ -226,14 +303,11 @@ export default function ProjectPage() {
 
                             {/* Mobile: bottom sheet */}
                             <div className="md:hidden fixed inset-0 z-[60]">
-                                {/* Backdrop */}
                                 <div
                                     className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                                     onClick={() => setSelectedLot(null)}
                                 />
-                                {/* Sheet */}
                                 <div className="absolute inset-x-0 bottom-0 h-[90vh] flex flex-col bg-slate-950 border-t border-white/10 rounded-t-2xl animate-in slide-in-from-bottom duration-300">
-                                    {/* Drag handle */}
                                     <div className="flex justify-center pt-2.5 pb-1 shrink-0">
                                         <div className="w-10 h-1 bg-white/20 rounded-full" />
                                     </div>

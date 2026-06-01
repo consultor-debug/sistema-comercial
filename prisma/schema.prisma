@@ -79,6 +79,7 @@ model Project {
   minInicial   Float           @default(0) @map("min_inicial")
   interestRate Float           @default(0) @map("interest_rate")
   n8nWebhookUrl String?        @map("n8n_webhook_url")
+  satCorners   Json?           @map("sat_corners")
   lots         Lot[]
   updates      ProjectUpdate[]
   tenant       Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
