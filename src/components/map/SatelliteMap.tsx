@@ -13,7 +13,7 @@
 import * as React from 'react'
 import { Lot } from '@prisma/client'
 import { cn } from '@/lib/utils'
-import { Layers, Maximize2, Minimize2, Navigation, Settings, GripVertical, RotateCw, ZoomIn, ZoomOut } from 'lucide-react'
+import { Maximize2, Minimize2, Navigation, Settings, GripVertical, RotateCw, ZoomIn, ZoomOut } from 'lucide-react'
 
 // ── Tipos ─────────────────────────────────────────────────────────
 interface LatLng { lat: number; lng: number }
@@ -103,8 +103,12 @@ function cornersCentroid(c: SatCorners): LatLng {
     }
 }
 function translateCorners(c: SatCorners, dLat: number, dLng: number): SatCorners {
-    const ks = ['tl','tr','br','bl'] as const
-    return Object.fromEntries(ks.map(k => [k, { lat: c[k].lat + dLat, lng: c[k].lng + dLng }])) as SatCorners
+    return {
+        tl: { lat: c.tl.lat + dLat, lng: c.tl.lng + dLng },
+        tr: { lat: c.tr.lat + dLat, lng: c.tr.lng + dLng },
+        br: { lat: c.br.lat + dLat, lng: c.br.lng + dLng },
+        bl: { lat: c.bl.lat + dLat, lng: c.bl.lng + dLng },
+    }
 }
 function transformCorners(corners: SatCorners, rotDeg: number, scale: number): SatCorners {
     const ks = ['tl','tr','br','bl'] as const

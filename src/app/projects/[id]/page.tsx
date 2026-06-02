@@ -1,42 +1,38 @@
 'use client'
 
 import * as React from 'react'
-import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { InteractiveMap } from '@/components/map'
 import { LotPanel } from '@/components/lot/LotPanel'
 import { Sidebar } from '@/components/Sidebar'
-import { ArrowLeft, Loader2, Search, Map, Satellite } from 'lucide-react'
+import { Loader2, Search, Map, Satellite, Download, Edit2 } from 'lucide-react'
 import { Lot } from '@prisma/client'
 import { cn } from '@/lib/utils'
 
-// SatelliteMap requiere Leaflet que solo funciona en cliente
 const SatelliteMap = dynamic(
     () => import('@/components/map/SatelliteMap').then(m => m.SatelliteMap),
-    { ssr: false, loading: () => <div className="flex-1 flex items-center justify-center bg-slate-950"><Loader2 className="w-5 h-5 text-slate-600 animate-spin" /></div> }
+    { ssr: false, loading: () => <div className="flex-1 flex items-center justify-center bg-white"><Loader2 className="w-5 h-5 text-slate-400 animate-spin" /></div> }
 )
 
-interface SatCorners {
-    tl: { lat: number; lng: number }
-    tr: { lat: number; lng: number }
-    br: { lat: number; lng: number }
-    bl: { lat: number; lng: number }
-}
+interface SatCorners { tl: {lat:number;lng:number}; tr: {lat:number;lng:number}; br: {lat:number;lng:number}; bl: {lat:number;lng:number} }
 
 interface ProjectData {
-    id: string
-    name: string
-    description: string | null
-    mapImageUrl: string | null
-    maxCuotas: number
-    minInicial: number
-    interestRate: number
+    id: string; name: string; description: string | null
+    mapImageUrl: string | null; maxCuotas: number; minInicial: number; interestRate: number
     satCorners?: SatCorners | null
 }
 
 type StatusFilter = 'ALL' | 'LIBRE' | 'SEPARADO' | 'VENDIDO'
 type MapView = '2d' | 'satelite'
+
+// ── Colores de chips según Mattika ───────────────────────────
+const CHIP_STYLES: Record<string, { active: string; dot: string }> = {
+    ALL:      { active: 'bg-blue-600 text-white border-blue-600', dot: '' },
+    LIBRE:    { active: 'bg-blue-50 text-blue-700 border-blue-300', dot: 'bg-blue-500' },
+    SEPARADO: { active: 'bg-amber-50 text-amber-700 border-amber-300', dot: 'bg-amber-500' },
+    VENDIDO:  { active: 'bg-slate-100 text-slate-600 border-slate-300', dot: 'bg-slate-400' },
+}
 
 export default function ProjectPage() {
     const params = useParams()
@@ -51,306 +47,302 @@ export default function ProjectPage() {
     const [satCorners, setSatCorners] = React.useState<SatCorners | null>(null)
     const [isAdmin, setIsAdmin] = React.useState(false)
 
-    const fetchProjectData = React.useCallback(async () => {
+    const fetchData = React.useCallback(async () => {
         setIsLoading(true)
         try {
-            const [projRes, lotsRes, sessionRes] = await Promise.all([
-                fetch(`/api/projects`),
+            const [projRes, lotsRes] = await Promise.all([
+                fetch('/api/projects'),
                 fetch(`/api/lots?projectId=${params.id}`),
-                fetch(`/api/auth/session`)
             ])
             const projData = await projRes.json()
             if (projData.success) {
                 const found = projData.projects.find((p: ProjectData) => p.id === params.id)
-                if (found) {
-                    setProject(found)
-                    setSatCorners(found.satCorners ?? null)
-                } else {
-                    router.push('/dashboard')
-                    return
-                }
+                if (found) { setProject(found); setSatCorners(found.satCorners ?? null) }
+                else { router.push('/dashboard'); return }
             }
             const lotsData = await lotsRes.json()
             if (lotsData.success) setLots(lotsData.lots)
 
-            try {
-                const sess = await sessionRes.json()
-                setIsAdmin(sess?.user?.role === 'SUPER_ADMIN' || sess?.user?.role === 'ADMIN')
-            } catch { /* no crítico */ }
-        } catch (error) {
-            console.error('Error fetching project data:', error)
-        } finally {
-            setIsLoading(false)
-        }
+            // Detectar rol (no crítico)
+            fetch('/api/auth/session').then(r => r.json()).then(s => {
+                setIsAdmin(s?.user?.role === 'SUPER_ADMIN' || s?.user?.role === 'ADMIN')
+            }).catch(() => {})
+        } catch { /* silence */ } finally { setIsLoading(false) }
     }, [params.id, router])
 
-    React.useEffect(() => {
-        if (params.id) fetchProjectData()
-    }, [params.id, fetchProjectData])
+    React.useEffect(() => { if (params.id) fetchData() }, [params.id, fetchData])
 
     const handleUpdate = React.useCallback(async () => {
         setSelectedLot(null)
-        const lotsRes = await fetch(`/api/lots?projectId=${params.id}`)
-        const lotsData = await lotsRes.json()
-        if (lotsData.success) setLots(lotsData.lots)
+        const r = await fetch(`/api/lots?projectId=${params.id}`)
+        const d = await r.json()
+        if (d.success) setLots(d.lots)
     }, [params.id])
 
     const stats = React.useMemo(() => ({
-        total: lots.length,
-        libre: lots.filter(l => l.estado === 'LIBRE').length,
+        total:    lots.length,
+        libre:    lots.filter(l => l.estado === 'LIBRE').length,
         separado: lots.filter(l => l.estado === 'SEPARADO').length,
-        vendido: lots.filter(l => l.estado === 'VENDIDO').length,
+        vendido:  lots.filter(l => l.estado === 'VENDIDO').length,
     }), [lots])
 
     const filteredLots = React.useMemo(() => {
         return lots.filter(lot => {
-            const q = search.trim().toLowerCase()
-            const matchSearch = !q ||
-                lot.code.toLowerCase().includes(q) ||
-                lot.manzana.toLowerCase().includes(q)
+            const q = search.trim().toLowerCase().replace(/[\s-]/g, '')
+            const hay = `${lot.code} ${lot.manzana}${lot.loteNumero} manzana${lot.manzana}`.toLowerCase().replace(/[\s-]/g, '')
+            const matchSearch = !q || hay.includes(q)
             const matchStatus = statusFilter === 'ALL' || lot.estado === statusFilter
             return matchSearch && matchStatus
         })
     }, [lots, search, statusFilter])
 
-    const filterTabs: { key: StatusFilter; label: string; count: number; color: string }[] = [
-        { key: 'ALL',      label: 'Todos',       count: stats.total,    color: '' },
-        { key: 'LIBRE',    label: 'Disponibles', count: stats.libre,    color: 'text-emerald-400' },
-        { key: 'SEPARADO', label: 'Separados',    count: stats.separado, color: 'text-amber-400' },
-        { key: 'VENDIDO',  label: 'Vendidos',    count: stats.vendido,  color: 'text-rose-400' },
-    ]
-
-    if (isLoading) {
-        return (
-            <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-                <div className="flex flex-col items-center gap-3">
-                    <Loader2 className="w-5 h-5 text-slate-500 animate-spin" />
-                    <p className="text-xs text-slate-500">Cargando plano...</p>
-                </div>
+    if (isLoading) return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-2">
+                <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                <p className="text-sm text-gray-400">Cargando plano...</p>
             </div>
-        )
-    }
-
+        </div>
+    )
     if (!project) return null
 
+    const tabs: { key: StatusFilter; label: string; count: number }[] = [
+        { key: 'ALL',      label: 'Todos',       count: stats.total },
+        { key: 'LIBRE',    label: 'Disponibles', count: stats.libre },
+        { key: 'SEPARADO', label: 'Separados',   count: stats.separado },
+        { key: 'VENDIDO',  label: 'Vendidos',    count: stats.vendido },
+    ]
+
     return (
-        <div className="min-h-screen bg-slate-950 flex">
+        <div className="min-h-screen bg-gray-50 flex">
             <Sidebar />
 
             <div className="flex-1 md:pl-52 flex flex-col min-h-screen">
 
-                {/* ── Header ── */}
-                <header className="shrink-0 border-b border-white/5 bg-slate-950 z-40">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 md:px-6 py-3 gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                            <Link href="/dashboard"
-                                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-white transition-colors shrink-0">
-                                <ArrowLeft className="w-3.5 h-3.5" />
-                                <span className="hidden sm:inline">Panel</span>
-                            </Link>
-                            <div className="h-4 w-px bg-white/10 shrink-0" />
-                            <div className="min-w-0">
-                                <h1 className="text-sm font-semibold text-white truncate">{project.name}</h1>
+                {/* ── Cabecera estilo Mattika ── */}
+                <header className="bg-white border-b border-gray-200 px-6 md:px-8 py-5 shrink-0">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900">Plano del proyecto</h1>
+                            <p className="text-sm text-gray-500 mt-0.5">
+                                <span className="text-gray-700 font-medium">{project.name}</span>
                                 {project.description && (
-                                    <p className="text-[10px] text-slate-500 uppercase tracking-wider truncate">
-                                        {project.description}
-                                    </p>
+                                    <> · <span className="text-blue-600 font-medium">{project.description}</span></>
                                 )}
-                            </div>
+                                {' · '}
+                                <span>{stats.total} lotes</span>
+                                {' · '}
+                                <span>{stats.libre} disponibles</span>
+                            </p>
                         </div>
 
-                        <div className="flex items-center gap-4 sm:gap-6 shrink-0">
-                            <StatPill value={stats.libre}    label="Disponibles" color="text-emerald-400" dot="bg-emerald-400" />
-                            <div className="h-4 w-px bg-white/10" />
-                            <StatPill value={stats.separado} label="Separados"   color="text-amber-400"   dot="bg-amber-400" />
-                            <div className="h-4 w-px bg-white/10" />
-                            <StatPill value={stats.vendido}  label="Vendidos"    color="text-rose-400"    dot="bg-rose-400" />
+                        {/* Botones de vista */}
+                        <div className="flex items-center gap-2 shrink-0">
+                            <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+                                <button
+                                    onClick={() => setMapView('2d')}
+                                    className={cn(
+                                        'flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors',
+                                        mapView === '2d'
+                                            ? 'bg-white text-gray-900'
+                                            : 'bg-gray-50 text-gray-500 hover:text-gray-700'
+                                    )}
+                                >
+                                    <Map className="w-3.5 h-3.5" /> Plano
+                                </button>
+                                <div className="w-px bg-gray-200" />
+                                <button
+                                    onClick={() => setMapView('satelite')}
+                                    className={cn(
+                                        'flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors',
+                                        mapView === 'satelite'
+                                            ? 'bg-white text-gray-900'
+                                            : 'bg-gray-50 text-gray-500 hover:text-gray-700'
+                                    )}
+                                >
+                                    <Satellite className="w-3.5 h-3.5" /> Satélite
+                                </button>
+                            </div>
+
+                            {mapView === '2d' && isAdmin && (
+                                <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-gray-50 transition-colors">
+                                    <Edit2 className="w-3.5 h-3.5" /> Editar polígonos
+                                </button>
+                            )}
+
+                            <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-gray-50 transition-colors">
+                                <Download className="w-3.5 h-3.5" /> Exportar plano
+                            </button>
                         </div>
                     </div>
                 </header>
 
-                {/* ── Body ── */}
-                <div className="flex-1 flex min-h-0 relative">
+                {/* ── Barra de filtros ── */}
+                <div className="bg-white border-b border-gray-200 px-6 md:px-8 py-3 shrink-0">
+                    <div className="flex items-center gap-3 flex-wrap">
+                        {/* Búsqueda */}
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                            <input
+                                type="text"
+                                placeholder="Lote A-03, manzana C..."
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                className="pl-9 pr-3 h-8 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all w-48"
+                            />
+                        </div>
 
-                    {/* Left: map area */}
-                    <div className={cn(
-                        'flex flex-col min-w-0 transition-all duration-300',
-                        selectedLot ? 'hidden md:flex flex-1' : 'flex-1'
-                    )}>
-                        {/* Search + filters + view toggle */}
-                        <div className="px-3 pt-3 pb-2 space-y-2 shrink-0 border-b border-white/5 bg-slate-950">
-                            <div className="flex items-center gap-2">
-                                <div className="relative flex-1">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
-                                    <input
-                                        type="text"
-                                        placeholder="Buscar lote o manzana (ej. A-03 o B)…"
-                                        value={search}
-                                        onChange={e => setSearch(e.target.value)}
-                                        className="w-full pl-9 pr-3 h-9 bg-white/5 border border-white/8 rounded-lg text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-white/20 transition-colors"
-                                    />
-                                </div>
-
-                                {/* Toggle 2D / Satélite */}
-                                <div className="flex items-center bg-white/5 border border-white/8 rounded-lg p-0.5 shrink-0">
+                        {/* Chips de estado */}
+                        <div className="flex items-center gap-1.5">
+                            {tabs.map(tab => {
+                                const style = CHIP_STYLES[tab.key]
+                                const isActive = statusFilter === tab.key
+                                return (
                                     <button
-                                        onClick={() => setMapView('2d')}
+                                        key={tab.key}
+                                        onClick={() => setStatusFilter(tab.key)}
                                         className={cn(
-                                            'flex items-center gap-1.5 px-3 h-7 rounded-md text-xs font-medium transition-colors',
-                                            mapView === '2d'
-                                                ? 'bg-white text-slate-900'
-                                                : 'text-slate-400 hover:text-white'
+                                            'flex items-center gap-1.5 px-3 h-8 rounded-lg border text-sm font-medium transition-colors',
+                                            isActive
+                                                ? style.active
+                                                : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
                                         )}
                                     >
-                                        <Map className="w-3 h-3" />
-                                        <span className="hidden sm:inline">Plano</span>
-                                    </button>
-                                    <button
-                                        onClick={() => setMapView('satelite')}
-                                        className={cn(
-                                            'flex items-center gap-1.5 px-3 h-7 rounded-md text-xs font-medium transition-colors',
-                                            mapView === 'satelite'
-                                                ? 'bg-white text-slate-900'
-                                                : 'text-slate-400 hover:text-white'
+                                        {tab.key !== 'ALL' && style.dot && (
+                                            <span className={cn('w-2 h-2 rounded-sm border border-current/30', style.dot, !isActive && 'opacity-60')} />
                                         )}
-                                    >
-                                        <Satellite className="w-3 h-3" />
-                                        <span className="hidden sm:inline">Satélite</span>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-                                {filterTabs.map(tab => (
-                                    <button key={tab.key} onClick={() => setStatusFilter(tab.key)}
-                                        className={cn(
-                                            'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors shrink-0',
-                                            statusFilter === tab.key
-                                                ? 'bg-white text-slate-950'
-                                                : 'text-slate-400 hover:text-white hover:bg-white/5'
-                                        )}>
                                         {tab.label}
-                                        <span className={cn(
-                                            'text-[10px] font-semibold',
-                                            statusFilter === tab.key
-                                                ? 'text-slate-500'
-                                                : (tab.color || 'text-slate-500')
-                                        )}>
-                                            {tab.count}
-                                        </span>
+                                        {tab.count > 0 && (
+                                            <span className={cn(
+                                                'text-xs font-semibold',
+                                                isActive && tab.key !== 'ALL' ? 'opacity-90' : 'text-gray-400'
+                                            )}>
+                                                {tab.count}
+                                            </span>
+                                        )}
                                     </button>
-                                ))}
-                                <span className="ml-auto text-[11px] text-slate-600 shrink-0 pr-1">
-                                    {filteredLots.length} de {stats.total} lotes
-                                </span>
-                            </div>
+                                )
+                            })}
                         </div>
 
-                        {/* Map — 2D o Satélite */}
-                        <div className="flex-1 relative flex flex-col">
-                            {mapView === '2d' ? (
-                                <InteractiveMap
-                                    projectId={project.id}
-                                    projectName={project.name}
-                                    mapImageUrl={project.mapImageUrl || '/maps/Lumina_SVG2.svg'}
-                                    lots={filteredLots}
-                                    onLotClick={(lot) => setSelectedLot(lot)}
-                                    selectedLotId={selectedLot?.id}
-                                    className="absolute inset-0"
-                                />
-                            ) : (
-                                <SatelliteMap
-                                    projectId={project.id}
-                                    projectName={project.name}
-                                    mapImageUrl={project.mapImageUrl || ''}
-                                    lots={filteredLots}
-                                    onLotClick={(lot) => setSelectedLot(lot)}
-                                    selectedLotId={selectedLot?.id}
-                                    satCorners={satCorners}
-                                    onSatCornersChange={setSatCorners}
-                                    isAdmin={isAdmin}
-                                    className="absolute inset-0"
-                                />
-                            )}
-                        </div>
+                        <span className="ml-auto text-xs text-gray-400 hidden lg:block">
+                            Click + arrastra para mover · scroll para zoom
+                        </span>
+                    </div>
+                </div>
 
-                        {/* Legend — solo en vista 2D */}
-                        {mapView === '2d' && (
-                            <div className="shrink-0 flex items-center gap-4 px-4 py-2.5 border-t border-white/5 bg-slate-950/90 backdrop-blur-sm overflow-x-auto no-scrollbar">
-                                <LegendItem dot="bg-emerald-500" label="Disponible" count={stats.libre}     countColor="text-emerald-400" />
-                                <div className="w-px h-4 bg-white/10 shrink-0" />
-                                <LegendItem dot="bg-amber-500"  label="Separado"   count={stats.separado}  countColor="text-amber-400" />
-                                <div className="w-px h-4 bg-white/10 shrink-0" />
-                                <LegendItem dot="bg-rose-500"   label="Vendido"    count={stats.vendido}   countColor="text-rose-400" />
-                                <div className="ml-auto shrink-0 text-[11px] text-slate-500">
-                                    {stats.total} lotes totales
-                                </div>
-                            </div>
+                {/* ── Contenido principal: plano izquierda + panel derecha ── */}
+                <div className="flex-1 flex min-h-0 p-4 gap-4">
+
+                    {/* Plano */}
+                    <div className="flex-1 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+                        {mapView === '2d' ? (
+                            <InteractiveMap
+                                projectId={project.id}
+                                projectName={project.name}
+                                mapImageUrl={project.mapImageUrl || ''}
+                                lots={filteredLots}
+                                onLotClick={setSelectedLot}
+                                selectedLotId={selectedLot?.id}
+                                className="flex-1"
+                            />
+                        ) : (
+                            <SatelliteMap
+                                projectId={project.id}
+                                projectName={project.name}
+                                mapImageUrl={project.mapImageUrl || ''}
+                                lots={filteredLots}
+                                onLotClick={setSelectedLot}
+                                selectedLotId={selectedLot?.id}
+                                satCorners={satCorners}
+                                onSatCornersChange={setSatCorners}
+                                isAdmin={isAdmin}
+                                className="flex-1"
+                            />
                         )}
                     </div>
 
-                    {/* Panel lateral — lote seleccionado */}
-                    {selectedLot && (
-                        <>
-                            <div className="hidden md:block w-80 lg:w-96 shrink-0 border-l border-white/5 animate-in slide-in-from-right duration-200">
+                    {/* Panel lateral — siempre visible, como en Mattika */}
+                    <div className="w-80 xl:w-96 shrink-0 flex flex-col">
+                        {selectedLot ? (
+                            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex-1">
                                 <LotPanel
                                     lot={selectedLot}
                                     onClose={() => setSelectedLot(null)}
                                     onUpdate={handleUpdate}
-                                    projectSettings={{ maxCuotas: project.maxCuotas, minInicial: project.minInicial, interestRate: project.interestRate }}
+                                    projectSettings={{
+                                        maxCuotas: project.maxCuotas,
+                                        minInicial: project.minInicial,
+                                        interestRate: project.interestRate,
+                                    }}
                                 />
                             </div>
-
-                            {/* Mobile: bottom sheet */}
-                            <div className="md:hidden fixed inset-0 z-[60]">
-                                <div
-                                    className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                                    onClick={() => setSelectedLot(null)}
-                                />
-                                <div className="absolute inset-x-0 bottom-0 h-[90vh] flex flex-col bg-slate-950 border-t border-white/10 rounded-t-2xl animate-in slide-in-from-bottom duration-300">
-                                    <div className="flex justify-center pt-2.5 pb-1 shrink-0">
-                                        <div className="w-10 h-1 bg-white/20 rounded-full" />
-                                    </div>
-                                    <div className="flex-1 overflow-hidden">
-                                        <LotPanel
-                                            lot={selectedLot}
-                                            onClose={() => setSelectedLot(null)}
-                                            onUpdate={handleUpdate}
-                                            projectSettings={{ maxCuotas: project.maxCuotas, minInicial: project.minInicial, interestRate: project.interestRate }}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </>
-                    )}
+                        ) : (
+                            <EmptyPanel stats={stats} />
+                        )}
+                    </div>
                 </div>
+
+                {/* Mobile: bottom sheet para lote seleccionado */}
+                {selectedLot && (
+                    <div className="md:hidden fixed inset-0 z-[60]">
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setSelectedLot(null)} />
+                        <div className="absolute inset-x-0 bottom-0 h-[88vh] bg-white rounded-t-2xl shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300">
+                            <div className="flex justify-center pt-3 pb-1 shrink-0">
+                                <div className="w-10 h-1 bg-gray-300 rounded-full" />
+                            </div>
+                            <div className="flex-1 overflow-hidden">
+                                <LotPanel
+                                    lot={selectedLot}
+                                    onClose={() => setSelectedLot(null)}
+                                    onUpdate={handleUpdate}
+                                    projectSettings={{
+                                        maxCuotas: project.maxCuotas,
+                                        minInicial: project.minInicial,
+                                        interestRate: project.interestRate,
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     )
 }
 
-function StatPill({ value, label, color, dot }: {
-    value: number; label: string; color: string; dot: string
-}) {
+function EmptyPanel({ stats }: { stats: { libre: number; separado: number; vendido: number; total: number } }) {
     return (
-        <div className="flex items-center gap-2">
-            <span className={cn('text-xl font-bold tracking-tight', color)}>{value}</span>
-            <div>
-                <div className={cn('w-1.5 h-1.5 rounded-full mb-0.5', dot)} />
-                <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-500 leading-none">{label}</p>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex flex-col gap-5">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Resumen del proyecto</h3>
+
+            <div className="space-y-3">
+                <StatRow label="Disponibles" value={stats.libre} color="bg-blue-500" pct={stats.total ? stats.libre/stats.total*100 : 0} />
+                <StatRow label="Separados"   value={stats.separado} color="bg-amber-500" pct={stats.total ? stats.separado/stats.total*100 : 0} />
+                <StatRow label="Vendidos"    value={stats.vendido} color="bg-slate-400" pct={stats.total ? stats.vendido/stats.total*100 : 0} />
+            </div>
+
+            <div className="mt-2 p-4 rounded-xl bg-blue-50 border border-blue-100">
+                <p className="text-xs text-blue-500 font-medium mb-1">Para comenzar</p>
+                <p className="text-sm text-blue-700">Haz clic en cualquier lote del plano para ver sus detalles y simular el financiamiento.</p>
             </div>
         </div>
     )
 }
 
-function LegendItem({ dot, label, count, countColor = 'text-white' }: {
-    dot: string; label: string; count: number; countColor?: string
-}) {
+function StatRow({ label, value, color, pct }: { label: string; value: number; color: string; pct: number }) {
     return (
-        <div className="flex items-center gap-1.5 shrink-0">
-            <span className={cn('w-2.5 h-2.5 rounded-full shrink-0', dot)} />
-            <span className="text-xs text-slate-400">{label}</span>
-            <span className={cn('text-xs font-bold', countColor)}>{count}</span>
+        <div>
+            <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                    <span className={cn('w-2.5 h-2.5 rounded-sm', color)} />
+                    <span className="text-sm text-gray-600">{label}</span>
+                </div>
+                <span className="text-sm font-semibold text-gray-900">{value}</span>
+            </div>
+            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div className={cn('h-full rounded-full transition-all', color)} style={{ width: `${pct}%` }} />
+            </div>
         </div>
     )
 }
