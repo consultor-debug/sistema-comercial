@@ -4,11 +4,12 @@ import * as React from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { InteractiveMap } from '@/components/map'
-import { LotPanel } from '@/components/lot/LotPanel'
+import { PlanoCotizador } from '@/components/lot/PlanoCotizador'
 import { Sidebar } from '@/components/Sidebar'
 import { Loader2, Search, Map, Satellite, Download, Edit2 } from 'lucide-react'
 import { Lot } from '@prisma/client'
 import { cn } from '@/lib/utils'
+import { buildLotes, mergeLotes, type LoteBase } from '@/lib/buildLotes'
 
 const SatelliteMap = dynamic(
     () => import('@/components/map/SatelliteMap').then(m => m.SatelliteMap),
@@ -22,6 +23,15 @@ interface ProjectData {
     mapImageUrl: string | null; maxCuotas: number; minInicial: number; interestRate: number
     satCorners?: SatCorners | null
 }
+
+interface Condiciones {
+    descuentoContadoMax: number; descuentoFinancMax: number; descuentoExcepMax: number
+    tasaDefault: number; plazoMax: number; inicialMinPct: number
+    tiempoAprobSeg: number; penalidad: number
+    aprobadores: Array<{id:string; nombre:string; cargo:string}>
+}
+
+type AnyLot = Lot | LoteBase
 
 type StatusFilter = 'ALL' | 'LIBRE' | 'SEPARADO' | 'VENDIDO'
 type MapView = '2d' | 'satelite'
@@ -38,14 +48,19 @@ export default function ProjectPage() {
     const params = useParams()
     const router = useRouter()
     const [project, setProject] = React.useState<ProjectData | null>(null)
-    const [lots, setLots] = React.useState<Lot[]>([])
-    const [selectedLot, setSelectedLot] = React.useState<Lot | null>(null)
+    const [dbLots, setDbLots] = React.useState<Lot[]>([])
+    const [condiciones, setCondiciones] = React.useState<Condiciones | null>(null)
+    const [selectedLot, setSelectedLot] = React.useState<AnyLot | null>(null)
     const [isLoading, setIsLoading] = React.useState(true)
     const [search, setSearch] = React.useState('')
     const [statusFilter, setStatusFilter] = React.useState<StatusFilter>('ALL')
     const [mapView, setMapView] = React.useState<MapView>('2d')
     const [satCorners, setSatCorners] = React.useState<SatCorners | null>(null)
     const [isAdmin, setIsAdmin] = React.useState(false)
+
+    // Merge PRNG base + DB overrides
+    const prngLotes = React.useMemo(() => buildLotes(), [])
+    const lots = React.useMemo(() => mergeLotes(prngLotes, dbLots) as AnyLot[], [prngLotes, dbLots])
 
     const fetchData = React.useCallback(async () => {
         setIsLoading(true)
@@ -61,7 +76,18 @@ export default function ProjectPage() {
                 else { router.push('/dashboard'); return }
             }
             const lotsData = await lotsRes.json()
-            if (lotsData.success) setLots(lotsData.lots)
+            if (lotsData.success) setDbLots(lotsData.lots)
+
+            // Cargar condiciones comerciales (no crítico)
+            fetch('/api/admin/condiciones').then(r => r.json()).then(d => {
+                if (d.ok && d.condiciones) setCondiciones(d.condiciones)
+                else {
+                    // Defaults si no hay condiciones configuradas
+                    setCondiciones({ descuentoContadoMax:5, descuentoFinancMax:3, descuentoExcepMax:10, tasaDefault:8, plazoMax:60, inicialMinPct:10, tiempoAprobSeg:120, penalidad:0.5, aprobadores:[] })
+                }
+            }).catch(() => {
+                setCondiciones({ descuentoContadoMax:5, descuentoFinancMax:3, descuentoExcepMax:10, tasaDefault:8, plazoMax:60, inicialMinPct:10, tiempoAprobSeg:120, penalidad:0.5, aprobadores:[] })
+            })
 
             // Detectar rol (no crítico)
             fetch('/api/auth/session').then(r => r.json()).then(s => {
@@ -76,22 +102,47 @@ export default function ProjectPage() {
         setSelectedLot(null)
         const r = await fetch(`/api/lots?projectId=${params.id}`)
         const d = await r.json()
-        if (d.success) setLots(d.lots)
+        if (d.success) setDbLots(d.lots)
     }, [params.id])
+
+    const handleVenderRapido = React.useCallback(async (
+        lotId: string,
+        datos: { dni:string; nombres:string; apellidos:string; email:string; telefono:string; tipo:'SEPARACION'|'COMPRAVENTA' }
+    ) => {
+        const r = await fetch('/api/contratos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                lotId, tipo: datos.tipo, estado: 'ACTIVO',
+                clienteDni: datos.dni, clienteNombres: datos.nombres,
+                clienteApellidos: datos.apellidos, clienteEmail: datos.email,
+                clientePhone: datos.telefono,
+                precioTotal: (selectedLot as any)?.precioLista ?? 0,
+                descuentoPct: 0, descuentoNivel: 1,
+            }),
+        })
+        const d = await r.json()
+        if (d.ok) { handleUpdate(); router.push(`/contratos/${d.contrato.id}`) }
+    }, [selectedLot, handleUpdate, router])
+
+    const handleGenerarVenta = React.useCallback((lotId: string) => {
+        router.push(`/vender?lotId=${lotId}`)
+    }, [router])
 
     const stats = React.useMemo(() => ({
         total:    lots.length,
-        libre:    lots.filter(l => l.estado === 'LIBRE').length,
-        separado: lots.filter(l => l.estado === 'SEPARADO').length,
-        vendido:  lots.filter(l => l.estado === 'VENDIDO').length,
+        libre:    lots.filter(l => (l as any).estado === 'LIBRE').length,
+        separado: lots.filter(l => (l as any).estado === 'SEPARADO').length,
+        vendido:  lots.filter(l => (l as any).estado === 'VENDIDO').length,
     }), [lots])
 
     const filteredLots = React.useMemo(() => {
         return lots.filter(lot => {
+            const l = lot as any
             const q = search.trim().toLowerCase().replace(/[\s-]/g, '')
-            const hay = `${lot.code} ${lot.manzana}${lot.loteNumero} manzana${lot.manzana}`.toLowerCase().replace(/[\s-]/g, '')
+            const hay = `${l.code} ${l.manzana}${l.loteNumero} manzana${l.manzana}`.toLowerCase().replace(/[\s-]/g, '')
             const matchSearch = !q || hay.includes(q)
-            const matchStatus = statusFilter === 'ALL' || lot.estado === statusFilter
+            const matchStatus = statusFilter === 'ALL' || l.estado === statusFilter
             return matchSearch && matchStatus
         })
     }, [lots, search, statusFilter])
@@ -266,15 +317,13 @@ export default function ProjectPage() {
                     <div className="w-80 xl:w-96 shrink-0 flex flex-col">
                         {selectedLot ? (
                             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex-1">
-                                <LotPanel
-                                    lot={selectedLot}
+                                <PlanoCotizador
+                                    lot={selectedLot as any}
+                                    condiciones={condiciones}
                                     onClose={() => setSelectedLot(null)}
+                                    onVenderRapido={handleVenderRapido}
+                                    onGenerarVenta={handleGenerarVenta}
                                     onUpdate={handleUpdate}
-                                    projectSettings={{
-                                        maxCuotas: project.maxCuotas,
-                                        minInicial: project.minInicial,
-                                        interestRate: project.interestRate,
-                                    }}
                                 />
                             </div>
                         ) : (
@@ -292,15 +341,13 @@ export default function ProjectPage() {
                                 <div className="w-10 h-1 bg-gray-300 rounded-full" />
                             </div>
                             <div className="flex-1 overflow-hidden">
-                                <LotPanel
-                                    lot={selectedLot}
+                                <PlanoCotizador
+                                    lot={selectedLot as any}
+                                    condiciones={condiciones}
                                     onClose={() => setSelectedLot(null)}
+                                    onVenderRapido={handleVenderRapido}
+                                    onGenerarVenta={handleGenerarVenta}
                                     onUpdate={handleUpdate}
-                                    projectSettings={{
-                                        maxCuotas: project.maxCuotas,
-                                        minInicial: project.minInicial,
-                                        interestRate: project.interestRate,
-                                    }}
                                 />
                             </div>
                         </div>

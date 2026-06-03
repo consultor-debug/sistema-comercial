@@ -41,6 +41,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     const [isDownloading, setIsDownloading] = React.useState(false)
     const [imageLoaded, setImageLoaded] = React.useState(false)
     const [imageError, setImageError] = React.useState(false)
+    const [hoveredLot, setHoveredLot] = React.useState<{ lot: Lot; x: number; y: number } | null>(null)
     // Natural image dimensions → used to build a proportional SVG viewBox
     const [naturalDims, setNaturalDims] = React.useState({ w: 1000, h: 1000 })
     // Dynamic min scale — updated when image loads so you can't zoom out past fit
@@ -261,18 +262,51 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                                                     viewBox={`0 0 ${VIEW_SIZE} ${Math.round(VIEW_SIZE * naturalDims.h / naturalDims.w)}`}
                                                     preserveAspectRatio="none"
                                                     style={{ zIndex: 10 }}
+                                                    onMouseLeave={() => setHoveredLot(null)}
                                                 >
                                                     {filteredLots.map(lot => (
-                                                        <LotMarker
+                                                        <g
                                                             key={lot.id}
-                                                            lot={lot}
-                                                            onClick={() => onLotClick(lot)}
-                                                            isSelected={selectedLotId === lot.id}
-                                                            imageSize={{ width: VIEW_SIZE, height: Math.round(VIEW_SIZE * naturalDims.h / naturalDims.w) }}
-                                                        />
+                                                            onMouseEnter={(e) => setHoveredLot({ lot, x: e.clientX, y: e.clientY })}
+                                                            onMouseMove={(e) => setHoveredLot({ lot, x: e.clientX, y: e.clientY })}
+                                                            onMouseLeave={() => setHoveredLot(null)}
+                                                        >
+                                                            <LotMarker
+                                                                lot={lot}
+                                                                onClick={() => onLotClick(lot)}
+                                                                isSelected={selectedLotId === lot.id}
+                                                                imageSize={{ width: VIEW_SIZE, height: Math.round(VIEW_SIZE * naturalDims.h / naturalDims.w) }}
+                                                            />
+                                                        </g>
                                                     ))}
                                                 </svg>
                                             )}
+                                        </div>
+                                    ) : filteredLots.some(l => (l as any).mapShapeData) ? (
+                                        /* ── Canvas SVG sin imagen (lotes PRNG) ── */
+                                        <div className="relative w-full" style={{ aspectRatio: '2800/2006' }}>
+                                            <svg
+                                                className="absolute inset-0 w-full h-full bg-gray-50"
+                                                viewBox="0 0 1000 717"
+                                                preserveAspectRatio="none"
+                                                onMouseLeave={() => setHoveredLot(null)}
+                                            >
+                                                {filteredLots.map(lot => (
+                                                    <g
+                                                        key={(lot as any).prngId ?? lot.id}
+                                                        onMouseEnter={(e) => setHoveredLot({ lot, x: e.clientX, y: e.clientY })}
+                                                        onMouseMove={(e) => setHoveredLot({ lot, x: e.clientX, y: e.clientY })}
+                                                        onMouseLeave={() => setHoveredLot(null)}
+                                                    >
+                                                        <LotMarker
+                                                            lot={lot}
+                                                            onClick={() => onLotClick(lot)}
+                                                            isSelected={selectedLotId === (lot.id ?? (lot as any).prngId)}
+                                                            imageSize={{ width: 1000, height: 717 }}
+                                                        />
+                                                    </g>
+                                                ))}
+                                            </svg>
                                         </div>
                                     ) : (
                                         <div className="flex flex-col items-center justify-center gap-3 text-center p-8">
@@ -310,6 +344,43 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                     <MapLegend counts={counts} total={filteredLots.length} />
                 </div>
             </div>
+
+            {/* Tooltip hover */}
+            {hoveredLot && (
+                <div
+                    className="fixed z-[9999] pointer-events-none"
+                    style={{ left: hoveredLot.x + 14, top: hoveredLot.y - 8 }}
+                >
+                    <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 text-xs min-w-[140px]">
+                        <div className="font-semibold text-gray-900 mb-1">
+                            Lote {(hoveredLot.lot as any).code ?? hoveredLot.lot.id}
+                        </div>
+                        <div className="text-gray-500 space-y-0.5">
+                            {(hoveredLot.lot as any).areaM2 && (
+                                <div>{(hoveredLot.lot as any).areaM2} m²</div>
+                            )}
+                            {(hoveredLot.lot as any).precioLista && (
+                                <div className="font-mono text-gray-700">
+                                    S/ {((hoveredLot.lot as any).precioLista as number).toLocaleString('es-PE')}
+                                </div>
+                            )}
+                            <div className="flex items-center gap-1 mt-1">
+                                <span className={cn(
+                                    'w-2 h-2 rounded-sm inline-block',
+                                    hoveredLot.lot.estado === 'LIBRE' ? 'bg-blue-400' :
+                                    hoveredLot.lot.estado === 'SEPARADO' ? 'bg-amber-400' :
+                                    hoveredLot.lot.estado === 'VENDIDO' ? 'bg-slate-400' : 'bg-slate-700'
+                                )} />
+                                <span className="capitalize text-gray-600">
+                                    {hoveredLot.lot.estado === 'LIBRE' ? 'Disponible' :
+                                     hoveredLot.lot.estado === 'SEPARADO' ? 'Separado' :
+                                     hoveredLot.lot.estado === 'VENDIDO' ? 'Vendido' : 'No disponible'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
