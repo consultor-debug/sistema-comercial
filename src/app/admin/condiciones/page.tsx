@@ -34,12 +34,12 @@ const DEFAULTS: Condiciones = {
     penalidad: 0, lucroCesante: 0,
 }
 
-function NumInput({ value, onChange, min = 0, step = 1, className }: {
-    value: number; onChange: (v: number) => void; min?: number; step?: number; className?: string
+function NumInput({ value, onChange, min = 0, max, step = 1, className }: {
+    value: number; onChange: (v: number) => void; min?: number; max?: number; step?: number; className?: string
 }) {
     return (
         <input
-            type="number" value={value} min={min} step={step}
+            type="number" value={value} min={min} max={max} step={step}
             onChange={e => onChange(parseFloat(e.target.value) || 0)}
             className={cn(
                 'h-10 px-3 border border-gray-200 rounded-lg text-sm text-gray-900 bg-white',
