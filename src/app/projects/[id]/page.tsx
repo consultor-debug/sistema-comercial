@@ -117,7 +117,7 @@ export default function ProjectPage() {
                 if (d.ok && d.condiciones) setCondiciones(d.condiciones)
                 else {
                     // Defaults si no hay condiciones configuradas
-                    setCondiciones({ descuentoContadoMax:5, descuentoFinancMax:3, descuentoExcepMax:10, tasaDefault:8, plazoMax:60, inicialMinPct:10, tiempoAprobSeg:120, penalidad:0.5, aprobadores:[] })
+                    setCondiciones({ descuentoContadoMax:0, descuentoFinancMax:0, descuentoExcepMax:0, tasaDefault:8, plazoMax:60, inicialMinPct:0, tiempoAprobSeg:120, penalidad:0, aprobadores:[] })
                 }
             }).catch(() => {
                 setCondiciones({ descuentoContadoMax:5, descuentoFinancMax:3, descuentoExcepMax:10, tasaDefault:8, plazoMax:60, inicialMinPct:10, tiempoAprobSeg:120, penalidad:0.5, aprobadores:[] })
@@ -366,6 +366,22 @@ export default function ProjectPage() {
                             <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-gray-50 transition-colors">
                                 <Download className="w-3.5 h-3.5" /> Exportar plano
                             </button>
+
+                            {/* Subir plano — visible siempre para admins */}
+                            {isAdmin && (
+                                <a
+                                    href={`/admin/projects/${params.id}`}
+                                    className={cn(
+                                        'flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-lg transition-colors',
+                                        !project.mapImageUrl
+                                            ? 'bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100'
+                                            : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                                    )}
+                                >
+                                    <PenLine className="w-3.5 h-3.5" />
+                                    {project.mapImageUrl ? 'Gestionar' : 'Subir plano'}
+                                </a>
+                            )}
                         </div>
                     </div>
                 </header>

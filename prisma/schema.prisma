@@ -344,14 +344,14 @@ model Cuota {
 model TenantCondiciones {
   id                   String   @id @default(uuid())
   tenantId             String   @unique @map("tenant_id")
-  // Topes de descuento (%)
-  descuentoContadoMax  Float    @default(5)   @map("descuento_contado_max")
-  descuentoFinancMax   Float    @default(3)   @map("descuento_financ_max")
-  descuentoExcepMax    Float    @default(10)  @map("descuento_excep_max")
+  // Topes de descuento (S/ - montos absolutos)
+  descuentoContadoMax  Float    @default(0)   @map("descuento_contado_max")
+  descuentoFinancMax   Float    @default(0)   @map("descuento_financ_max")
+  descuentoExcepMax    Float    @default(0)  @map("descuento_excep_max")
   // Financiamiento
   tasaDefault          Float    @default(8)   @map("tasa_default")
   plazoMax             Int      @default(60)  @map("plazo_max")
-  inicialMinPct        Float    @default(10)  @map("inicial_min_pct")
+  inicialMinPct        Float    @default(0)   @map("inicial_min_pct")
   // Aprobaciones
   tiempoAprobSeg       Int      @default(120) @map("tiempo_aprob_seg")
   aprobadores          Json     @default("[]") @map("aprobadores")
