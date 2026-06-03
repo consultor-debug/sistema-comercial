@@ -18,31 +18,34 @@ export async function GET(request: NextRequest) {
         const etapa = searchParams.get('etapa')
         const estado = searchParams.get('estado')
 
-        if (!projectId) {
-            return NextResponse.json(
-                { success: false, error: 'projectId es requerido' },
-                { status: 400 }
-            )
-        }
-
-        // Verify the project belongs to the user's allowed tenants (unless SUPER_ADMIN)
         const { role, tenantId, assignedTenantIds } = session.user as any
         const allowedTenantIds = [tenantId, ...(assignedTenantIds || [])].filter(Boolean)
         const isSuperAdmin = role === 'SUPER_ADMIN'
-        
-        if (!isSuperAdmin) {
-            const project = await prisma.project.findFirst({
-                where: { id: projectId, tenantId: { in: allowedTenantIds } }
-            })
-            if (!project) {
-                return NextResponse.json(
-                    { success: false, error: 'Proyecto no encontrado o sin acceso' },
-                    { status: 404 }
-                )
-            }
-        }
 
-        const where: Record<string, unknown> = { projectId }
+        const where: Record<string, unknown> = {}
+
+        if (projectId) {
+            // Filtro por proyecto específico — verificar acceso
+            if (!isSuperAdmin) {
+                const project = await prisma.project.findFirst({
+                    where: { id: projectId, tenantId: { in: allowedTenantIds } }
+                })
+                if (!project) {
+                    return NextResponse.json(
+                        { success: false, error: 'Proyecto no encontrado o sin acceso' },
+                        { status: 404 }
+                    )
+                }
+            }
+            where.projectId = projectId
+        } else if (!isSuperAdmin) {
+            // Sin projectId → todos los lotes del tenant (para el wizard de venta)
+            const projects = await prisma.project.findMany({
+                where: { tenantId: { in: allowedTenantIds } },
+                select: { id: true },
+            })
+            where.projectId = { in: projects.map(p => p.id) }
+        }
 
         if (manzana) where.manzana = manzana
         if (etapa) where.etapa = etapa
@@ -51,13 +54,8 @@ export async function GET(request: NextRequest) {
         const lots = await prisma.lot.findMany({
             where,
             include: {
-                asesor: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true
-                    }
-                }
+                asesor: { select: { id: true, name: true, email: true } },
+                project: { select: { id: true, name: true } },
             },
             orderBy: [
                 { manzana: 'asc' },
