@@ -348,6 +348,8 @@ model TenantCondiciones {
   descuentoContadoMax  Float    @default(0)   @map("descuento_contado_max")
   descuentoFinancMax   Float    @default(0)   @map("descuento_financ_max")
   descuentoExcepMax    Float    @default(0)  @map("descuento_excep_max")
+  descuentoExcepFinancMax Float   @default(0)  @map("descuento_excep_financ_max")
+  tiempoExcepSeg       Int      @default(60)  @map("tiempo_excep_seg")
   // Financiamiento
   tasaDefault          Float    @default(8)   @map("tasa_default")
   plazoMax             Int      @default(60)  @map("plazo_max")

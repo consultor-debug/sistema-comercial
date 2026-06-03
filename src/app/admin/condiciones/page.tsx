@@ -2,241 +2,336 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Save, Plus, Trash2, Loader2, CheckCircle2, Settings2, Percent, Clock, Users } from 'lucide-react'
-
-interface Aprobador { id: string; nombre: string; cargo: string }
+import { Sidebar } from '@/components/Sidebar'
+import {
+    Save, RotateCcw, Loader2, CheckCircle2, Shield,
+    DollarSign, Clock, Users, Plus, Trash2, AlertCircle
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface Condiciones {
-  descuentoContadoMax: number
-  descuentoFinancMax: number
-  descuentoExcepMax: number
-  tasaDefault: number
-  plazoMax: number
-  inicialMinPct: number
-  tiempoAprobSeg: number
-  penalidad: number
-  lucroCesante: number
-  aprobadores: Aprobador[]
+    descuentoContadoMax:    number
+    descuentoFinancMax:     number
+    descuentoExcepMax:      number   // excepcion contado
+    descuentoExcepFinancMax:number   // excepcion financiamiento
+    tiempoExcepSeg:         number   // countdown nivel 2
+    tasaDefault:            number
+    plazoMax:               number
+    inicialMinPct:          number
+    tiempoAprobSeg:         number   // countdown VB gerencial
+    aprobadores:            Array<{ id: string; nombre: string; cargo?: string }>
+    penalidad:              number
+    lucroCesante:           number
 }
 
 const DEFAULTS: Condiciones = {
-  descuentoContadoMax: 5, descuentoFinancMax: 3, descuentoExcepMax: 10,
-  tasaDefault: 8, plazoMax: 60, inicialMinPct: 10,
-  tiempoAprobSeg: 120, penalidad: 0.5, lucroCesante: 0.5,
-  aprobadores: []
+    descuentoContadoMax: 0, descuentoFinancMax: 0,
+    descuentoExcepMax: 0, descuentoExcepFinancMax: 0,
+    tiempoExcepSeg: 60,
+    tasaDefault: 8, plazoMax: 60, inicialMinPct: 0,
+    tiempoAprobSeg: 120,
+    aprobadores: [],
+    penalidad: 0, lucroCesante: 0,
+}
+
+function NumInput({ value, onChange, min = 0, step = 1, className }: {
+    value: number; onChange: (v: number) => void; min?: number; step?: number; className?: string
+}) {
+    return (
+        <input
+            type="number" value={value} min={min} step={step}
+            onChange={e => onChange(parseFloat(e.target.value) || 0)}
+            className={cn(
+                'h-10 px-3 border border-gray-200 rounded-lg text-sm text-gray-900 bg-white',
+                'focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400',
+                'w-full', className
+            )}
+        />
+    )
 }
 
 export default function CondicionesPage() {
-  const [data, setData] = React.useState<Condiciones>(DEFAULTS)
-  const [loading, setLoading] = React.useState(true)
-  const [saving, setSaving] = React.useState(false)
-  const [saved, setSaved] = React.useState(false)
+    const [data, setData]       = React.useState<Condiciones>(DEFAULTS)
+    const [original, setOrig]   = React.useState<Condiciones>(DEFAULTS)
+    const [loading, setLoading] = React.useState(true)
+    const [saving, setSaving]   = React.useState(false)
+    const [saved, setSaved]     = React.useState(false)
 
-  React.useEffect(() => {
-    fetch('/api/admin/condiciones').then(r => r.json()).then(d => {
-      if (d.condiciones) {
-        setData({
-          descuentoContadoMax: d.condiciones.descuentoContadoMax,
-          descuentoFinancMax: d.condiciones.descuentoFinancMax,
-          descuentoExcepMax: d.condiciones.descuentoExcepMax,
-          tasaDefault: d.condiciones.tasaDefault,
-          plazoMax: d.condiciones.plazoMax,
-          inicialMinPct: d.condiciones.inicialMinPct,
-          tiempoAprobSeg: d.condiciones.tiempoAprobSeg,
-          penalidad: d.condiciones.penalidad,
-          lucroCesante: d.condiciones.lucroCesante,
-          aprobadores: (d.condiciones.aprobadores as Aprobador[]) || [],
+    React.useEffect(() => {
+        fetch('/api/admin/condiciones').then(r => r.json()).then(d => {
+            if (d.ok && d.condiciones) {
+                const c = { ...DEFAULTS, ...d.condiciones }
+                setData(c); setOrig(c)
+            }
+        }).finally(() => setLoading(false))
+    }, [])
+
+    const set = (k: keyof Condiciones) => (v: number) => setData(p => ({ ...p, [k]: v }))
+
+    const save = async () => {
+        setSaving(true)
+        await fetch('/api/admin/condiciones', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
         })
-      }
-    }).finally(() => setLoading(false))
-  }, [])
+        setSaving(false); setSaved(true); setOrig(data)
+        setTimeout(() => setSaved(false), 2500)
+    }
 
-  const save = async () => {
-    setSaving(true)
-    try {
-      await fetch('/api/admin/condiciones', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
-    } finally { setSaving(false) }
-  }
-
-  const num = (key: keyof Condiciones) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setData(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))
-
-  const addAprobador = () => setData(prev => ({
-    ...prev,
-    aprobadores: [...prev.aprobadores, { id: Date.now().toString(), nombre: '', cargo: '' }]
-  }))
-  const removeAprobador = (id: string) => setData(prev => ({
-    ...prev, aprobadores: prev.aprobadores.filter(a => a.id !== id)
-  }))
-  const updateAprobador = (id: string, field: 'nombre' | 'cargo', value: string) =>
-    setData(prev => ({
-      ...prev,
-      aprobadores: prev.aprobadores.map(a => a.id === id ? { ...a, [field]: value } : a)
+    const addAprobador = () => setData(p => ({
+        ...p,
+        aprobadores: [...p.aprobadores, { id: Date.now().toString(), nombre: '', cargo: '' }],
     }))
+    const updateAprobador = (id: string, campo: 'nombre' | 'cargo', val: string) =>
+        setData(p => ({ ...p, aprobadores: p.aprobadores.map(a => a.id === id ? { ...a, [campo]: val } : a) }))
+    const removeAprobador = (id: string) =>
+        setData(p => ({ ...p, aprobadores: p.aprobadores.filter(a => a.id !== id) }))
 
-  if (loading) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
-    </div>
-  )
+    const dirty = JSON.stringify(data) !== JSON.stringify(original)
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-3xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <Link href="/admin" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 mb-4">
-            <ArrowLeft className="w-3.5 h-3.5" /> Panel Admin
-          </Link>
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center">
-                <Settings2 className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Condiciones Comerciales</h1>
-                <p className="text-sm text-gray-500">Define los topes de descuento, plazos y aprobadores</p>
-              </div>
+    if (loading) return (
+        <div className="min-h-screen bg-gray-50 flex">
+            <Sidebar />
+            <div className="flex-1 md:pl-52 flex items-center justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
             </div>
-            <button
-              onClick={save} disabled={saving}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
-            >
-              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : saved ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
-              {saved ? '¡Guardado!' : 'Guardar cambios'}
-            </button>
-          </div>
         </div>
+    )
 
-        <div className="space-y-6">
-          {/* Descuentos */}
-          <Section icon={<Percent className="w-4 h-4 text-blue-600" />} title="Topes de descuento">
-            <div className="grid grid-cols-3 gap-4">
-              <Field label="Contado máx (S/)" hint="Monto máximo de descuento">
-                <NumberInput value={data.descuentoContadoMax} onChange={num('descuentoContadoMax')} min={0} max={999999} step={500} />
-              </Field>
-              <Field label="Financiamiento máx (S/)" hint="Monto máximo con financiamiento">
-                <NumberInput value={data.descuentoFinancMax} onChange={num('descuentoFinancMax')} min={0} max={999999} step={500} />
-              </Field>
-              <Field label="Excepción máx (S/)" hint="Requiere aprobación del supervisor">
-                <NumberInput value={data.descuentoExcepMax} onChange={num('descuentoExcepMax')} min={0} max={999999} step={1000} />
-              </Field>
-            </div>
-            <InfoBox text="Nivel 1: el asesor aplica hasta el monto de contado/financiamiento. Nivel 2: solicita excepción (requiere aprobación). Nivel 3: VB gerencial (elige aprobador)." />
-          </Section>
+    return (
+        <div className="min-h-screen bg-gray-50 flex">
+            <Sidebar />
+            <div className="flex-1 md:pl-52 flex flex-col">
 
-          {/* Financiamiento */}
-          <Section icon={<Settings2 className="w-4 h-4 text-green-600" />} title="Condiciones de financiamiento">
-            <div className="grid grid-cols-3 gap-4">
-              <Field label="Tasa anual por defecto" hint="Porcentaje anual — ej. 12">
-                <NumberInput value={data.tasaDefault} onChange={num('tasaDefault')} min={0} max={30} step={0.5} />
-              </Field>
-              <Field label="Plazo máximo (meses)" hint="Ej. 36 o 60">
-                <NumberInput value={data.plazoMax} onChange={num('plazoMax')} min={6} max={240} step={6} />
-              </Field>
-              <Field label="Inicial mínima (S/)" hint="Monto mínimo de cuota inicial">
-                <NumberInput value={data.inicialMinPct} onChange={num('inicialMinPct')} min={0} max={999999} step={500} />
-              </Field>
-            </div>
-          </Section>
-
-          {/* Mora */}
-          <Section icon={<Clock className="w-4 h-4 text-amber-600" />} title="Penalidad y mora">
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Penalidad por mora (S/ mensual)">
-                <NumberInput value={data.penalidad} onChange={num('penalidad')} min={0} max={99999} step={50} />
-              </Field>
-              <Field label="Lucro cesante (S/ mensual)">
-                <NumberInput value={data.lucroCesante} onChange={num('lucroCesante')} min={0} max={99999} step={50} />
-              </Field>
-            </div>
-          </Section>
-
-          {/* Aprobaciones */}
-          <Section icon={<Users className="w-4 h-4 text-purple-600" />} title="Aprobadores de descuento">
-            <div className="mb-3">
-              <Field label="Tiempo de aprobación (segundos)" hint="Para excepciones nivel 2">
-                <NumberInput value={data.tiempoAprobSeg} onChange={num('tiempoAprobSeg')} min={30} max={600} step={30} />
-              </Field>
-            </div>
-            <div className="space-y-2">
-              {data.aprobadores.map(a => (
-                <div key={a.id} className="flex gap-2">
-                  <input
-                    placeholder="Nombre del aprobador"
-                    value={a.nombre}
-                    onChange={e => updateAprobador(a.id, 'nombre', e.target.value)}
-                    className="flex-1 px-3 h-9 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
-                  />
-                  <input
-                    placeholder="Cargo (ej. Gerente General)"
-                    value={a.cargo}
-                    onChange={e => updateAprobador(a.id, 'cargo', e.target.value)}
-                    className="flex-1 px-3 h-9 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
-                  />
-                  <button onClick={() => removeAprobador(a.id)}
-                    className="p-2.5 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                {/* Header */}
+                <div className="bg-white border-b border-gray-200 px-6 py-5 shrink-0">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <Link href="/admin" className="text-sm text-gray-400 hover:text-gray-600 transition-colors">← Admin</Link>
+                            <h1 className="text-xl font-bold text-gray-900">Condiciones Comerciales</h1>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {dirty && (
+                                <button onClick={() => setData(original)}
+                                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-gray-200 rounded-lg bg-white text-gray-600 hover:bg-gray-50 transition-colors">
+                                    <RotateCcw className="w-3.5 h-3.5" /> Restablecer
+                                </button>
+                            )}
+                            <button onClick={save} disabled={saving || !dirty}
+                                className={cn(
+                                    'flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg transition-colors',
+                                    saved
+                                        ? 'bg-emerald-600 text-white'
+                                        : dirty
+                                            ? 'bg-blue-600 hover:bg-blue-500 text-white'
+                                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                )}>
+                                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    : saved ? <CheckCircle2 className="w-3.5 h-3.5" />
+                                        : <Save className="w-3.5 h-3.5" />}
+                                {saved ? '¡Guardado!' : 'Guardar cambios'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
-              ))}
-              <button onClick={addAprobador}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors">
-                <Plus className="w-3.5 h-3.5" /> Agregar aprobador
-              </button>
+
+                {/* Body */}
+                <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 max-w-3xl">
+
+                    {/* Info banner */}
+                    <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700">
+                        <Shield className="w-4 h-4 mt-0.5 shrink-0 text-blue-500" />
+                        <span><strong>Política de descuentos del proyecto.</strong> Estos límites se aplican automáticamente en el Cotizador del Plano. Cambios aquí afectan a todo el equipo comercial.</span>
+                    </div>
+
+                    {/* Financiamiento */}
+                    <Card icon={<Clock className="w-4 h-4 text-amber-600" />} title="Financiamiento">
+                        <div className="grid grid-cols-2 gap-4">
+                            <Field label="PLAZO MÁXIMO" hint="Los asesores no podrán ofrecer plazos mayores a este.">
+                                <div className="flex">
+                                    <NumInput value={data.plazoMax} onChange={set('plazoMax')} min={1} step={6}
+                                        className="rounded-r-none border-r-0" />
+                                    <span className="flex items-center px-3 bg-gray-50 border border-gray-200 border-l-0 rounded-r-lg text-sm text-gray-500 whitespace-nowrap">meses</span>
+                                </div>
+                            </Field>
+                            <Field label="TASA ANUAL SUGERIDA" hint="Valor por defecto del slider de tasa en el cotizador.">
+                                <div className="flex">
+                                    <NumInput value={data.tasaDefault} onChange={set('tasaDefault')} min={0} max={30} step={0.5}
+                                        className="rounded-r-none border-r-0" />
+                                    <span className="flex items-center px-3 bg-gray-50 border border-gray-200 border-l-0 rounded-r-lg text-sm text-gray-500">%</span>
+                                </div>
+                            </Field>
+                        </div>
+                    </Card>
+
+                    {/* Topes de descuento */}
+                    <Card icon={<DollarSign className="w-4 h-4 text-blue-600" />} title="Topes de descuento">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="border-b border-gray-100">
+                                        <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide pb-3 w-48">Nivel</th>
+                                        <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide pb-3">Contado</th>
+                                        <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide pb-3 pl-4">Financiamiento</th>
+                                        <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide pb-3 pl-4">Aprobación</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                    {/* Nivel 1 — Estándar */}
+                                    <tr className="py-4">
+                                        <td className="py-4 pr-6">
+                                            <div className="flex items-start gap-2">
+                                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 mt-1 shrink-0" />
+                                                <div>
+                                                    <p className="font-semibold text-gray-900">Descuento estándar</p>
+                                                    <p className="text-xs text-gray-400 mt-0.5">Cualquier asesor puede aplicar</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="py-4">
+                                            <div className="flex items-center gap-1.5 max-w-[160px]">
+                                                <span className="text-gray-400 text-sm font-medium">S/</span>
+                                                <NumInput value={data.descuentoContadoMax} onChange={set('descuentoContadoMax')} min={0} step={500} />
+                                            </div>
+                                        </td>
+                                        <td className="py-4 pl-4">
+                                            <div className="flex items-center gap-1.5 max-w-[160px]">
+                                                <span className="text-gray-400 text-sm font-medium">S/</span>
+                                                <NumInput value={data.descuentoFinancMax} onChange={set('descuentoFinancMax')} min={0} step={500} />
+                                            </div>
+                                        </td>
+                                        <td className="py-4 pl-4">
+                                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-lg border border-emerald-200">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                Automática
+                                            </span>
+                                        </td>
+                                    </tr>
+
+                                    {/* Nivel 2 — Excepción */}
+                                    <tr>
+                                        <td className="py-4 pr-6">
+                                            <div className="flex items-start gap-2">
+                                                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 mt-1 shrink-0" />
+                                                <div>
+                                                    <p className="font-semibold text-gray-900">Excepción</p>
+                                                    <p className="text-xs text-gray-400 mt-0.5">Espera de aprobación automática</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="py-4">
+                                            <div className="flex items-center gap-1.5 max-w-[160px]">
+                                                <span className="text-gray-400 text-sm font-medium">S/</span>
+                                                <NumInput value={data.descuentoExcepMax} onChange={set('descuentoExcepMax')} min={0} step={500} />
+                                            </div>
+                                        </td>
+                                        <td className="py-4 pl-4">
+                                            <div className="flex items-center gap-1.5 max-w-[160px]">
+                                                <span className="text-gray-400 text-sm font-medium">S/</span>
+                                                <NumInput value={data.descuentoExcepFinancMax} onChange={set('descuentoExcepFinancMax')} min={0} step={500} />
+                                            </div>
+                                        </td>
+                                        <td className="py-4 pl-4">
+                                            <div className="flex items-center gap-2 max-w-[120px]">
+                                                <NumInput value={data.tiempoExcepSeg} onChange={set('tiempoExcepSeg')} min={10} step={10} className="w-20" />
+                                                <span className="text-gray-400 text-sm whitespace-nowrap">seg</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    {/* Nivel 3 — VB Gerencial */}
+                                    <tr>
+                                        <td className="py-4 pr-6">
+                                            <div className="flex items-start gap-2">
+                                                <span className="w-2.5 h-2.5 rounded-full bg-rose-400 mt-1 shrink-0" />
+                                                <div>
+                                                    <p className="font-semibold text-gray-900">Visto Bueno (VB)</p>
+                                                    <p className="text-xs text-gray-400 mt-0.5">Cualquier monto, requiere firma de gerencia</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="py-4">
+                                            <p className="text-sm text-gray-400 italic">Sin tope · requiere VB</p>
+                                        </td>
+                                        <td className="py-4 pl-4">
+                                            <p className="text-sm text-gray-400 italic">Sin tope · requiere VB</p>
+                                        </td>
+                                        <td className="py-4 pl-4">
+                                            <div className="flex items-center gap-2 max-w-[120px]">
+                                                <NumInput value={data.tiempoAprobSeg} onChange={set('tiempoAprobSeg')} min={10} step={30} className="w-20" />
+                                                <span className="text-gray-400 text-sm whitespace-nowrap">seg</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </Card>
+
+                    {/* Aprobadores */}
+                    <Card icon={<Users className="w-4 h-4 text-purple-600" />} title="Aprobadores autorizados para VB Gerencial">
+                        <p className="text-sm text-gray-500 mb-4">
+                            Solo estos roles pueden firmar el visto bueno para descuentos sin tope. El sistema registra automáticamente quién aprobó cada operación.
+                        </p>
+                        <div className="space-y-2">
+                            {data.aprobadores.length === 0 && (
+                                <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-100 rounded-lg text-sm text-amber-700">
+                                    <AlertCircle className="w-4 h-4 shrink-0" />
+                                    Sin aprobadores — el nivel VB no estará disponible hasta agregar al menos uno.
+                                </div>
+                            )}
+                            {data.aprobadores.map(a => (
+                                <div key={a.id} className="flex items-center gap-2">
+                                    <Shield className="w-4 h-4 text-gray-300 shrink-0" />
+                                    <input
+                                        value={a.nombre}
+                                        onChange={e => updateAprobador(a.id, 'nombre', e.target.value)}
+                                        placeholder="Nombre del aprobador"
+                                        className="flex-1 h-9 px-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                                    />
+                                    <input
+                                        value={a.cargo ?? ''}
+                                        onChange={e => updateAprobador(a.id, 'cargo', e.target.value)}
+                                        placeholder="Cargo (opcional)"
+                                        className="w-44 h-9 px-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                                    />
+                                    <button onClick={() => removeAprobador(a.id)}
+                                        className="p-2 text-gray-300 hover:text-rose-500 transition-colors">
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ))}
+                            <button onClick={addAprobador}
+                                className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium mt-1 transition-colors">
+                                <Plus className="w-3.5 h-3.5" /> Agregar aprobador
+                            </button>
+                        </div>
+                    </Card>
+                </div>
             </div>
-          </Section>
         </div>
-      </div>
-    </div>
-  )
+    )
 }
 
-function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
-      <h2 className="flex items-center gap-2 text-sm font-semibold text-gray-800 mb-4">
-        {icon} {title}
-      </h2>
-      {children}
-    </div>
-  )
+function Card({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+    return (
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="flex items-center gap-2 mb-5">
+                {icon}
+                <h2 className="text-base font-semibold text-gray-900">{title}</h2>
+            </div>
+            {children}
+        </div>
+    )
 }
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1.5">
-        {label}{hint && <span className="text-gray-400 font-normal"> — {hint}</span>}
-      </label>
-      {children}
-    </div>
-  )
-}
-
-function NumberInput({ value, onChange, min, max, step }: {
-  value: number; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-  min?: number; max?: number; step?: number
-}) {
-  return (
-    <input
-      type="number" value={value} onChange={onChange}
-      min={min} max={max} step={step}
-      className="w-full px-3 h-9 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
-    />
-  )
-}
-
-function InfoBox({ text }: { text: string }) {
-  return (
-    <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-700">
-      {text}
-    </div>
-  )
+    return (
+        <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</label>
+            {children}
+            {hint && <p className="text-xs text-gray-400">{hint}</p>}
+        </div>
+    )
 }

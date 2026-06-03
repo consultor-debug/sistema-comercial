@@ -38,7 +38,9 @@ interface PlanoCotizadorProps {
   condiciones: {
     descuentoContadoMax: number
     descuentoFinancMax: number
-    descuentoExcepMax: number
+    descuentoExcepMax: number           // excepción contado S/
+    descuentoExcepFinancMax?: number    // excepción financiamiento S/
+    tiempoExcepSeg?: number             // countdown nivel 2
     tasaDefault: number
     plazoMax: number
     inicialMinPct: number
@@ -604,12 +606,16 @@ export function PlanoCotizador({
   const precioLista = lot.precioLista
   const precioM2 = lot.areaM2 > 0 ? precioLista / lot.areaM2 : 0
 
-  // discount caps — now stored directly as S/ amounts
+  // discount caps — S/ amounts, split by modo y nivel
   const topeNivel1 =
     modo === 'contado'
       ? (cond?.descuentoContadoMax ?? 0)
       : (cond?.descuentoFinancMax ?? 0)
-  const topeNivel2 = cond?.descuentoExcepMax ?? 0
+  const topeNivel2 =
+    modo === 'contado'
+      ? (cond?.descuentoExcepMax ?? 0)
+      : (cond?.descuentoExcepFinancMax ?? cond?.descuentoExcepMax ?? 0)
+  const tiempoExcep = cond?.tiempoExcepSeg ?? cond?.tiempoAprobSeg ?? 60
 
   const descuentoActivo = descuento
   const precioConDesc = Math.max(0, precioLista - descuentoActivo)
@@ -751,7 +757,7 @@ export function PlanoCotizador({
                 modo={modo}
                 topeNivel1={topeNivel1}
                 topeNivel2={topeNivel2}
-                tiempoAprobSeg={cond.tiempoAprobSeg}
+                tiempoAprobSeg={tiempoExcep}
                 aprobadores={cond.aprobadores}
                 value={descuentoActivo}
                 onChange={setDescuento}
