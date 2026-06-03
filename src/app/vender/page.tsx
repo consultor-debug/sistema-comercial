@@ -88,7 +88,7 @@ function generateCronograma(
     return crons
 }
 
-export default function VenderPage() {
+function VenderContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const preselectedLotId = searchParams.get('lotId')
@@ -799,5 +799,13 @@ function DescuentoSystem({
                 </div>
             )}
         </div>
+    )
+}
+
+export default function VenderPage() {
+    return (
+        <React.Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>}>
+            <VenderContent />
+        </React.Suspense>
     )
 }
