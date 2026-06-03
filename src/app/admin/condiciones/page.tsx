@@ -118,30 +118,30 @@ export default function CondicionesPage() {
           {/* Descuentos */}
           <Section icon={<Percent className="w-4 h-4 text-blue-600" />} title="Topes de descuento">
             <div className="grid grid-cols-3 gap-4">
-              <Field label="Contado máx (%)" hint="Ej. 5%">
-                <NumberInput value={data.descuentoContadoMax} onChange={num('descuentoContadoMax')} min={0} max={50} step={0.5} />
+              <Field label="Contado máx (S/)" hint="Monto máximo de descuento">
+                <NumberInput value={data.descuentoContadoMax} onChange={num('descuentoContadoMax')} min={0} max={999999} step={500} />
               </Field>
-              <Field label="Financiamiento máx (%)" hint="Ej. 3%">
-                <NumberInput value={data.descuentoFinancMax} onChange={num('descuentoFinancMax')} min={0} max={50} step={0.5} />
+              <Field label="Financiamiento máx (S/)" hint="Monto máximo con financiamiento">
+                <NumberInput value={data.descuentoFinancMax} onChange={num('descuentoFinancMax')} min={0} max={999999} step={500} />
               </Field>
-              <Field label="Excepción máx (%)" hint="Requiere aprobación">
-                <NumberInput value={data.descuentoExcepMax} onChange={num('descuentoExcepMax')} min={0} max={50} step={0.5} />
+              <Field label="Excepción máx (S/)" hint="Requiere aprobación del supervisor">
+                <NumberInput value={data.descuentoExcepMax} onChange={num('descuentoExcepMax')} min={0} max={999999} step={1000} />
               </Field>
             </div>
-            <InfoBox text="Nivel 1: el asesor aplica hasta contado/financiamiento máx. Nivel 2: solicita excepción (requiere aprobación). Nivel 3: VB gerencial (elige aprobador)." />
+            <InfoBox text="Nivel 1: el asesor aplica hasta el monto de contado/financiamiento. Nivel 2: solicita excepción (requiere aprobación). Nivel 3: VB gerencial (elige aprobador)." />
           </Section>
 
           {/* Financiamiento */}
           <Section icon={<Settings2 className="w-4 h-4 text-green-600" />} title="Condiciones de financiamiento">
             <div className="grid grid-cols-3 gap-4">
-              <Field label="Tasa anual por defecto (%)" hint="Ej. 8%">
+              <Field label="Tasa anual por defecto" hint="Porcentaje anual — ej. 12">
                 <NumberInput value={data.tasaDefault} onChange={num('tasaDefault')} min={0} max={30} step={0.5} />
               </Field>
-              <Field label="Plazo máximo (meses)" hint="Ej. 60">
+              <Field label="Plazo máximo (meses)" hint="Ej. 36 o 60">
                 <NumberInput value={data.plazoMax} onChange={num('plazoMax')} min={6} max={240} step={6} />
               </Field>
-              <Field label="Inicial mínima (%)" hint="Ej. 10%">
-                <NumberInput value={data.inicialMinPct} onChange={num('inicialMinPct')} min={0} max={90} step={5} />
+              <Field label="Inicial mínima (S/)" hint="Monto mínimo de cuota inicial">
+                <NumberInput value={data.inicialMinPct} onChange={num('inicialMinPct')} min={0} max={999999} step={500} />
               </Field>
             </div>
           </Section>
@@ -149,11 +149,11 @@ export default function CondicionesPage() {
           {/* Mora */}
           <Section icon={<Clock className="w-4 h-4 text-amber-600" />} title="Penalidad y mora">
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Penalidad por mora (% mensual)">
-                <NumberInput value={data.penalidad} onChange={num('penalidad')} min={0} max={10} step={0.1} />
+              <Field label="Penalidad por mora (S/ mensual)">
+                <NumberInput value={data.penalidad} onChange={num('penalidad')} min={0} max={99999} step={50} />
               </Field>
-              <Field label="Lucro cesante (% mensual)">
-                <NumberInput value={data.lucroCesante} onChange={num('lucroCesante')} min={0} max={10} step={0.1} />
+              <Field label="Lucro cesante (S/ mensual)">
+                <NumberInput value={data.lucroCesante} onChange={num('lucroCesante')} min={0} max={99999} step={50} />
               </Field>
             </div>
           </Section>

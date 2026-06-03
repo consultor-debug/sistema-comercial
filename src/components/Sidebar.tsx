@@ -37,17 +37,17 @@ const GROUPS_ASESOR: NavGroup[] = [
     {
         label: 'Comercial',
         items: [
-            { name: 'Dashboard',   href: '/dashboard',   icon: LayoutDashboard },
-            { name: 'Contratos',   href: '/contratos',   icon: ClipboardList },
-            { name: 'Pagos',       href: '/pagos',       icon: DollarSign },
-            { name: 'Clientes',    href: '/clientes',    icon: UserCheck },
+            { name: 'Dashboard',   href: '/dashboard',  icon: LayoutDashboard },
+            { name: 'Contratos',   href: '/contratos',  icon: ClipboardList },
+            { name: 'Pagos',       href: '/pagos',      icon: DollarSign },
+            { name: 'Clientes',    href: '/clientes',   icon: UserCheck },
         ],
     },
     {
         label: 'Proyectos',
         items: [
+            { name: 'Plano',       href: '/plano',      icon: MapPinned },
             { name: 'Proyectos',   href: '/admin/projects', icon: MapIcon },
-            { name: 'Plano',       href: '/admin/lots/map', icon: MapPinned },
         ],
     },
 ]
@@ -56,19 +56,19 @@ const GROUPS_ADMIN: NavGroup[] = [
     {
         label: 'Comercial',
         items: [
-            { name: 'Dashboard',   href: '/dashboard',   icon: LayoutDashboard },
-            { name: 'Contratos',   href: '/contratos',   icon: ClipboardList },
-            { name: 'Pagos',       href: '/pagos',       icon: DollarSign },
-            { name: 'Clientes',    href: '/clientes',    icon: UserCheck },
+            { name: 'Dashboard',   href: '/dashboard',  icon: LayoutDashboard },
+            { name: 'Contratos',   href: '/contratos',  icon: ClipboardList },
+            { name: 'Pagos',       href: '/pagos',      icon: DollarSign },
+            { name: 'Clientes',    href: '/clientes',   icon: UserCheck },
             { name: 'Reportes',    href: '/admin/reports', icon: BarChart3 },
         ],
     },
     {
         label: 'Proyectos',
         items: [
+            { name: 'Plano',       href: '/plano',      icon: MapPinned },
             { name: 'Proyectos',   href: '/admin/projects', icon: MapIcon },
-            { name: 'Plano',       href: '/admin/lots/map', icon: MapPinned },
-            { name: 'Lotes',       href: '/admin/lots',     icon: Database },
+            { name: 'Lotes',       href: '/admin/lots', icon: Database },
         ],
     },
     {
@@ -85,19 +85,19 @@ const GROUPS_SUPER_ADMIN: NavGroup[] = [
     {
         label: 'Comercial',
         items: [
-            { name: 'Dashboard',   href: '/dashboard',   icon: LayoutDashboard },
-            { name: 'Contratos',   href: '/contratos',   icon: ClipboardList },
-            { name: 'Pagos',       href: '/pagos',       icon: DollarSign },
-            { name: 'Clientes',    href: '/clientes',    icon: UserCheck },
+            { name: 'Dashboard',   href: '/dashboard',  icon: LayoutDashboard },
+            { name: 'Contratos',   href: '/contratos',  icon: ClipboardList },
+            { name: 'Pagos',       href: '/pagos',      icon: DollarSign },
+            { name: 'Clientes',    href: '/clientes',   icon: UserCheck },
             { name: 'Reportes',    href: '/admin/reports', icon: BarChart3 },
         ],
     },
     {
         label: 'Proyectos',
         items: [
+            { name: 'Plano',       href: '/plano',      icon: MapPinned },
             { name: 'Proyectos',   href: '/admin/projects', icon: MapIcon },
-            { name: 'Plano',       href: '/admin/lots/map', icon: MapPinned },
-            { name: 'Lotes',       href: '/admin/lots',     icon: Database },
+            { name: 'Lotes',       href: '/admin/lots', icon: Database },
         ],
     },
     {

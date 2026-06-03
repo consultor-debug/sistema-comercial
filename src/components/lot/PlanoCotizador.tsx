@@ -116,8 +116,8 @@ type GerencialState =
 interface DiscountBlockProps {
   precioLista: number
   modo: 'contado' | 'financiamiento'
-  topeNivel1Pct: number   // % del precio
-  topeNivel2Pct: number   // % excepcion
+  topeNivel1: number      // S/ máximo nivel 1
+  topeNivel2: number      // S/ máximo nivel 2 (excepción)
   tiempoAprobSeg: number
   aprobadores: Array<{ id: string; nombre: string; cargo: string }>
   value: number           // S/ descuento actual
@@ -126,15 +126,15 @@ interface DiscountBlockProps {
 
 function DiscountBlock({
   precioLista,
-  topeNivel1Pct,
-  topeNivel2Pct,
+  topeNivel1,
+  topeNivel2,
   tiempoAprobSeg,
   aprobadores,
   value,
   onChange,
 }: DiscountBlockProps) {
-  const topeN1 = Math.round(precioLista * topeNivel1Pct / 100)
-  const topeN2 = Math.round(precioLista * topeNivel2Pct / 100)
+  const topeN1 = topeNivel1
+  const topeN2 = topeNivel2
 
   const [excep, setExcep] = React.useState<ExcepcionState>({ phase: 'idle' })
   const [gerencial, setGerencial] = React.useState<GerencialState>({ phase: 'idle' })
@@ -604,12 +604,12 @@ export function PlanoCotizador({
   const precioLista = lot.precioLista
   const precioM2 = lot.areaM2 > 0 ? precioLista / lot.areaM2 : 0
 
-  // discount caps
-  const topeNivel1Pct =
+  // discount caps — now stored directly as S/ amounts
+  const topeNivel1 =
     modo === 'contado'
-      ? (cond?.descuentoContadoMax ?? 5)
-      : (cond?.descuentoFinancMax ?? 3)
-  const topeNivel2Pct = cond?.descuentoExcepMax ?? 10
+      ? (cond?.descuentoContadoMax ?? 0)
+      : (cond?.descuentoFinancMax ?? 0)
+  const topeNivel2 = cond?.descuentoExcepMax ?? 0
 
   const descuentoActivo = descuento
   const precioConDesc = Math.max(0, precioLista - descuentoActivo)
@@ -618,9 +618,8 @@ export function PlanoCotizador({
   const prontoPago = Math.round(precioConDesc * 0.05)
   const totalContado = precioConDesc - prontoPago
 
-  // financing
-  const inicialMinPct = cond?.inicialMinPct ?? 10
-  const inicialMin = Math.round(precioConDesc * inicialMinPct / 100)
+  // financing — inicialMinPct now stores S/ amount directly
+  const inicialMin = cond?.inicialMinPct ?? 0
   const inicialNum = typeof inicialS === 'number' ? inicialS : 0
   const saldoFinanc = Math.max(0, precioConDesc - inicialNum)
   const cuotaMensual = cuotaMensualFrances(saldoFinanc, tasa, plazo)
@@ -750,8 +749,8 @@ export function PlanoCotizador({
               <DiscountBlock
                 precioLista={precioLista}
                 modo={modo}
-                topeNivel1Pct={topeNivel1Pct}
-                topeNivel2Pct={topeNivel2Pct}
+                topeNivel1={topeNivel1}
+                topeNivel2={topeNivel2}
                 tiempoAprobSeg={cond.tiempoAprobSeg}
                 aprobadores={cond.aprobadores}
                 value={descuentoActivo}
