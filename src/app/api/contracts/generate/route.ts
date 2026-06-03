@@ -420,8 +420,8 @@ export async function POST(request: NextRequest) {
                 precioTotal: financialData?.precioTotal ?? lot.precioLista,
                 montoSeparacion: financialData?.montoSeparacion ?? null,
                 inicial: financialData?.inicial ?? null,
-                cuotas: financialData?.cuotas ?? null,
-                cronograma: financialData?.cronograma ?? undefined,
+                cuotasNum: financialData?.cuotas ?? null,
+                datos: financialData?.cronograma ? { cronograma: financialData.cronograma } : undefined,
                 docxUrl: null,
             }
         })
