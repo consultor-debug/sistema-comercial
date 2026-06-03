@@ -31,6 +31,8 @@ model Tenant {
   minInicial     Float         @default(3500) @map("min_inicial")
   auditLogs      AuditLog[]
   contracts      Contract[]
+  cuotas         Cuota[]
+  condiciones    TenantCondiciones?
   projects       Project[]
   quotations     Quotation[]
   subscription   Subscription?
@@ -55,6 +57,7 @@ model User {
   updatedAt         DateTime        @updatedAt @map("updated_at")
   auditLogs         AuditLog[]
   contracts         Contract[]
+  cuotasRegistradas Cuota[]         @relation("CuotaRegistro")
   assignedLots      Lot[]           @relation("AsesorLots")
   projectUpdates    ProjectUpdate[]
   lotDocuments      LotDocument[]
@@ -266,36 +269,117 @@ enum DocumentType {
 }
 
 model Contract {
-  id               String       @id @default(uuid())
-  codigo           String       @unique
-  tenantId         String       @map("tenant_id")
-  lotId            String       @map("lot_id")
-  quotationId      String?      @map("quotation_id")
-  userId           String       @map("user_id")
-  tipo             ContractType @default(SEPARACION)
-  clienteDni       String       @map("cliente_dni")
-  clienteNombres   String       @map("cliente_nombres")
-  clienteApellidos String       @map("cliente_apellidos")
-  clienteEmail     String       @map("cliente_email")
-  clientePhone     String?      @map("cliente_phone")
-  clienteDomicilio String?      @map("cliente_domicilio")
-  precioTotal      Float        @map("precio_total")
-  montoSeparacion  Float?       @map("monto_separacion")
-  inicial          Float?
-  cuotas           Int?
-  cronograma       Json?
-  docxUrl          String?      @map("docx_url")
-  createdAt        DateTime     @default(now()) @map("created_at")
-  lot              Lot          @relation(fields: [lotId], references: [id], onDelete: Cascade)
-  tenant           Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user             User         @relation(fields: [userId], references: [id])
+  id                    String         @id @default(uuid())
+  codigo                String         @unique
+  tenantId              String         @map("tenant_id")
+  lotId                 String         @map("lot_id")
+  quotationId           String?        @map("quotation_id")
+  userId                String         @map("user_id")
+  tipo                  ContractType   @default(SEPARACION)
+  estado                ContractEstado @default(BORRADOR) @map("estado")
+  // Comprador principal
+  clienteDni            String         @map("cliente_dni")
+  clienteNombres        String         @map("cliente_nombres")
+  clienteApellidos      String         @map("cliente_apellidos")
+  clienteEmail          String         @map("cliente_email")
+  clientePhone          String?        @map("cliente_phone")
+  clienteDomicilio      String?        @map("cliente_domicilio")
+  clienteEstadoCivil    String?        @map("cliente_estado_civil")
+  // Financiero
+  precioTotal           Float          @map("precio_total")
+  descuentoPct          Float          @default(0) @map("descuento_pct")
+  descuentoNivel        Int            @default(1) @map("descuento_nivel")
+  descuentoAprobadoPor  String?        @map("descuento_aprobado_por")
+  descuentoAprobadoCargo String?       @map("descuento_aprobado_cargo")
+  montoSeparacion       Float?         @map("monto_separacion")
+  inicial               Float?
+  cuotasNum             Int?           @map("cuotas_num")
+  tasaAnual             Float?         @map("tasa_anual")
+  // Datos completos del wizard (JSON libre)
+  datos                 Json?
+  // Firma
+  firmadoFisicamente    Boolean        @default(false) @map("firmado_fisicamente")
+  fechaFirma            DateTime?      @map("fecha_firma")
+  lugarFirma            String?        @map("lugar_firma")
+  // Docs
+  docxUrl               String?        @map("docx_url")
+  createdAt             DateTime       @default(now()) @map("created_at")
+  updatedAt             DateTime       @updatedAt @map("updated_at")
+  cuotas                Cuota[]
+  lot                   Lot            @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  tenant                Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user                  User           @relation(fields: [userId], references: [id])
 
   @@index([tenantId])
   @@index([lotId])
   @@map("contracts")
 }
 
+model Cuota {
+  id              String      @id @default(uuid())
+  tenantId        String      @map("tenant_id")
+  contractId      String      @map("contract_id")
+  numero          Int
+  descripcion     String?
+  monto           Float
+  fechaVenc       DateTime    @map("fecha_venc")
+  fechaPago       DateTime?   @map("fecha_pago")
+  montoPagado     Float?      @map("monto_pagado")
+  estado          CuotaStatus @default(PENDIENTE)
+  metodoPago      String?     @map("metodo_pago")
+  numOperacion    String?     @map("num_operacion")
+  voucherUrl      String?     @map("voucher_url")
+  registradoPorId String?     @map("registrado_por_id")
+  registradoEl    DateTime?   @map("registrado_el")
+  contract        Contract    @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  tenant          Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  registradoPor   User?       @relation("CuotaRegistro", fields: [registradoPorId], references: [id])
+
+  @@index([tenantId])
+  @@index([contractId])
+  @@index([fechaVenc])
+  @@map("cuotas")
+}
+
+model TenantCondiciones {
+  id                   String   @id @default(uuid())
+  tenantId             String   @unique @map("tenant_id")
+  // Topes de descuento (%)
+  descuentoContadoMax  Float    @default(5)   @map("descuento_contado_max")
+  descuentoFinancMax   Float    @default(3)   @map("descuento_financ_max")
+  descuentoExcepMax    Float    @default(10)  @map("descuento_excep_max")
+  // Financiamiento
+  tasaDefault          Float    @default(8)   @map("tasa_default")
+  plazoMax             Int      @default(60)  @map("plazo_max")
+  inicialMinPct        Float    @default(10)  @map("inicial_min_pct")
+  // Aprobaciones
+  tiempoAprobSeg       Int      @default(120) @map("tiempo_aprob_seg")
+  aprobadores          Json     @default("[]") @map("aprobadores")
+  // Otros
+  penalidad            Float    @default(0.5) @map("penalidad")
+  lucroCesante         Float    @default(0.5) @map("lucro_cesante")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+  tenant               Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_condiciones")
+}
+
 enum ContractType {
   SEPARACION
   COMPRAVENTA
+}
+
+enum ContractEstado {
+  BORRADOR
+  ACTIVO
+  FIRMADO
+  CANCELADO
+}
+
+enum CuotaStatus {
+  PENDIENTE
+  PAGADO
+  VENCIDO
+  PARCIAL
 }

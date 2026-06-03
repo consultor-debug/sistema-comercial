@@ -20,6 +20,9 @@ import {
     Calendar,
     Layers,
     MapPinned,
+    DollarSign,
+    SlidersHorizontal,
+    ClipboardList,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { logout } from '@/lib/actions'
@@ -32,83 +35,78 @@ type NavGroup = { label: string; items: NavItem[] }
 
 const GROUPS_ASESOR: NavGroup[] = [
     {
-        label: 'Principal',
+        label: 'Comercial',
         items: [
-            { name: 'Dashboard',   href: '/dashboard',             icon: LayoutDashboard },
-            { name: 'Contratos',   href: '/dashboard/contratos',   icon: FileText },
-            { name: 'Clientes',    href: '/dashboard/clientes',    icon: UserCheck },
-            { name: 'Cronogramas', href: '/dashboard/cronogramas', icon: Calendar },
+            { name: 'Dashboard',   href: '/dashboard',   icon: LayoutDashboard },
+            { name: 'Contratos',   href: '/contratos',   icon: ClipboardList },
+            { name: 'Pagos',       href: '/pagos',       icon: DollarSign },
+            { name: 'Clientes',    href: '/clientes',    icon: UserCheck },
         ],
     },
     {
         label: 'Proyectos',
         items: [
-            { name: 'Inmuebles',   href: '/dashboard/inmuebles',   icon: Database },
-            { name: 'Proyectos',   href: '/admin/projects',        icon: MapIcon },
-            { name: 'Plano',       href: '/admin/lots/map',        icon: MapPinned },
+            { name: 'Proyectos',   href: '/admin/projects', icon: MapIcon },
+            { name: 'Plano',       href: '/admin/lots/map', icon: MapPinned },
         ],
     },
 ]
 
 const GROUPS_ADMIN: NavGroup[] = [
     {
-        label: 'Principal',
+        label: 'Comercial',
         items: [
-            { name: 'Dashboard',   href: '/dashboard',             icon: LayoutDashboard },
-            { name: 'Contratos',   href: '/dashboard/contratos',   icon: FileText },
-            { name: 'Clientes',    href: '/dashboard/clientes',    icon: UserCheck },
-            { name: 'Cronogramas', href: '/dashboard/cronogramas', icon: Calendar },
-            { name: 'Reportes',    href: '/admin/reports',         icon: BarChart3 },
+            { name: 'Dashboard',   href: '/dashboard',   icon: LayoutDashboard },
+            { name: 'Contratos',   href: '/contratos',   icon: ClipboardList },
+            { name: 'Pagos',       href: '/pagos',       icon: DollarSign },
+            { name: 'Clientes',    href: '/clientes',    icon: UserCheck },
+            { name: 'Reportes',    href: '/admin/reports', icon: BarChart3 },
         ],
     },
     {
         label: 'Proyectos',
         items: [
-            { name: 'Inmuebles',   href: '/dashboard/inmuebles',   icon: Database },
-            { name: 'Proyectos',   href: '/admin/projects',        icon: MapIcon },
-            { name: 'Plano',       href: '/admin/lots/map',        icon: MapPinned },
-            { name: 'Lotes',       href: '/admin/lots',            icon: Database },
+            { name: 'Proyectos',   href: '/admin/projects', icon: MapIcon },
+            { name: 'Plano',       href: '/admin/lots/map', icon: MapPinned },
+            { name: 'Lotes',       href: '/admin/lots',     icon: Database },
         ],
     },
     {
-        label: 'Administración',
+        label: 'Configuración',
         items: [
-            { name: 'Usuarios',    href: '/admin/users',           icon: Users },
-            { name: 'Asesores',    href: '/dashboard/asesores',    icon: UserCheck },
-            { name: 'Plantillas',  href: '/dashboard/plantillas',  icon: Layers },
-            { name: 'Auditoría',   href: '/admin/logs',            icon: Activity },
+            { name: 'Condiciones', href: '/admin/condiciones', icon: SlidersHorizontal },
+            { name: 'Usuarios',    href: '/admin/users',       icon: Users },
+            { name: 'Auditoría',   href: '/admin/logs',        icon: Activity },
         ],
     },
 ]
 
 const GROUPS_SUPER_ADMIN: NavGroup[] = [
     {
-        label: 'Principal',
+        label: 'Comercial',
         items: [
-            { name: 'Dashboard',   href: '/dashboard',             icon: LayoutDashboard },
-            { name: 'Contratos',   href: '/dashboard/contratos',   icon: FileText },
-            { name: 'Clientes',    href: '/dashboard/clientes',    icon: UserCheck },
-            { name: 'Cronogramas', href: '/dashboard/cronogramas', icon: Calendar },
-            { name: 'Reportes',    href: '/admin/reports',         icon: BarChart3 },
+            { name: 'Dashboard',   href: '/dashboard',   icon: LayoutDashboard },
+            { name: 'Contratos',   href: '/contratos',   icon: ClipboardList },
+            { name: 'Pagos',       href: '/pagos',       icon: DollarSign },
+            { name: 'Clientes',    href: '/clientes',    icon: UserCheck },
+            { name: 'Reportes',    href: '/admin/reports', icon: BarChart3 },
         ],
     },
     {
         label: 'Proyectos',
         items: [
-            { name: 'Inmuebles',   href: '/dashboard/inmuebles',   icon: Database },
-            { name: 'Proyectos',   href: '/admin/projects',        icon: MapIcon },
-            { name: 'Plano',       href: '/admin/lots/map',        icon: MapPinned },
-            { name: 'Lotes',       href: '/admin/lots',            icon: Database },
+            { name: 'Proyectos',   href: '/admin/projects', icon: MapIcon },
+            { name: 'Plano',       href: '/admin/lots/map', icon: MapPinned },
+            { name: 'Lotes',       href: '/admin/lots',     icon: Database },
         ],
     },
     {
-        label: 'Administración',
+        label: 'Configuración',
         items: [
-            { name: 'Usuarios',    href: '/admin/users',           icon: Users },
-            { name: 'Asesores',    href: '/dashboard/asesores',    icon: UserCheck },
-            { name: 'Negocios',    href: '/admin/tenants',         icon: Building2 },
-            { name: 'Plantillas',  href: '/dashboard/plantillas',  icon: Layers },
-            { name: 'Auditoría',   href: '/admin/logs',            icon: Activity },
+            { name: 'Condiciones', href: '/admin/condiciones', icon: SlidersHorizontal },
+            { name: 'Usuarios',    href: '/admin/users',       icon: Users },
+            { name: 'Negocios',    href: '/admin/tenants',     icon: Building2 },
+            { name: 'Auditoría',   href: '/admin/logs',        icon: Activity },
         ],
     },
 ]
