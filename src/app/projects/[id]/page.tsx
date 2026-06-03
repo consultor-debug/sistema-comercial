@@ -437,8 +437,8 @@ export default function ProjectPage() {
                                 projectId={project.id}
                                 projectName={project.name}
                                 mapImageUrl={project.mapImageUrl || ''}
-                                lots={filteredLots}
-                                onLotClick={setSelectedLot}
+                                lots={filteredLots as Lot[]}
+                                onLotClick={l => setSelectedLot(l)}
                                 selectedLotId={(selectedLot as any)?.id}
                                 className="absolute inset-0"
                             />
@@ -447,8 +447,8 @@ export default function ProjectPage() {
                                 projectId={project.id}
                                 projectName={project.name}
                                 mapImageUrl={project.mapImageUrl || ''}
-                                lots={filteredLots}
-                                onLotClick={setSelectedLot}
+                                lots={filteredLots as Lot[]}
+                                onLotClick={l => setSelectedLot(l)}
                                 selectedLotId={(selectedLot as any)?.id}
                                 satCorners={satCorners}
                                 onSatCornersChange={setSatCorners}
