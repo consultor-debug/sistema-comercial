@@ -74,9 +74,10 @@ const GROUPS_ADMIN: NavGroup[] = [
     {
         label: 'Configuración',
         items: [
-            { name: 'Condiciones', href: '/admin/condiciones', icon: SlidersHorizontal },
-            { name: 'Usuarios',    href: '/admin/users',       icon: Users },
-            { name: 'Auditoría',   href: '/admin/logs',        icon: Activity },
+            { name: 'Condiciones', href: '/admin/condiciones',       icon: SlidersHorizontal },
+            { name: 'Plantillas',  href: '/dashboard/plantillas',    icon: Layers },
+            { name: 'Usuarios',    href: '/admin/users',             icon: Users },
+            { name: 'Auditoría',   href: '/admin/logs',              icon: Activity },
         ],
     },
 ]
@@ -103,10 +104,11 @@ const GROUPS_SUPER_ADMIN: NavGroup[] = [
     {
         label: 'Configuración',
         items: [
-            { name: 'Condiciones', href: '/admin/condiciones', icon: SlidersHorizontal },
-            { name: 'Usuarios',    href: '/admin/users',       icon: Users },
-            { name: 'Negocios',    href: '/admin/tenants',     icon: Building2 },
-            { name: 'Auditoría',   href: '/admin/logs',        icon: Activity },
+            { name: 'Condiciones', href: '/admin/condiciones',    icon: SlidersHorizontal },
+            { name: 'Plantillas',  href: '/dashboard/plantillas', icon: Layers },
+            { name: 'Usuarios',    href: '/admin/users',          icon: Users },
+            { name: 'Negocios',    href: '/admin/tenants',        icon: Building2 },
+            { name: 'Auditoría',   href: '/admin/logs',           icon: Activity },
         ],
     },
 ]

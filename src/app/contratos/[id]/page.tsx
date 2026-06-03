@@ -7,7 +7,8 @@ import { Sidebar } from '@/components/Sidebar'
 import {
   ArrowLeft, Loader2, User, MapPin, DollarSign, FileSignature,
   AlertCircle, CheckCircle2, Clock, XCircle, ChevronRight,
-  Mail, Phone, Home, CreditCard, Building2, UserCheck
+  Mail, Phone, Home, CreditCard, Building2, UserCheck,
+  FileText, Download
 } from 'lucide-react'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -515,6 +516,64 @@ export default function ContratoPage() {
                     )}
                   </div>
                 )}
+              </div>
+
+              {/* Card Documentos */}
+              <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+                <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+                  Documentos
+                </h2>
+                <div className="space-y-2">
+                  <a
+                    href={`/dashboard/plantillas?contratoId=${id}`}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+                  >
+                    <FileText className="w-4 h-4 text-blue-500" />
+                    Ver modelo de contrato
+                  </a>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const r = await fetch('/api/contracts/generate', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            tipo: contrato?.tipo ?? 'SEPARACION',
+                            lotId: contrato?.lot ? (contrato as any).lotId : undefined,
+                            quotationId: null,
+                            clienteData: {
+                              dni:       clienteDni,
+                              nombres:   clienteNombres,
+                              apellidos: clienteApellidos,
+                              email:     clienteEmail,
+                              phone:     clientePhone,
+                              domicilio: clienteDomicilio,
+                            },
+                            financialData: {
+                              precioTotal: precioTotal,
+                              inicial:     inicial,
+                              cuotas:      cuotasNum,
+                              cronograma:  cuotas.map((c) => ({
+                                numero: c.numero, fecha: c.fechaVenc, monto: c.monto, descripcion: c.descripcion,
+                              })),
+                            },
+                          }),
+                        })
+                        const d = await r.json()
+                        if (d.docxBase64) {
+                          const link = document.createElement('a')
+                          link.href = 'data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,' + d.docxBase64
+                          link.download = `${codigo}.docx`
+                          link.click()
+                        }
+                      } catch { /* silencioso */ }
+                    }}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    Descargar contrato (.docx)
+                  </button>
+                </div>
               </div>
 
               {/* Card Cronograma de pagos */}
