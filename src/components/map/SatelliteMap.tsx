@@ -277,9 +277,22 @@ export function SatelliteMap({
                     // Normalizar vértices: acepta tanto {x,y}[] como {vertices:[{x,y}]}
                     let verts: {x:number;y:number}[] = []
                     if (Array.isArray(shapeData)) verts = shapeData
+                    else if (Array.isArray(shapeData.points)) {
+                        // formato estandar {points:[{x,y}]} fracciones 0-1
+                        verts = shapeData.points.map((p: {x:number;y:number}) => ({
+                            x: p.x * VIEW_SIZE, y: p.y * VIEW_SIZE,
+                        }))
+                    }
                     else if (Array.isArray(shapeData.vertices)) verts = shapeData.vertices
+                    else if (shapeData.x !== undefined && shapeData.radius !== undefined) {
+                        // circulo → poligono 8 lados
+                        const cx = shapeData.x * VIEW_SIZE, cy = shapeData.y * VIEW_SIZE, r = shapeData.radius ?? 10
+                        verts = Array.from({length: 8}, (_, i) => {
+                            const a = (i / 8) * Math.PI * 2
+                            return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) }
+                        })
+                    }
                     else if (shapeData.x !== undefined) {
-                        // rect {x,y,w,h} en 0-1 → escalar a VIEW_SIZE
                         const {x,y,w,h} = shapeData
                         verts = [
                             {x: x*VIEW_SIZE, y: y*VIEW_SIZE},
