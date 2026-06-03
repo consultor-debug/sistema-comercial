@@ -349,50 +349,51 @@ interface QuickSaleModalProps {
 }
 
 function QuickSaleModal({ lot, onClose, onConfirm }: QuickSaleModalProps) {
-  const [tipo, setTipo] = React.useState<'SEPARACION' | 'COMPRAVENTA'>('SEPARACION')
   const [dni, setDni] = React.useState('')
+  const [telefono, setTelefono] = React.useState('')
+  // Datos RENIEC — se llenan en background, no los ve ni edita el usuario
   const [nombres, setNombres] = React.useState('')
   const [apellidos, setApellidos] = React.useState('')
-  const [telefono, setTelefono] = React.useState('')
-  const [email, setEmail] = React.useState('')
-  const [buscando, setBuscando] = React.useState(false)
-  const [reniecMsg, setReniecMsg] = React.useState<string | null>(null)
+  const [reniecStatus, setReniecStatus] = React.useState<'idle' | 'loading' | 'found' | 'not_found'>('idle')
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
-  async function buscarReniec() {
-    if (!/^\d{8}$/.test(dni)) {
-      setReniecMsg('Ingresa 8 digitos')
+  // Auto-consulta RENIEC al completar 8 dígitos
+  React.useEffect(() => {
+    if (dni.length !== 8) {
+      setReniecStatus('idle')
+      setNombres('')
+      setApellidos('')
       return
     }
-    setBuscando(true)
-    setReniecMsg(null)
-    try {
-      const res = await fetch(`/api/clients/validate?dni=${dni}`)
-      const data = await res.json()
-      if (data?.nombres) {
-        setNombres(data.nombres)
-        setApellidos(data.apellidos ?? '')
-        setReniecMsg('Datos cargados desde RENIEC')
-      } else {
-        setReniecMsg('No encontrado, ingrese manualmente')
-      }
-    } catch {
-      setReniecMsg('Error al consultar RENIEC')
-    } finally {
-      setBuscando(false)
-    }
-  }
+    let cancelled = false
+    setReniecStatus('loading')
+    fetch(`/api/clients/validate?dni=${dni}`)
+      .then(r => r.json())
+      .then(data => {
+        if (cancelled) return
+        if (data?.nombres) {
+          setNombres(data.nombres)
+          setApellidos(data.apellidos ?? '')
+          setReniecStatus('found')
+        } else {
+          setReniecStatus('not_found')
+        }
+      })
+      .catch(() => { if (!cancelled) setReniecStatus('not_found') })
+    return () => { cancelled = true }
+  }, [dni])
 
   async function handleConfirm() {
-    if (!nombres.trim() || !apellidos.trim() || !telefono.trim() || !email.trim()) {
-      setError('Completa todos los campos')
-      return
-    }
+    if (dni.length !== 8) { setError('Ingresa un DNI de 8 dígitos'); return }
+    if (!telefono.trim()) { setError('Ingresa el teléfono'); return }
     setLoading(true)
     setError(null)
+    // Si RENIEC no respondió usamos S/N; el wizard completo pedirá los datos luego
+    const nom = nombres || 'S/N'
+    const ape = apellidos || 'S/N'
     try {
-      await onConfirm(lot.id, { dni, nombres, apellidos, email, telefono, tipo })
+      await onConfirm(lot.id, { dni, nombres: nom, apellidos: ape, email: '', telefono, tipo: 'SEPARACION' })
       onClose()
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Error al registrar')
@@ -402,13 +403,11 @@ function QuickSaleModal({ lot, onClose, onConfirm }: QuickSaleModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40">
-      <div className="w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden">
+      <div className="w-full sm:max-w-sm bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div>
-            <h3 className="text-sm font-semibold text-gray-900">
-              Apartar / Vender
-            </h3>
+            <h3 className="text-sm font-semibold text-gray-900">Separación de lote</h3>
             <p className="text-xs text-gray-400 mt-0.5">Lote {lot.code}</p>
           </div>
           <button
@@ -419,113 +418,49 @@ function QuickSaleModal({ lot, onClose, onConfirm }: QuickSaleModalProps) {
           </button>
         </div>
 
-        <div className="px-5 py-4 space-y-4 max-h-[80vh] overflow-y-auto">
-          {/* Tipo operacion */}
+        <div className="px-5 py-5 space-y-4">
+          {/* DNI con indicador RENIEC inline */}
           <div>
-            <p className="text-xs text-gray-500 mb-2">Tipo de operacion</p>
-            <div className="flex gap-2">
-              {(['SEPARACION', 'COMPRAVENTA'] as const).map(t => (
-                <button
-                  key={t}
-                  onClick={() => setTipo(t)}
-                  className={cn(
-                    'flex-1 py-2 rounded-lg text-xs font-medium border transition-colors',
-                    tipo === t
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
-                  )}
-                >
-                  {t === 'SEPARACION' ? 'Separacion' : 'Compraventa'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* DNI + RENIEC */}
-          <div>
-            <label className="text-xs text-gray-500 block mb-1">DNI</label>
-            <div className="flex gap-2">
+            <label className="text-xs font-medium text-gray-600 block mb-1.5">
+              Número de DNI <span className="text-red-400">*</span>
+            </label>
+            <div className="relative">
               <input
                 type="text"
+                inputMode="numeric"
                 maxLength={8}
                 value={dni}
-                onChange={e => {
-                  setDni(e.target.value.replace(/\D/g, ''))
-                  setReniecMsg(null)
-                }}
+                onChange={e => setDni(e.target.value.replace(/\D/g, ''))}
                 placeholder="12345678"
-                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 pr-10"
               />
-              <button
-                onClick={buscarReniec}
-                disabled={buscando || dni.length !== 8}
-                className="px-3 py-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium hover:bg-blue-100 disabled:opacity-40 transition-colors flex items-center gap-1 shrink-0"
-              >
-                {buscando ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Buscar RENIEC'}
-              </button>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                {reniecStatus === 'loading' && <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />}
+                {reniecStatus === 'found' && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+              </span>
             </div>
-            {reniecMsg && (
-              <p
-                className={cn(
-                  'text-[11px] mt-1',
-                  reniecMsg.includes('cargados') ? 'text-green-600' : 'text-gray-400'
-                )}
-              >
-                {reniecMsg}
+            {reniecStatus === 'found' && (nombres || apellidos) && (
+              <p className="text-[11px] text-green-600 mt-1 flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 shrink-0" />
+                {nombres} {apellidos}
               </p>
+            )}
+            {reniecStatus === 'not_found' && (
+              <p className="text-[11px] text-gray-400 mt-1">DNI no encontrado en RENIEC</p>
             )}
           </div>
 
-          {/* Nombres */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-gray-500 block mb-1">
-                Nombres <span className="text-red-400">*</span>
-              </label>
-              <input
-                value={nombres}
-                onChange={e => setNombres(e.target.value)}
-                placeholder="Juan"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-gray-500 block mb-1">
-                Apellidos <span className="text-red-400">*</span>
-              </label>
-              <input
-                value={apellidos}
-                onChange={e => setApellidos(e.target.value)}
-                placeholder="Perez"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
-              />
-            </div>
-          </div>
-
-          {/* Telefono */}
+          {/* Teléfono */}
           <div>
-            <label className="text-xs text-gray-500 block mb-1">
-              Telefono <span className="text-red-400">*</span>
+            <label className="text-xs font-medium text-gray-600 block mb-1.5">
+              Teléfono <span className="text-red-400">*</span>
             </label>
             <input
+              type="tel"
               value={telefono}
               onChange={e => setTelefono(e.target.value)}
-              placeholder="+51 999 999 999"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
-            />
-          </div>
-
-          {/* Email */}
-          <div>
-            <label className="text-xs text-gray-500 block mb-1">
-              Email <span className="text-red-400">*</span>
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="correo@ejemplo.com"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
+              placeholder="999 999 999"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
             />
           </div>
 
@@ -538,7 +473,7 @@ function QuickSaleModal({ lot, onClose, onConfirm }: QuickSaleModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t border-gray-100 flex gap-3">
+        <div className="px-5 pb-5 flex gap-3">
           <button
             onClick={onClose}
             className="flex-1 py-2.5 rounded-xl text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors"
@@ -547,10 +482,10 @@ function QuickSaleModal({ lot, onClose, onConfirm }: QuickSaleModalProps) {
           </button>
           <button
             onClick={handleConfirm}
-            disabled={loading}
+            disabled={loading || dni.length !== 8 || !telefono.trim()}
             className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
           >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmar'}
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Separar lote'}
           </button>
         </div>
       </div>
@@ -965,7 +900,7 @@ export function PlanoCotizador({
                 onClick={() => setShowModal(true)}
                 className="w-full py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors"
               >
-                Apartar / Vender lote
+                Separar lote
               </button>
 
               {/* Secundario */}
