@@ -4,7 +4,8 @@
 
 set -e
 
-TOKEN="${GH_TOKEN}"
+# Token: pasa como variable de entorno GH_TOKEN o en ~/.cowork-token
+TOKEN="${GH_TOKEN:-$(cat ~/.cowork-token 2>/dev/null)}"
 REPO_URL="https://consultor-debug:${TOKEN}@github.com/consultor-debug/sistema-comercial.git"
 TMP_DIR="/tmp/sc-git-push"
 SRC_DIR="/sessions/admiring-funny-tesla/mnt/Sistema Comercial/sistema-comercial"
