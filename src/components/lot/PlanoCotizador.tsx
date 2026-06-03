@@ -801,7 +801,7 @@ export function PlanoCotizador({
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-semibold text-gray-700">Cuota inicial</p>
                   <p className="text-[11px] text-gray-400">
-                    Min. {fmtPEN(inicialMin)} ({inicialMinPct}%)
+                    Mín. {fmtPEN(inicialMin)}
                   </p>
                 </div>
                 <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden">
