@@ -4,9 +4,12 @@ import * as React from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { InteractiveMap } from '@/components/map'
+import { PlanoEditor } from '@/components/map/PlanoEditor'
+import { PlanoEditPanel } from '@/components/map/PlanoEditPanel'
+import { NewLoteModal } from '@/components/map/NewLoteModal'
 import { PlanoCotizador } from '@/components/lot/PlanoCotizador'
 import { Sidebar } from '@/components/Sidebar'
-import { Loader2, Search, Map, Satellite, Download, Edit2 } from 'lucide-react'
+import { Loader2, Search, Map, Satellite, Download, Edit2, PenLine, Plus } from 'lucide-react'
 import { Lot } from '@prisma/client'
 import { cn } from '@/lib/utils'
 import { buildLotes, mergeLotes, type LoteBase } from '@/lib/buildLotes'
@@ -58,9 +61,30 @@ export default function ProjectPage() {
     const [satCorners, setSatCorners] = React.useState<SatCorners | null>(null)
     const [isAdmin, setIsAdmin] = React.useState(false)
 
+    // ── Modo edición ───────────────────────────────────────────
+    const [editMode, setEditMode]     = React.useState(false)
+    const [drawMode, setDrawMode]     = React.useState(false)
+    const [isSaving, setIsSaving]     = React.useState(false)
+    // Overrides de polígonos en memoria durante la edición: { [code]: points[] }
+    const [polyOverrides, setPolyOverrides] = React.useState<Record<string, {x:number;y:number}[]>>({})
+    // Puntos del dibujo en curso (para el modal)
+    const [pendingPoly, setPendingPoly] = React.useState<{x:number;y:number}[] | null>(null)
+
     // Merge PRNG base + DB overrides
     const prngLotes = React.useMemo(() => buildLotes(), [])
-    const lots = React.useMemo(() => mergeLotes(prngLotes, dbLots) as AnyLot[], [prngLotes, dbLots])
+    const baseLots  = React.useMemo(() => mergeLotes(prngLotes, dbLots) as AnyLot[], [prngLotes, dbLots])
+
+    // Aplica polyOverrides sobre baseLots para el editor
+    const lots = React.useMemo(() => {
+        if (!editMode || Object.keys(polyOverrides).length === 0) return baseLots
+        return baseLots.map(l => {
+            const code = (l as any).code as string
+            if (polyOverrides[code]) {
+                return { ...l, mapShapeType: 'polygon', mapShapeData: { points: polyOverrides[code] } }
+            }
+            return l
+        })
+    }, [baseLots, editMode, polyOverrides])
 
     const fetchData = React.useCallback(async () => {
         setIsLoading(true)
@@ -128,6 +152,87 @@ export default function ProjectPage() {
     const handleGenerarVenta = React.useCallback((lotId: string) => {
         router.push(`/vender?lotId=${lotId}`)
     }, [router])
+
+    // ── Handlers modo edición ──────────────────────────────────
+    const handlePolygonChange = React.useCallback((code: string, points: {x:number;y:number}[]) => {
+        setPolyOverrides(prev => ({ ...prev, [code]: points }))
+    }, [])
+
+    const handleSaveEdits = React.useCallback(async () => {
+        if (!project) return
+        setIsSaving(true)
+        const entries = Object.entries(polyOverrides)
+        for (const [code, points] of entries) {
+            const lot = baseLots.find(l => (l as any).code === code) as any
+            try {
+                if (lot?.id) {
+                    // Lote existente en BD → solo actualizar geometría
+                    await fetch(`/api/lots/${lot.id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ mapShapeType: 'polygon', mapShapeData: { points } }),
+                    })
+                } else {
+                    // Lote PRNG sin BD → crear primero, luego actualizar geometría
+                    const cr = await fetch('/api/lots', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            projectId: project.id,
+                            manzana: lot?.manzana ?? code.split('-')[0],
+                            loteNumero: lot?.loteNumero ?? parseInt(code.split('-')[1] ?? '1'),
+                            areaM2: lot?.areaM2,
+                            frenteM: lot?.frenteM,
+                            fondoM: lot?.fondoM,
+                            precioLista: lot?.precioLista ?? 50000,
+                            tipologia: lot?.tipologia,
+                            etapa: lot?.etapa,
+                            mapShapeType: 'polygon',
+                            mapShapeData: { points },
+                        }),
+                    })
+                    const cd = await cr.json()
+                    if (!cd.success) console.error('Error creando lote PRNG:', cd.error)
+                }
+            } catch (e) { console.error('Error guardando polígono:', code, e) }
+        }
+        setIsSaving(false)
+        setPolyOverrides({})
+        setEditMode(false)
+        setDrawMode(false)
+        setSelectedLot(null)
+        await handleUpdate()
+    }, [project, polyOverrides, baseLots, handleUpdate])
+
+    const handleNewLotSave = React.useCallback(async (data: {
+        manzana: string; loteNumero: number; tipologia: string; etapa: string|null
+        areaM2: number; frenteM: number; fondoM: number; precioLista: number
+        points: {x:number;y:number}[]
+    }) => {
+        if (!project) return
+        const r = await fetch('/api/lots', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                projectId: project.id,
+                manzana: data.manzana,
+                loteNumero: data.loteNumero,
+                areaM2: data.areaM2,
+                frenteM: data.frenteM,
+                fondoM: data.fondoM,
+                precioLista: data.precioLista,
+                tipologia: data.tipologia,
+                etapa: data.etapa,
+                mapShapeType: 'polygon',
+                mapShapeData: { points: data.points },
+            }),
+        })
+        const d = await r.json()
+        if (!d.success) throw new Error(d.error || 'Error al crear lote')
+        setPendingPoly(null)
+        setDrawMode(false)
+        await handleUpdate()
+    }, [project, handleUpdate])
 
     const stats = React.useMemo(() => ({
         total:    lots.length,
@@ -215,9 +320,36 @@ export default function ProjectPage() {
                                 </button>
                             </div>
 
+                            {mapView === '2d' && isAdmin && editMode && (
+                                <button
+                                    onClick={() => { setDrawMode(d => !d); setSelectedLot(null) }}
+                                    className={cn(
+                                        'flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-lg transition-colors',
+                                        drawMode
+                                            ? 'bg-blue-600 text-white border-blue-600'
+                                            : 'bg-white border-blue-300 text-blue-700 hover:bg-blue-50'
+                                    )}
+                                >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    {drawMode ? 'Cancelar dibujo' : 'Nuevo polígono'}
+                                </button>
+                            )}
+
                             {mapView === '2d' && isAdmin && (
-                                <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-gray-50 transition-colors">
-                                    <Edit2 className="w-3.5 h-3.5" /> Editar polígonos
+                                <button
+                                    onClick={() => {
+                                        if (editMode) { setEditMode(false); setDrawMode(false); setPolyOverrides({}); setSelectedLot(null) }
+                                        else { setEditMode(true); setMapView('2d') }
+                                    }}
+                                    className={cn(
+                                        'flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-lg transition-colors',
+                                        editMode
+                                            ? 'bg-amber-500 text-white border-amber-500'
+                                            : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                                    )}
+                                >
+                                    <Edit2 className="w-3.5 h-3.5" />
+                                    {editMode ? 'Salir edición' : 'Editar polígonos'}
                                 </button>
                             )}
 
@@ -285,16 +417,29 @@ export default function ProjectPage() {
                 {/* ── Contenido principal: plano izquierda + panel derecha ── */}
                 <div className="flex-1 flex min-h-0 p-4 gap-4">
 
-                    {/* Plano — posicionamiento relativo para que el mapa use absolute inset-0 */}
+                    {/* Plano */}
                     <div className="flex-1 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden relative min-h-[400px]">
-                        {mapView === '2d' ? (
+                        {editMode ? (
+                            <PlanoEditor
+                                lots={filteredLots as any}
+                                selectedLotId={(selectedLot as any)?.code ?? null}
+                                onSelectLot={setSelectedLot as any}
+                                editMode={editMode}
+                                drawMode={drawMode}
+                                onDrawFinish={(pts) => { setPendingPoly(pts); setDrawMode(false) }}
+                                onDrawCancel={() => { setDrawMode(false) }}
+                                onPolygonChange={handlePolygonChange}
+                                statusFilter={statusFilter}
+                                className="absolute inset-0"
+                            />
+                        ) : mapView === '2d' ? (
                             <InteractiveMap
                                 projectId={project.id}
                                 projectName={project.name}
                                 mapImageUrl={project.mapImageUrl || ''}
                                 lots={filteredLots}
                                 onLotClick={setSelectedLot}
-                                selectedLotId={selectedLot?.id}
+                                selectedLotId={(selectedLot as any)?.id}
                                 className="absolute inset-0"
                             />
                         ) : (
@@ -304,7 +449,7 @@ export default function ProjectPage() {
                                 mapImageUrl={project.mapImageUrl || ''}
                                 lots={filteredLots}
                                 onLotClick={setSelectedLot}
-                                selectedLotId={selectedLot?.id}
+                                selectedLotId={(selectedLot as any)?.id}
                                 satCorners={satCorners}
                                 onSatCornersChange={setSatCorners}
                                 isAdmin={isAdmin}
@@ -313,9 +458,36 @@ export default function ProjectPage() {
                         )}
                     </div>
 
-                    {/* Panel lateral — siempre visible, como en Mattika */}
+                    {/* Panel lateral */}
                     <div className="w-80 xl:w-96 shrink-0 flex flex-col">
-                        {selectedLot ? (
+                        {editMode ? (
+                            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex-1">
+                                <PlanoEditPanel
+                                    editedCount={Object.keys(polyOverrides).length}
+                                    drawMode={drawMode}
+                                    drawPointCount={0}
+                                    selectedLot={selectedLot as any}
+                                    onStartDraw={() => { setDrawMode(true); setSelectedLot(null) }}
+                                    onCancelDraw={() => setDrawMode(false)}
+                                    onFinishDraw={() => { /* handled by PlanoEditor double-click */ }}
+                                    onFinishEdit={handleSaveEdits}
+                                    onResetAll={() => setPolyOverrides({})}
+                                    onDeleteLot={(lot) => {
+                                        if (!(lot as any).id) {
+                                            // Lote PRNG: simplemente quitar el override
+                                            setPolyOverrides(prev => { const n={...prev}; delete n[(lot as any).code]; return n })
+                                        }
+                                        setSelectedLot(null)
+                                    }}
+                                    onResetLot={(lot) => {
+                                        setPolyOverrides(prev => { const n={...prev}; delete n[(lot as any).code]; return n })
+                                        setSelectedLot(null)
+                                    }}
+                                    onDrawAnother={() => { setDrawMode(true); setSelectedLot(null) }}
+                                    isSaving={isSaving}
+                                />
+                            </div>
+                        ) : selectedLot ? (
                             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex-1">
                                 <PlanoCotizador
                                     lot={selectedLot as any}
@@ -330,6 +502,20 @@ export default function ProjectPage() {
                             <EmptyPanel stats={stats} />
                         )}
                     </div>
+
+                    {/* Modal: nuevo lote desde polígono dibujado */}
+                    {pendingPoly && project && (
+                        <NewLoteModal
+                            projectId={project.id}
+                            points={pendingPoly}
+                            estimatedArea={Math.abs(pendingPoly.reduce((acc, p, i) => {
+                                const j = (i + 1) % pendingPoly.length
+                                return acc + (p.x * pendingPoly[j].y - pendingPoly[j].x * p.y)
+                            }, 0) / 2) * 2800 * 2006}
+                            onSave={handleNewLotSave}
+                            onCancel={() => { setPendingPoly(null); setDrawMode(false) }}
+                        />
+                    )}
                 </div>
 
                 {/* Mobile: bottom sheet para lote seleccionado */}
