@@ -71,8 +71,18 @@ export default function ProjectPage() {
     const [pendingPoly, setPendingPoly] = React.useState<{x:number;y:number}[] | null>(null)
 
     // Merge PRNG base + DB overrides
+    // Regla: si el proyecto tiene imagen del plano → solo lotes de BD (posicionados en el editor)
+    //        si no tiene imagen → PRNG como canvas fallback
     const prngLotes = React.useMemo(() => buildLotes(), [])
-    const baseLots  = React.useMemo(() => mergeLotes(prngLotes, dbLots) as AnyLot[], [prngLotes, dbLots])
+    const baseLots  = React.useMemo(() => {
+        const hasImage = !!project?.mapImageUrl
+        if (hasImage) {
+            // Solo lotes de BD que tienen posición definida (mapShapeData o mapShapeType)
+            return dbLots.filter(l => l.mapShapeData || l.mapShapeType) as AnyLot[]
+        }
+        // Sin imagen: PRNG mezclado con lotes de BD
+        return mergeLotes(prngLotes, dbLots) as AnyLot[]
+    }, [prngLotes, dbLots, project?.mapImageUrl])
 
     // Aplica polyOverrides sobre baseLots para el editor
     const lots = React.useMemo(() => {
