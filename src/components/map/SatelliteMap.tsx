@@ -14,6 +14,7 @@ import * as React from 'react'
 import { Lot } from '@prisma/client'
 import { cn } from '@/lib/utils'
 import { Maximize2, Minimize2, Navigation, Settings, GripVertical, RotateCw, ZoomIn, ZoomOut } from 'lucide-react'
+import 'leaflet/dist/leaflet.css'
 
 // ── Tipos ─────────────────────────────────────────────────────────
 interface LatLng { lat: number; lng: number }

@@ -141,7 +141,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         <div
             ref={containerRef}
             className={cn(
-                'relative flex flex-col bg-slate-950 overflow-hidden transition-all duration-300',
+                'relative flex flex-col bg-white overflow-hidden transition-all duration-300',
                 isFullscreen ? 'fixed inset-0 z-[9999]' : 'rounded-xl border border-white/5',
                 className
             )}
@@ -150,29 +150,25 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             <div className="absolute top-0 inset-x-0 z-30 pointer-events-none">
                 <div className="flex flex-col gap-1.5 p-2 pointer-events-auto">
 
-                    {/* Row 1: name + actions */}
+                    {/* Row 1: Manzana filters + acciones */}
                     <div className="flex items-center gap-2">
-                        <div className="px-2.5 py-1 bg-slate-900/90 backdrop-blur-sm rounded-md border border-white/10 shrink-0">
-                            <h2 className="text-[11px] font-semibold text-white leading-none">{projectName}</h2>
-                        </div>
-
                         {/* Manzana filters — scrollable */}
                         <div className="flex-1 overflow-x-auto no-scrollbar">
                             <div className="flex items-center gap-1 w-max">
-                                <span className="text-[9px] font-semibold text-slate-600 uppercase tracking-wider px-1 shrink-0">MZ</span>
+                                <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider px-1 shrink-0">MZ</span>
                                 <button
                                     onClick={() => setSelectedManzana('all')}
                                     className={cn('px-2.5 py-1 text-[11px] rounded-md border transition-colors shrink-0',
                                         selectedManzana === 'all'
-                                            ? 'bg-white text-slate-950 border-white font-medium'
-                                            : 'bg-slate-900/80 border-white/10 text-slate-400 hover:text-white')}
+                                            ? 'bg-blue-600 text-white border-blue-600 font-medium'
+                                            : 'bg-white/80 border-gray-200 text-gray-600 hover:text-gray-900 hover:border-gray-300')}
                                 >Todas</button>
                                 {manzanas.map(m => (
                                     <button key={m} onClick={() => setSelectedManzana(m)}
                                         className={cn('px-2.5 py-1 text-[11px] rounded-md border transition-colors shrink-0',
                                             selectedManzana === m
-                                                ? 'bg-white text-slate-950 border-white font-medium'
-                                                : 'bg-slate-900/80 border-white/10 text-slate-400 hover:text-white')}
+                                                ? 'bg-blue-600 text-white border-blue-600 font-medium'
+                                                : 'bg-white/80 border-gray-200 text-gray-600 hover:text-gray-900 hover:border-gray-300')}
                                     >{m}</button>
                                 ))}
                             </div>
@@ -181,37 +177,37 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                         {/* Action buttons */}
                         <div className="flex gap-1 shrink-0">
                             <button onClick={handleDownloadPdf} disabled={isDownloading}
-                                className="p-1.5 bg-slate-900/90 backdrop-blur-sm rounded-md border border-white/10 text-white/60 hover:text-white hover:bg-slate-800 transition-colors disabled:opacity-50"
+                                className="p-1.5 bg-white/90 backdrop-blur-sm rounded-md border border-gray-200 text-gray-500 hover:text-gray-800 hover:bg-white transition-colors disabled:opacity-50"
                                 title="Descargar PDF">
                                 {isDownloading
-                                    ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white animate-spin rounded-full" />
+                                    ? <div className="w-3.5 h-3.5 border-2 border-gray-300 border-t-gray-600 animate-spin rounded-full" />
                                     : <Download className="w-3.5 h-3.5" />}
                             </button>
                             <button onClick={handleFullscreen}
-                                className="p-1.5 bg-slate-900/90 backdrop-blur-sm rounded-md border border-white/10 text-white/60 hover:text-white hover:bg-slate-800 transition-colors"
+                                className="p-1.5 bg-white/90 backdrop-blur-sm rounded-md border border-gray-200 text-gray-500 hover:text-gray-800 hover:bg-white transition-colors"
                                 title={isFullscreen ? 'Salir' : 'Pantalla completa'}>
                                 {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
                             </button>
                         </div>
                     </div>
 
-                    {/* Row 2: Etapa filters (only if exist) */}
+                    {/* Row 2: Etapa filters */}
                     {etapas.length > 0 && (
                         <div className="flex items-center gap-1 overflow-x-auto no-scrollbar w-max">
-                            <span className="text-[9px] font-semibold text-slate-600 uppercase tracking-wider px-1 shrink-0">ET</span>
+                            <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider px-1 shrink-0">ET</span>
                             <button
                                 onClick={() => setSelectedEtapa('all')}
                                 className={cn('px-2.5 py-1 text-[11px] rounded-md border transition-colors shrink-0',
                                     selectedEtapa === 'all'
-                                        ? 'bg-white text-slate-950 border-white font-medium'
-                                        : 'bg-slate-900/80 border-white/10 text-slate-400 hover:text-white')}
+                                        ? 'bg-blue-600 text-white border-blue-600 font-medium'
+                                        : 'bg-white/80 border-gray-200 text-gray-600 hover:text-gray-900')}
                             >Todas</button>
                             {etapas.map(e => (
                                 <button key={e} onClick={() => setSelectedEtapa(e)}
                                     className={cn('px-2.5 py-1 text-[11px] rounded-md border transition-colors shrink-0',
                                         selectedEtapa === e
-                                            ? 'bg-white text-slate-950 border-white font-medium'
-                                            : 'bg-slate-900/80 border-white/10 text-slate-400 hover:text-white')}
+                                            ? 'bg-blue-600 text-white border-blue-600 font-medium'
+                                            : 'bg-white/80 border-gray-200 text-gray-600 hover:text-gray-900')}
                                 >{e}</button>
                             ))}
                         </div>

@@ -234,8 +234,8 @@ export default function ProjectPage() {
                 {/* ── Contenido principal: plano izquierda + panel derecha ── */}
                 <div className="flex-1 flex min-h-0 p-4 gap-4">
 
-                    {/* Plano */}
-                    <div className="flex-1 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+                    {/* Plano — posicionamiento relativo para que el mapa use absolute inset-0 */}
+                    <div className="flex-1 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden relative min-h-[400px]">
                         {mapView === '2d' ? (
                             <InteractiveMap
                                 projectId={project.id}
@@ -244,7 +244,7 @@ export default function ProjectPage() {
                                 lots={filteredLots}
                                 onLotClick={setSelectedLot}
                                 selectedLotId={selectedLot?.id}
-                                className="flex-1"
+                                className="absolute inset-0"
                             />
                         ) : (
                             <SatelliteMap
@@ -257,7 +257,7 @@ export default function ProjectPage() {
                                 satCorners={satCorners}
                                 onSatCornersChange={setSatCorners}
                                 isAdmin={isAdmin}
-                                className="flex-1"
+                                className="absolute inset-0"
                             />
                         )}
                     </div>
