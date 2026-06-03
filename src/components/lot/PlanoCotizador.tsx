@@ -633,7 +633,11 @@ export function PlanoCotizador({
   const totalPagarFinanc = inicialNum + cuotaMensual * plazo
 
   const plazoMax = cond?.plazoMax ?? 60
-  const plazosDisponibles = [12, 24, 36, 48, 60, 72].filter(p => p <= plazoMax)
+  // Chips de 6 en 6 meses hasta el plazoMax (máx 12 chips para no saturar)
+  const plazosDisponibles = Array.from(
+    { length: Math.floor(plazoMax / 6) },
+    (_, i) => (i + 1) * 6
+  ).filter(p => p <= plazoMax)
 
   const chipsPct = [10, 20, 30, 50]
 
