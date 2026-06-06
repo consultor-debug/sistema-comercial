@@ -29,6 +29,7 @@ interface Cuota {
 interface Contrato {
   id: string
   codigo: string
+  lotId: string
   tipo: 'SEPARACION' | 'COMPRAVENTA'
   estado: 'BORRADOR' | 'ACTIVO' | 'FIRMADO' | 'CANCELADO'
   clienteNombres: string
@@ -40,6 +41,7 @@ interface Contrato {
   clienteEstadoCivil: string | null
   precioTotal: number
   descuentoPct: number
+  montoSeparacion: number | null
   inicial: number | null
   cuotasNum: number | null
   tasaAnual: number | null
@@ -237,10 +239,10 @@ export default function ContratoPage() {
   }
 
   const {
-    codigo, tipo, estado,
+    codigo, tipo, estado, lotId,
     clienteNombres, clienteApellidos, clienteDni, clienteEmail,
     clientePhone, clienteDomicilio, clienteEstadoCivil,
-    precioTotal, descuentoPct, inicial, cuotasNum, tasaAnual,
+    precioTotal, descuentoPct, montoSeparacion, inicial, cuotasNum, tasaAnual,
     firmadoFisicamente, fechaFirma, lugarFirma,
     createdAt, lot, user, cuotas,
   } = contrato
@@ -538,23 +540,27 @@ export default function ContratoPage() {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({
-                            tipo: contrato?.tipo ?? 'SEPARACION',
-                            lotId: contrato?.lot ? (contrato as any).lotId : undefined,
+                            tipo,
+                            lotId,
                             quotationId: null,
                             clienteData: {
                               dni:       clienteDni,
                               nombres:   clienteNombres,
                               apellidos: clienteApellidos,
                               email:     clienteEmail,
-                              phone:     clientePhone,
-                              domicilio: clienteDomicilio,
+                              phone:     clientePhone ?? '',
+                              domicilio: clienteDomicilio ?? '',
                             },
                             financialData: {
-                              precioTotal: precioTotal,
-                              inicial:     inicial,
-                              cuotas:      cuotasNum,
-                              cronograma:  cuotas.map((c) => ({
-                                numero: c.numero, fecha: c.fechaVenc, monto: c.monto, descripcion: c.descripcion,
+                              precioTotal,
+                              montoSeparacion: montoSeparacion ?? undefined,
+                              inicial:         inicial ?? undefined,
+                              cuotas:          cuotasNum ?? undefined,
+                              cuotaMensual:    cuotas[0]?.monto ?? undefined,
+                              cronograma:      cuotas.map((c) => ({
+                                numero: c.numero,
+                                fecha: new Date(c.fechaVenc).toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' }),
+                                monto: c.monto,
                               })),
                             },
                           }),
@@ -565,8 +571,12 @@ export default function ContratoPage() {
                           link.href = 'data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,' + d.docxBase64
                           link.download = `${codigo}.docx`
                           link.click()
+                        } else {
+                          alert('Error generando el documento: ' + (d.error ?? 'desconocido'))
                         }
-                      } catch { /* silencioso */ }
+                      } catch (err) {
+                        alert('Error de conexión al generar el documento')
+                      }
                     }}
                     className="w-full flex items-center gap-2.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
                   >

@@ -210,6 +210,7 @@ function VenderContent() {
                     descuentoNivel: data.descuentoNivel,
                     descuentoAprobadoPor: data.descuentoAprobadoPor || undefined,
                     descuentoAprobadoCargo: data.descuentoAprobadoCargo || undefined,
+                    montoSeparacion: data.tipo === 'SEPARACION' ? (data.esContado ? precioFinal : data.inicial) : undefined,
                     inicial: data.esContado ? precioFinal : data.inicial,
                     cuotasNum: data.esContado ? 0 : data.cuotasNum,
                     tasaAnual: data.tasaAnual,

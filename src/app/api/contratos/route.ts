@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
         clienteEmail, clientePhone, clienteDomicilio, clienteEstadoCivil,
         precioTotal, descuentoPct, descuentoNivel,
         descuentoAprobadoPor, descuentoAprobadoCargo,
-        inicial, cuotasNum, tasaAnual,
+        montoSeparacion, inicial, cuotasNum, tasaAnual,
         cronograma, datos,
     } = body
 
@@ -82,6 +82,7 @@ export async function POST(req: NextRequest) {
             descuentoNivel:         descuentoNivel       ?? 1,
             descuentoAprobadoPor:   descuentoAprobadoPor  || null,
             descuentoAprobadoCargo: descuentoAprobadoCargo || null,
+            montoSeparacion:        montoSeparacion ?? null,
             inicial:                inicial   ?? null,
             cuotasNum:              cuotasNum ?? null,
             tasaAnual:              tasaAnual ?? null,

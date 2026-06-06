@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { auth } from '@/auth'
-import { generateQuotationCode } from '@/lib/auth'
 import {
     Document, Packer, Paragraph, TextRun, AlignmentType, BorderStyle,
     Table, TableRow, TableCell, WidthType, ShadingType, HeadingLevel
@@ -372,7 +371,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Lote no encontrado' }, { status: 404 })
         }
 
-        const codigo = generateQuotationCode()
+        const codigo = `GEN-${Date.now()}`
         const fecha = formatDate(new Date())
 
         // Build DOCX
@@ -391,7 +390,7 @@ export async function POST(request: NextRequest) {
             loteNumero: lot.loteNumero,
             areaM2: lot.areaM2,
             precioTotal: financialData?.precioTotal ?? lot.precioLista,
-            montoSeparacion: financialData?.montoSeparacion,
+            montoSeparacion: financialData?.montoSeparacion ?? financialData?.inicial ?? undefined,
             inicial: financialData?.inicial,
             cuotas: financialData?.cuotas,
             cuotaMensual: financialData?.cuotaMensual,
@@ -402,31 +401,7 @@ export async function POST(request: NextRequest) {
         const buffer = await Packer.toBuffer(doc)
         const base64 = buffer.toString('base64')
 
-        // Save to DB (without file URL — file is streamed directly)
-        const contract = await prisma.contract.create({
-            data: {
-                codigo,
-                tenantId: lot.project.tenantId,
-                lotId: lot.id,
-                quotationId: quotationId || null,
-                userId,
-                tipo,
-                clienteDni: clienteData.dni,
-                clienteNombres: clienteData.nombres,
-                clienteApellidos: clienteData.apellidos,
-                clienteEmail: clienteData.email || '',
-                clientePhone: clienteData.phone || null,
-                clienteDomicilio: clienteData.domicilio || null,
-                precioTotal: financialData?.precioTotal ?? lot.precioLista,
-                montoSeparacion: financialData?.montoSeparacion ?? null,
-                inicial: financialData?.inicial ?? null,
-                cuotasNum: financialData?.cuotas ?? null,
-                datos: financialData?.cronograma ? { cronograma: financialData.cronograma } : undefined,
-                docxUrl: null,
-            }
-        })
-
-        return NextResponse.json({ success: true, contractId: contract.id, codigo, docxBase64: base64 })
+        return NextResponse.json({ success: true, codigo, docxBase64: base64 })
     } catch (error) {
         console.error('Error generating contract:', error)
         return NextResponse.json({ success: false, error: 'Error interno del servidor' }, { status: 500 })
