@@ -80,7 +80,7 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
     if (lot.mapShapeType === 'circle' && shapeData.x !== undefined && shapeData.y !== undefined) {
         const cx = toPixel(shapeData.x, imageSize.width)
         const cy = toPixel(shapeData.y, imageSize.height)
-        const r  = 12
+        const r  = 8
         // Fuente más pequeña para códigos largos (A-10 vs G1)
         const fs = lot.code.length <= 3 ? r * 0.62 : r * 0.52
 
@@ -99,7 +99,7 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
                 {/* Anillo de selección */}
                 {isSelected && (
                     <circle
-                        cx={cx} cy={cy} r={r + 4}
+                        cx={cx} cy={cy} r={r + 3}
                         fill="none"
                         stroke="#60a5fa"
                         strokeWidth={2.5}
