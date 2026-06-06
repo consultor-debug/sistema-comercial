@@ -112,10 +112,10 @@ interface MapLegendProps {
 export const MapLegend: React.FC<MapLegendProps> = ({ counts, total }) => {
     // Colores estilo Mattika — pasteles con borde
     const items = [
-        { label: 'Disponible', dot: 'bg-blue-400 border-blue-600',  text: 'text-blue-700',  count: counts.libre },
-        { label: 'Separado',   dot: 'bg-amber-200 border-amber-500',text: 'text-amber-700', count: counts.separado },
-        { label: 'Vendido',    dot: 'bg-gray-300 border-gray-500',  text: 'text-gray-600',  count: counts.vendido },
-        { label: 'Bloqueado',  dot: 'bg-slate-700 border-slate-900',text: 'text-slate-500', count: counts.noDisponible },
+        { label: 'Disponible', dot: 'bg-blue-500 border-blue-700',    text: 'text-blue-700',   count: counts.libre },
+        { label: 'Separado',   dot: 'bg-yellow-400 border-yellow-600', text: 'text-yellow-700', count: counts.separado },
+        { label: 'Vendido',    dot: 'bg-red-500 border-red-700',      text: 'text-red-700',    count: counts.vendido },
+        { label: 'Bloqueado',  dot: 'bg-slate-700 border-slate-900',  text: 'text-slate-500',  count: counts.noDisponible },
     ]
     return (
         <div className="flex items-center gap-1 px-3 py-1.5 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl shadow-sm">

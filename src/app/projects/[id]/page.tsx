@@ -42,9 +42,9 @@ type MapView = '2d' | 'satelite'
 // ── Colores de chips según Mattika ───────────────────────────
 const CHIP_STYLES: Record<string, { active: string; dot: string }> = {
     ALL:      { active: 'bg-blue-600 text-white border-blue-600', dot: '' },
-    LIBRE:    { active: 'bg-blue-50 text-blue-700 border-blue-300', dot: 'bg-blue-500' },
-    SEPARADO: { active: 'bg-amber-50 text-amber-700 border-amber-300', dot: 'bg-amber-500' },
-    VENDIDO:  { active: 'bg-slate-100 text-slate-600 border-slate-300', dot: 'bg-slate-400' },
+    LIBRE:    { active: 'bg-blue-50 text-blue-700 border-blue-300', dot: 'bg-blue-600' },
+    SEPARADO: { active: 'bg-yellow-50 text-yellow-700 border-yellow-300', dot: 'bg-yellow-400' },
+    VENDIDO:  { active: 'bg-red-50 text-red-700 border-red-300', dot: 'bg-red-600' },
 }
 
 export default function ProjectPage() {
@@ -575,8 +575,8 @@ function EmptyPanel({ stats }: { stats: { libre: number; separado: number; vendi
 
             <div className="space-y-3">
                 <StatRow label="Disponibles" value={stats.libre} color="bg-blue-500" pct={stats.total ? stats.libre/stats.total*100 : 0} />
-                <StatRow label="Separados"   value={stats.separado} color="bg-amber-500" pct={stats.total ? stats.separado/stats.total*100 : 0} />
-                <StatRow label="Vendidos"    value={stats.vendido} color="bg-slate-400" pct={stats.total ? stats.vendido/stats.total*100 : 0} />
+                <StatRow label="Separados"   value={stats.separado} color="bg-yellow-400" pct={stats.total ? stats.separado/stats.total*100 : 0} />
+                <StatRow label="Vendidos"    value={stats.vendido} color="bg-red-600" pct={stats.total ? stats.vendido/stats.total*100 : 0} />
             </div>
 
             <div className="mt-2 p-4 rounded-xl bg-blue-50 border border-blue-100">

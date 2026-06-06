@@ -34,16 +34,16 @@ const COLORS: Record<string, {
         badge:      '#1d4ed8',   // blue-700
     },
     SEPARADO: {
-        dot:        '#d97706',   // amber-600
-        polyFill:   '#fef3c7',   // amber-100
-        polyStroke: '#f59e0b',   // amber-500
-        badge:      '#b45309',   // amber-700
+        dot:        '#eab308',   // yellow-500
+        polyFill:   '#fef9c3',   // yellow-100
+        polyStroke: '#ca8a04',   // yellow-600
+        badge:      '#a16207',   // yellow-700
     },
     VENDIDO: {
-        dot:        '#64748b',   // slate-500
-        polyFill:   '#e2e8f0',   // slate-200
-        polyStroke: '#94a3b8',   // slate-400
-        badge:      '#475569',   // slate-600
+        dot:        '#dc2626',   // red-600
+        polyFill:   '#fee2e2',   // red-100
+        polyStroke: '#ef4444',   // red-500
+        badge:      '#b91c1c',   // red-700
     },
     NO_DISPONIBLE: {
         dot:        '#1e293b',
@@ -80,7 +80,7 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
     if (lot.mapShapeType === 'circle' && shapeData.x !== undefined && shapeData.y !== undefined) {
         const cx = toPixel(shapeData.x, imageSize.width)
         const cy = toPixel(shapeData.y, imageSize.height)
-        const r  = 16
+        const r  = 12
         // Fuente más pequeña para códigos largos (A-10 vs G1)
         const fs = lot.code.length <= 3 ? r * 0.62 : r * 0.52
 
@@ -99,7 +99,7 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
                 {/* Anillo de selección */}
                 {isSelected && (
                     <circle
-                        cx={cx} cy={cy} r={r + 6}
+                        cx={cx} cy={cy} r={r + 4}
                         fill="none"
                         stroke="#60a5fa"
                         strokeWidth={2.5}

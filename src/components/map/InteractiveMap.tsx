@@ -367,9 +367,9 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                             <div className="flex items-center gap-1 mt-1">
                                 <span className={cn(
                                     'w-2 h-2 rounded-sm inline-block',
-                                    hoveredLot.lot.estado === 'LIBRE' ? 'bg-blue-400' :
-                                    hoveredLot.lot.estado === 'SEPARADO' ? 'bg-amber-400' :
-                                    hoveredLot.lot.estado === 'VENDIDO' ? 'bg-slate-400' : 'bg-slate-700'
+                                    hoveredLot.lot.estado === 'LIBRE' ? 'bg-blue-600' :
+                                    hoveredLot.lot.estado === 'SEPARADO' ? 'bg-yellow-400' :
+                                    hoveredLot.lot.estado === 'VENDIDO' ? 'bg-red-600' : 'bg-slate-700'
                                 )} />
                                 <span className="capitalize text-gray-600">
                                     {hoveredLot.lot.estado === 'LIBRE' ? 'Disponible' :
