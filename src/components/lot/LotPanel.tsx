@@ -143,6 +143,8 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
     if (!lot) return null
 
     const isLibre = lot.estado === 'LIBRE'
+    // LIBRE y SEPARADO pueden generar cotización (con vigencia 3 días)
+    const canCotizar = lot.estado === 'LIBRE' || lot.estado === 'SEPARADO'
     const precioM2 = lot.areaM2 > 0 ? Math.round(lot.precioLista / lot.areaM2) : 0
     const descuentoMax = lot.descuentoMax ?? 0
     const descuentoClamped = Math.min(descuento, descuentoMax)
@@ -177,7 +179,7 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
     }
 
     const quotation = (() => {
-        if (!isLibre) return null
+        if (!canCotizar) return null
         return calculateQuotation({
             precioLista: lot.precioLista,
             descuento: descuentoClamped,
@@ -188,7 +190,7 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
         })
     })()
 
-    const canSend = isLibre && quotation && client && !inicialBelowMin
+    const canSend = canCotizar && quotation && client && !inicialBelowMin
 
     const handleDownloadPdf = async () => {
         if (!canSend || !quotation || !client) return
@@ -263,6 +265,14 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
         LIBRE: 'text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/10',
         SEPARADO: 'text-amber-400 border-amber-500/20 hover:bg-amber-500/10',
         VENDIDO: 'text-rose-400 border-rose-500/20 hover:bg-rose-500/10',
+    }
+
+    // Solo abre ContractModal cuando viene de LIBRE → SEPARADO/VENDIDO (primera venta)
+    // Cualquier otra transición (VENDIDO→LIBRE, SEPARADO→LIBRE, etc.) usa ConfirmDialog directo
+    const handleStatusClick = (status: LotStatus) => {
+        if (isLibre && status === 'SEPARADO') setContractModalTipo('SEPARACION')
+        else if (isLibre && status === 'VENDIDO') setContractModalTipo('COMPRAVENTA')
+        else setConfirmStatus(status)
     }
 
     return (
@@ -377,8 +387,17 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
                         </div>
                     </div>
 
-                    {isLibre ? (
+                    {canCotizar ? (
                         <div className="px-5 py-5 space-y-5">
+                            {/* Aviso si lote está SEPARADO */}
+                            {lot.estado === 'SEPARADO' && (
+                                <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                                    <p className="text-[11px] text-amber-300 leading-relaxed">
+                                        Lote reservado. La cotización tendrá <span className="font-semibold">3 días de vigencia</span> desde su emisión.
+                                    </p>
+                                </div>
+                            )}
 
                             {/* Payment tabs */}
                             <div className="flex border border-white/10 rounded-xl overflow-hidden">
@@ -584,11 +603,7 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
                         </p>
                         <div className="flex gap-2">
                             {statusActions.map(status => (
-                                <button key={status} onClick={() => {
-                                    if (status === 'SEPARADO') setContractModalTipo('SEPARACION')
-                                    else if (status === 'VENDIDO') setContractModalTipo('COMPRAVENTA')
-                                    else setConfirmStatus(status)
-                                }}
+                                <button key={status} onClick={() => handleStatusClick(status)}
                                     disabled={!!updatingStatus}
                                     className={cn(
                                         'flex-1 py-2 px-2 text-[11px] font-medium rounded-lg border transition-colors',
@@ -604,7 +619,7 @@ export const LotPanel: React.FC<LotPanelProps> = ({ lot, onClose, projectSetting
                 </div>
 
                 {/* ── Footer CTA ── */}
-                {isLibre && (
+                {canCotizar && (
                     <div className="shrink-0 px-5 py-4 border-t border-white/5 space-y-3">
                         <Button onClick={handleDownloadPdf}
                             disabled={!canSend || isDownloading}

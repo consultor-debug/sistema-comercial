@@ -24,7 +24,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Lote no encontrado' }, { status: 404 })
         }
 
-        if (lot.estado !== 'LIBRE') {
+        // Solo LIBRE y SEPARADO pueden generar cotización; VENDIDO no
+        if (lot.estado === 'VENDIDO' || lot.estado === 'NO_DISPONIBLE') {
             return NextResponse.json({ success: false, error: 'El lote no está disponible para cotizar' }, { status: 400 })
         }
 
