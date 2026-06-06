@@ -19,9 +19,14 @@ export async function GET(request: NextRequest) {
     const contratos = await prisma.contract.findMany({
         where,
         include: {
-            lot:    { select: { code: true, manzana: true, areaM2: true, loteNumero: true } },
+            lot: {
+                select: {
+                    code: true, manzana: true, areaM2: true, loteNumero: true,
+                    project: { select: { name: true } },
+                },
+            },
             user:   { select: { name: true } },
-            cuotas: { select: { id: true, estado: true, monto: true, fechaVenc: true } },
+            cuotas: { select: { id: true, numero: true, estado: true, monto: true, fechaVenc: true } },
         },
         orderBy: { createdAt: 'desc' },
     })
