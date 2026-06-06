@@ -12,16 +12,17 @@ import React from 'react'
 // Body: { dni, telefono, email, estadoCivil?, domicilio? }
 export async function POST(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     const session = await auth()
     if (!session?.user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
     const user = session.user as { id: string; role: string; tenantId?: string }
+    const { id } = await params
 
     // Load the contract
     const contrato = await prisma.contract.findUnique({
-        where: { id: params.id },
+        where: { id },
         include: {
             lot: {
                 select: {
