@@ -519,7 +519,6 @@ export default function ProjectPage() {
                                     lot={selectedLot as any}
                                     condiciones={condiciones}
                                     onClose={() => setSelectedLot(null)}
-                                    onVenderRapido={handleVenderRapido}
                                     onGenerarVenta={handleGenerarVenta}
                                     onUpdate={handleUpdate}
                                 />
@@ -557,7 +556,6 @@ export default function ProjectPage() {
                                     lot={selectedLot as any}
                                     condiciones={condiciones}
                                     onClose={() => setSelectedLot(null)}
-                                    onVenderRapido={handleVenderRapido}
                                     onGenerarVenta={handleGenerarVenta}
                                     onUpdate={handleUpdate}
                                 />

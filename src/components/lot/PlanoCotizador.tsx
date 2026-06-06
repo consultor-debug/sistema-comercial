@@ -49,17 +49,6 @@ interface PlanoCotizadorProps {
     aprobadores: Array<{ id: string; nombre: string; cargo: string }>
   } | null
   onClose: () => void
-  onVenderRapido: (
-    lotId: string,
-    datos: {
-      dni: string
-      nombres: string
-      apellidos: string
-      email: string
-      telefono: string
-      tipo: 'SEPARACION' | 'COMPRAVENTA'
-    }
-  ) => void
   onGenerarVenta: (lotId: string) => void
   onUpdate?: () => void
 }
@@ -341,59 +330,42 @@ function DiscountBlock({
 }
 
 // ─── QuickSaleModal ────────────────────────────────────────────────────────────
+// Process 1: Reserve a lot — only asks for deadline date + deposit amount.
+// Process 2 (generate document) is done later from the Contratos dashboard.
 
 interface QuickSaleModalProps {
   lot: NonNullable<PlanoCotizadorProps['lot']>
   onClose: () => void
-  onConfirm: PlanoCotizadorProps['onVenderRapido']
+  onSuccess: () => void   // called after successful reservation (refresh lots)
 }
 
-function QuickSaleModal({ lot, onClose, onConfirm }: QuickSaleModalProps) {
-  const [dni, setDni] = React.useState('')
-  const [telefono, setTelefono] = React.useState('')
-  // Datos RENIEC — se llenan en background, no los ve ni edita el usuario
-  const [nombres, setNombres] = React.useState('')
-  const [apellidos, setApellidos] = React.useState('')
-  const [reniecStatus, setReniecStatus] = React.useState<'idle' | 'loading' | 'found' | 'not_found'>('idle')
+function QuickSaleModal({ lot, onClose, onSuccess }: QuickSaleModalProps) {
+  // Default deadline: today + 7 days
+  const defaultFecha = React.useMemo(() => {
+    const d = new Date()
+    d.setDate(d.getDate() + 7)
+    return d.toISOString().split('T')[0]
+  }, [])
+
+  const [fechaLimite, setFechaLimite] = React.useState(defaultFecha)
+  const [montoSep, setMontoSep] = React.useState<string>('')
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
-  // Auto-consulta RENIEC al completar 8 dígitos
-  React.useEffect(() => {
-    if (dni.length !== 8) {
-      setReniecStatus('idle')
-      setNombres('')
-      setApellidos('')
-      return
-    }
-    let cancelled = false
-    setReniecStatus('loading')
-    fetch(`/api/clients/validate?dni=${dni}`)
-      .then(r => r.json())
-      .then(data => {
-        if (cancelled) return
-        if (data?.nombres) {
-          setNombres(data.nombres)
-          setApellidos(data.apellidos ?? '')
-          setReniecStatus('found')
-        } else {
-          setReniecStatus('not_found')
-        }
-      })
-      .catch(() => { if (!cancelled) setReniecStatus('not_found') })
-    return () => { cancelled = true }
-  }, [dni])
-
   async function handleConfirm() {
-    if (dni.length !== 8) { setError('Ingresa un DNI de 8 dígitos'); return }
-    if (!telefono.trim()) { setError('Ingresa el teléfono'); return }
+    if (!fechaLimite) { setError('Selecciona la fecha límite'); return }
+    const monto = parseFloat(montoSep) || 0
     setLoading(true)
     setError(null)
-    // Si RENIEC no respondió usamos S/N; el wizard completo pedirá los datos luego
-    const nom = nombres || 'S/N'
-    const ape = apellidos || 'S/N'
     try {
-      await onConfirm(lot.id, { dni, nombres: nom, apellidos: ape, email: '', telefono, tipo: 'SEPARACION' })
+      const r = await fetch('/api/separaciones', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lotId: lot.id, fechaLimite, montoSeparacion: monto }),
+      })
+      const d = await r.json()
+      if (!r.ok || !d.ok) throw new Error(d.error ?? 'Error al separar')
+      onSuccess()
       onClose()
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Error al registrar')
@@ -401,13 +373,16 @@ function QuickSaleModal({ lot, onClose, onConfirm }: QuickSaleModalProps) {
     }
   }
 
+  const minDate = new Date().toISOString().split('T')[0]
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40">
       <div className="w-full sm:max-w-sm bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden">
+
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div>
-            <h3 className="text-sm font-semibold text-gray-900">Separación de lote</h3>
+            <h3 className="text-sm font-semibold text-gray-900">Separar lote</h3>
             <p className="text-xs text-gray-400 mt-0.5">Lote {lot.code}</p>
           </div>
           <button
@@ -419,47 +394,44 @@ function QuickSaleModal({ lot, onClose, onConfirm }: QuickSaleModalProps) {
         </div>
 
         <div className="px-5 py-5 space-y-4">
-          {/* DNI con indicador RENIEC inline */}
-          <div>
-            <label className="text-xs font-medium text-gray-600 block mb-1.5">
-              Número de DNI <span className="text-red-400">*</span>
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                inputMode="numeric"
-                maxLength={8}
-                value={dni}
-                onChange={e => setDni(e.target.value.replace(/\D/g, ''))}
-                placeholder="12345678"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 pr-10"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2">
-                {reniecStatus === 'loading' && <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />}
-                {reniecStatus === 'found' && <CheckCircle2 className="w-4 h-4 text-green-500" />}
-              </span>
-            </div>
-            {reniecStatus === 'found' && (nombres || apellidos) && (
-              <p className="text-[11px] text-green-600 mt-1 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3 shrink-0" />
-                {nombres} {apellidos}
-              </p>
-            )}
-            {reniecStatus === 'not_found' && (
-              <p className="text-[11px] text-gray-400 mt-1">DNI no encontrado en RENIEC</p>
-            )}
+
+          {/* Info pill */}
+          <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-xs text-blue-700">
+            <p className="font-semibold mb-0.5">Solo reserva el lote</p>
+            <p className="text-blue-500">
+              Los datos del cliente y el documento de separación se generan desde la sección de Contratos.
+            </p>
           </div>
 
-          {/* Teléfono */}
+          {/* Fecha límite */}
           <div>
             <label className="text-xs font-medium text-gray-600 block mb-1.5">
-              Teléfono <span className="text-red-400">*</span>
+              Fecha límite de separación <span className="text-red-400">*</span>
             </label>
             <input
-              type="tel"
-              value={telefono}
-              onChange={e => setTelefono(e.target.value)}
-              placeholder="999 999 999"
+              type="date"
+              min={minDate}
+              value={fechaLimite}
+              onChange={e => setFechaLimite(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
+            />
+            <p className="text-[11px] text-gray-400 mt-1">
+              Si no se formaliza, el lote se libera automáticamente.
+            </p>
+          </div>
+
+          {/* Monto de separación */}
+          <div>
+            <label className="text-xs font-medium text-gray-600 block mb-1.5">
+              Monto de separación (S/)
+            </label>
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              value={montoSep}
+              onChange={e => setMontoSep(e.target.value)}
+              placeholder="0.00"
               className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
             />
           </div>
@@ -482,7 +454,7 @@ function QuickSaleModal({ lot, onClose, onConfirm }: QuickSaleModalProps) {
           </button>
           <button
             onClick={handleConfirm}
-            disabled={loading || dni.length !== 8 || !telefono.trim()}
+            disabled={loading || !fechaLimite}
             className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Separar lote'}
@@ -499,7 +471,6 @@ export function PlanoCotizador({
   lot,
   condiciones,
   onClose,
-  onVenderRapido,
   onGenerarVenta,
   onUpdate: _onUpdate,
 }: PlanoCotizadorProps) {
@@ -584,7 +555,7 @@ export function PlanoCotizador({
         <QuickSaleModal
           lot={lot}
           onClose={() => setShowModal(false)}
-          onConfirm={onVenderRapido}
+          onSuccess={() => { setShowModal(false); _onUpdate?.() }}
         />
       )}
 

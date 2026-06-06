@@ -51,6 +51,28 @@ export async function GET(request: NextRequest) {
         if (etapa) where.etapa = etapa
         if (estado) where.estado = estado
 
+        // ── Auto-release: liberar separaciones cuya fecha límite venció ──────
+        if (projectId) {
+            try {
+                const now = new Date()
+                const expired = await prisma.contract.findMany({
+                    where: {
+                        tipo: 'SEPARACION',
+                        estado: 'ACTIVO',
+                        lot: { projectId, estado: 'SEPARADO' },
+                    },
+                    select: { id: true, lotId: true, datos: true },
+                })
+                for (const c of expired) {
+                    const datos = c.datos as Record<string, unknown> | null
+                    if (datos?.fechaLimite && new Date(datos.fechaLimite as string) < now) {
+                        await prisma.lot.update({ where: { id: c.lotId }, data: { estado: 'LIBRE' } })
+                        await prisma.contract.update({ where: { id: c.id }, data: { estado: 'CANCELADO' } })
+                    }
+                }
+            } catch { /* non-critical — log silently */ }
+        }
+
         const lots = await prisma.lot.findMany({
             where,
             include: {
