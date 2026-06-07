@@ -7,472 +7,608 @@ import {
     StyleSheet
 } from '@react-pdf/renderer';
 
-// Register fonts if needed
-// Font.register({
-//   family: 'Inter',
-//   src: 'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2'
-// });
+// ── Paleta ──────────────────────────────────────────────────────
+const C = {
+    primary:      '#1e3a5f',   // azul marino profundo
+    accent:       '#2563eb',   // blue-600 (acento)
+    accentLight:  '#eff6ff',   // blue-50
+    accentMid:    '#bfdbfe',   // blue-200
+    teal:         '#0d9488',   // teal-600
+    tealLight:    '#f0fdfa',   // teal-50
+    tealMid:      '#99f6e4',   // teal-200
+    green:        '#16a34a',
+    greenLight:   '#f0fdf4',
+    greenMid:     '#bbf7d0',
+    red:          '#dc2626',
+    redLight:     '#fff1f2',
+    amber:        '#d97706',
+    bg:           '#f8fafc',
+    white:        '#ffffff',
+    border:       '#e2e8f0',
+    borderLight:  '#f1f5f9',
+    text:         '#0f172a',
+    textMid:      '#334155',
+    textMuted:    '#64748b',
+    textFaint:    '#94a3b8',
+}
 
 const styles = StyleSheet.create({
     page: {
         padding: 0,
-        backgroundColor: '#f8fafc',
+        backgroundColor: C.bg,
         fontFamily: 'Helvetica',
-        color: '#1e293b',
+        color: C.text,
     },
-    topBar: {
-        height: 8,
-        backgroundColor: '#3b82f6',
-        width: '100%',
+
+    /* ── Header ───────────────────────────────────────────────── */
+    headerBlock: {
+        backgroundColor: C.primary,
+        paddingHorizontal: 32,
+        paddingTop: 22,
+        paddingBottom: 18,
     },
-    contentContent: {
-        padding: 30,
-        paddingTop: 20,
-    },
-    header: {
+    headerInner: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: '#e2e8f0',
-        paddingBottom: 15,
+        alignItems: 'flex-start',
     },
-    logoSection: {
+    logoRow: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
     },
-    logoCircle: {
-        width: 48,
-        height: 48,
-        backgroundColor: '#3b82f6',
-        borderRadius: 12,
+    logoBox: {
+        width: 44,
+        height: 44,
+        backgroundColor: C.accent,
+        borderRadius: 10,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    logoText: {
-        color: 'white',
+    logoLetter: {
+        color: C.white,
         fontSize: 22,
-        fontWeight: 'bold',
+        fontFamily: 'Helvetica-Bold',
     },
     companyName: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#0f172a',
+        fontSize: 17,
+        fontFamily: 'Helvetica-Bold',
+        color: C.white,
     },
-    quotationInfo: {
-        textAlign: 'right',
+    companySub: {
+        color: C.accentMid,
+        fontSize: 9,
+        marginTop: 2,
     },
-    quotationLabel: {
-        fontSize: 10,
-        fontWeight: 'extrabold',
-        color: '#3b82f6',
+    cotLabel: {
+        fontSize: 9,
+        fontFamily: 'Helvetica-Bold',
+        color: C.accentMid,
         letterSpacing: 2,
         marginBottom: 4,
+        textAlign: 'right',
     },
-    quotationCode: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#1e293b',
+    cotCode: {
+        fontSize: 15,
+        fontFamily: 'Helvetica-Bold',
+        color: C.white,
+        textAlign: 'right',
     },
-    dateText: {
-        marginTop: 4,
-        color: '#64748b',
-        fontSize: 10,
+    cotDate: {
+        fontSize: 9,
+        color: C.accentMid,
+        textAlign: 'right',
+        marginTop: 3,
+    },
+    headerDivider: {
+        height: 1,
+        backgroundColor: 'rgba(255,255,255,0.12)',
+        marginTop: 14,
+        marginBottom: 0,
+    },
+    vigenciaBand: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        paddingTop: 8,
+        gap: 6,
+    },
+    vigenciaPill: {
+        backgroundColor: 'rgba(255,255,255,0.10)',
+        borderRadius: 20,
+        paddingHorizontal: 10,
+        paddingVertical: 3,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    vigenciaDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#4ade80',
+    },
+    vigenciaText: {
+        fontSize: 8,
+        color: 'rgba(255,255,255,0.75)',
+    },
+
+    /* ── Body ─────────────────────────────────────────────────── */
+    body: {
+        paddingHorizontal: 28,
+        paddingTop: 18,
+        paddingBottom: 24,
+    },
+
+    /* ── Section header ──────────────────────────────────────── */
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 7,
+        marginTop: 14,
+        gap: 7,
+    },
+    sectionBar: {
+        width: 3,
+        height: 14,
+        backgroundColor: C.accent,
+        borderRadius: 2,
     },
     sectionTitle: {
-        fontSize: 11,
-        fontWeight: 'bold',
-        color: '#3b82f6',
-        borderBottomWidth: 2,
-        borderBottomColor: '#bfdbfe',
-        paddingBottom: 2,
-        marginBottom: 6,
-        marginTop: 12,
+        fontSize: 10,
+        fontFamily: 'Helvetica-Bold',
+        color: C.primary,
         textTransform: 'uppercase',
         letterSpacing: 1,
     },
+
+    /* ── Card ────────────────────────────────────────────────── */
     card: {
-        backgroundColor: 'white',
+        backgroundColor: C.white,
         borderRadius: 8,
-        padding: 10,
+        padding: 12,
         borderWidth: 1,
-        borderColor: '#e2e8f0',
-        marginBottom: 8,
+        borderColor: C.border,
+        marginBottom: 4,
     },
+
+    /* ── Label / Value ───────────────────────────────────────── */
+    label: {
+        color: C.textMuted,
+        fontSize: 8,
+        marginBottom: 3,
+        textTransform: 'uppercase',
+        letterSpacing: 0.4,
+    },
+    value: {
+        fontSize: 10,
+        fontFamily: 'Helvetica-Bold',
+        color: C.text,
+    },
+
+    /* ── Grid ────────────────────────────────────────────────── */
     grid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        justifyContent: 'space-between',
     },
-    gridItem: {
-        width: '30%',
-        marginBottom: 12,
-    },
-    label: {
-        color: '#64748b',
-        fontSize: 9,
-        marginBottom: 4,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-    },
-    value: {
-        fontSize: 11,
-        fontWeight: 'bold',
-        color: '#0f172a',
-    },
-    financialContainer: {
+
+    /* ── Financial cards ─────────────────────────────────────── */
+    finRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        gap: 8,
-        marginBottom: 10,
+        gap: 6,
+        marginBottom: 6,
     },
-    financialCard: {
+    finCard: {
         flex: 1,
-        backgroundColor: 'white',
-        padding: 10,
+        backgroundColor: C.white,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: '#e2e8f0',
+        borderColor: C.border,
+        paddingVertical: 9,
+        paddingHorizontal: 10,
         alignItems: 'center',
     },
-    financialCardHighlight: {
-        backgroundColor: '#eff6ff',
-        borderColor: '#bfdbfe',
-    },
-    financialCardSuccess: {
-        backgroundColor: '#f0fdf4',
-        borderColor: '#bbf7d0',
-    },
-    financialCardLabel: {
-        fontSize: 8,
-        color: '#64748b',
+    finLabel: {
+        fontSize: 7,
+        color: C.textMuted,
         textTransform: 'uppercase',
+        letterSpacing: 0.5,
         marginBottom: 4,
     },
-    financialCardValue: {
-        fontSize: 13,
-        fontWeight: 'heavy',
+    finValue: {
+        fontSize: 12,
+        fontFamily: 'Helvetica-Bold',
+        color: C.text,
     },
-    tableContainer: {
-        backgroundColor: 'white',
+
+    /* ── Cronograma resumen ───────────────────────────────────── */
+    cronoCard: {
+        backgroundColor: C.accentLight,
         borderRadius: 8,
+        padding: 12,
         borderWidth: 1,
-        borderColor: '#e2e8f0',
-        overflow: 'hidden',
+        borderColor: C.accentMid,
+        marginBottom: 4,
     },
-    tableRow: {
+
+    /* ── Bottom columns ──────────────────────────────────────── */
+    bottomRow: {
         flexDirection: 'row',
-        borderBottomWidth: 1,
-        borderBottomColor: '#f1f5f9',
-        paddingVertical: 8,
-        paddingHorizontal: 12,
+        gap: 10,
+        marginTop: 10,
     },
-    tableHeader: {
-        backgroundColor: '#f8fafc',
-        borderBottomWidth: 2,
-        borderBottomColor: '#e2e8f0',
+
+    /* ── Footer ──────────────────────────────────────────────── */
+    footer: {
+        borderTopWidth: 1,
+        borderTopColor: C.border,
+        paddingTop: 10,
+        marginTop: 12,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
     },
-    cellNum: { width: '15%' },
-    cellDate: { width: '45%' },
-    cellAmount: { width: '40%', textAlign: 'right' },
-    headerText: {
-        fontWeight: 'bold',
-        color: '#475569',
-        fontSize: 9,
-        textTransform: 'uppercase',
+    footerText: {
+        fontSize: 7,
+        color: C.textFaint,
     },
-    cellText: {
-        fontSize: 10,
-        color: '#334155',
+    footerBrand: {
+        fontSize: 7,
+        fontFamily: 'Helvetica-Bold',
+        color: C.textMuted,
     },
+
+    /* ── Watermark ───────────────────────────────────────────── */
     watermark: {
         position: 'absolute',
-        top: '40%',
-        left: '10%',
-        fontSize: 80,
-        color: 'rgba(226, 232, 240, 0.4)',
+        top: '38%',
+        left: '8%',
+        fontSize: 72,
+        color: 'rgba(226, 232, 240, 0.30)',
         transform: 'rotate(-45deg)',
-        fontWeight: 'bold',
+        fontFamily: 'Helvetica-Bold',
         zIndex: -1,
-    }
-});
+    },
+})
 
+// ── Helpers ──────────────────────────────────────────────────────
+const fmt = (v: number) =>
+    new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(v)
+
+const isValidPhone = (p?: string | null) =>
+    !!p && p.trim().replace(/\s/g, '').length >= 6
+
+// ── Sub-components ───────────────────────────────────────────────
+const Section = ({ title }: { title: string }) => (
+    <View style={styles.sectionHeader}>
+        <View style={styles.sectionBar} />
+        <Text style={styles.sectionTitle}>{title}</Text>
+    </View>
+)
+
+const FieldItem = ({
+    label, value, w = '25%', accent = false, small = false,
+}: {
+    label: string; value: string; w?: string; accent?: boolean; small?: boolean
+}) => (
+    <View style={[styles.grid, { width: w, marginBottom: 10 }]}>
+        <View>
+            <Text style={styles.label}>{label}</Text>
+            <Text style={[
+                styles.value,
+                accent ? { color: C.accent } : {},
+                small ? { fontSize: 9 } : {},
+            ]}>{value}</Text>
+        </View>
+    </View>
+)
+
+// ── Props ────────────────────────────────────────────────────────
 interface QuotationPdfProps {
     data: {
         codigo: string;
-        date: {
-            fechaEmision: string;
-            horaEmision: string;
-            fechaVigencia: string;
-        };
-        tenant: {
-            name: string;
-            logoUrl?: string;
-        };
-        project: {
-            name: string;
-        };
+        date: { fechaEmision: string; horaEmision: string; fechaVigencia: string };
+        tenant: { name: string; logoUrl?: string };
+        project: { name: string };
         lot: {
-            code: string;
-            manzana: string;
-            loteNumero: number;
-            areaM2: number;
-            precioLista: number;
-            tipologia?: string | null;
-            etapa?: string | null;
-            frenteM?: number | null;
-            fondoM?: number | null;
-            ladoDerM?: number | null;
-            ladoIzqM?: number | null;
+            code: string; manzana: string; loteNumero: number; areaM2: number;
+            precioLista: number; tipologia?: string | null; etapa?: string | null;
+            frenteM?: number | null; fondoM?: number | null;
+            ladoDerM?: number | null; ladoIzqM?: number | null;
         };
-        client: {
-            dni: string;
-            nombreCompleto: string;
-            email: string; // almacena teléfono (campo reutilizado)
-        };
+        client: { dni: string; nombreCompleto: string; email: string };
         financial: {
-            precioLista: number;
-            descuento: number;
-            precioFinal: number;
-            inicial: number;
-            cuotas: number;
-            cuotaMensual: number;
+            precioLista: number; descuento: number; precioFinal: number;
+            inicial: number; cuotas: number; cuotaMensual: number;
             cronograma: Array<{ numero: number; fecha: string; monto: number }>;
         };
     }
 }
 
-const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(val);
-};
-
-const isValidPhone = (phone?: string | null) => {
-    if (!phone) return false;
-    return phone.trim().replace(/\s/g, '').length >= 6;
-};
-
+// ── Main component ───────────────────────────────────────────────
 export const QuotationPdf = ({ data }: QuotationPdfProps) => {
+    const { financial: f, lot, client, project, date, tenant, codigo } = data
+    const saldoFinanciar = f.precioFinal - f.inicial
+    const phone = isValidPhone(client.email)
+
     return (
         <Document>
             <Page size="A4" style={styles.page}>
-                <View style={styles.topBar} />
-                <View style={styles.contentContent}>
-                    {/* Header */}
-                    <View style={styles.header}>
-                        <View style={styles.logoSection}>
-                            <View style={styles.logoCircle}>
-                                <Text style={styles.logoText}>{data.tenant.name.charAt(0).toUpperCase()}</Text>
+
+                {/* ── HEADER OSCURO ─────────────────────────────────────── */}
+                <View style={styles.headerBlock}>
+                    <View style={styles.headerInner}>
+                        {/* Logo + empresa */}
+                        <View style={styles.logoRow}>
+                            <View style={styles.logoBox}>
+                                <Text style={styles.logoLetter}>
+                                    {tenant.name.charAt(0).toUpperCase()}
+                                </Text>
                             </View>
                             <View>
-                                <Text style={styles.companyName}>{data.tenant.name}</Text>
-                                <Text style={{ color: '#64748b', fontSize: 10 }}>Gestión Inmobiliaria</Text>
+                                <Text style={styles.companyName}>{tenant.name}</Text>
+                                <Text style={styles.companySub}>Gestión Inmobiliaria · Cotización Oficial</Text>
                             </View>
                         </View>
-                        <View style={styles.quotationInfo}>
-                            <Text style={styles.quotationLabel}>COTIZACIÓN</Text>
-                            <Text style={styles.quotationCode}>{data.codigo}</Text>
-                            <Text style={styles.dateText}>Emitido: {data.date.fechaEmision} – {data.date.horaEmision}</Text>
-                            <Text style={[styles.dateText, { marginTop: 2 }]}>Vigencia: Hasta {data.date.fechaVigencia} – {data.date.horaEmision}</Text>
+                        {/* Código cotización */}
+                        <View>
+                            <Text style={styles.cotLabel}>COTIZACIÓN</Text>
+                            <Text style={styles.cotCode}>{codigo}</Text>
+                            <Text style={styles.cotDate}>
+                                Emitido: {date.fechaEmision} — {date.horaEmision}
+                            </Text>
                         </View>
                     </View>
 
-                    {/* Client Info */}
-                    <Text style={styles.sectionTitle}>Datos del Cliente</Text>
+                    <View style={styles.headerDivider} />
+
+                    <View style={styles.vigenciaBand}>
+                        <View style={styles.vigenciaPill}>
+                            <View style={styles.vigenciaDot} />
+                            <Text style={styles.vigenciaText}>
+                                Válida hasta {date.fechaVigencia}
+                            </Text>
+                        </View>
+                        <View style={[styles.vigenciaPill, { backgroundColor: 'rgba(255,255,255,0.07)' }]}>
+                            <Text style={styles.vigenciaText}>
+                                Proyecto: {project.name}
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* ── BODY ────────────────────────────────────────────── */}
+                <View style={styles.body}>
+
+                    {/* ── Cliente ─────────────────────────────────────── */}
+                    <Section title="Datos del Cliente" />
                     <View style={styles.card}>
                         <View style={styles.grid}>
-                            <View style={[styles.gridItem, { width: '45%' }]}>
-                                <Text style={styles.label}>Nombres y Apellidos</Text>
-                                <Text style={styles.value}>{data.client.nombreCompleto}</Text>
-                            </View>
-                            <View style={[styles.gridItem, { width: '25%' }]}>
-                                <Text style={styles.label}>DNI / RUC</Text>
-                                <Text style={styles.value}>{data.client.dni}</Text>
-                            </View>
-                            <View style={[styles.gridItem, { width: '30%' }]}>
+                            <FieldItem label="Nombres y Apellidos" value={client.nombreCompleto} w="48%" />
+                            <FieldItem label="DNI / RUC" value={client.dni} w="22%" />
+                            <View style={{ width: '30%', marginBottom: 10 }}>
                                 <Text style={styles.label}>Nro de Teléfono</Text>
-                                {isValidPhone(data.client.email) ? (
-                                    <Text style={styles.value}>{data.client.email}</Text>
+                                {phone ? (
+                                    <Text style={styles.value}>{client.email}</Text>
                                 ) : (
-                                    <View>
-                                        <Text style={[styles.value, { color: '#ef4444' }]}>PENDIENTE</Text>
-                                        <Text style={{ fontSize: 7, color: '#ef4444', marginTop: 2 }}>Ingresa el teléfono del cliente para completar la cotización.</Text>
+                                    <View style={{
+                                        backgroundColor: '#fff1f2', borderRadius: 5,
+                                        paddingHorizontal: 7, paddingVertical: 4,
+                                        borderWidth: 1, borderColor: '#fecdd3', marginTop: 1,
+                                    }}>
+                                        <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', color: C.red }}>PENDIENTE</Text>
+                                        <Text style={{ fontSize: 7, color: '#9f1239', marginTop: 1 }}>
+                                            Ingresa el teléfono para completar.
+                                        </Text>
                                     </View>
                                 )}
                             </View>
                         </View>
                     </View>
 
-                    {/* Project & Lot Info */}
-                    <Text style={styles.sectionTitle}>Detalles del Inmueble</Text>
+                    {/* ── Inmueble ─────────────────────────────────────── */}
+                    <Section title="Detalles del Inmueble" />
                     <View style={styles.card}>
                         <View style={styles.grid}>
-                            <View style={[styles.gridItem, { width: '40%' }]}>
-                                <Text style={styles.label}>Proyecto</Text>
-                                <Text style={styles.value}>{data.project.name}</Text>
-                            </View>
-                            <View style={[styles.gridItem, { width: '15%' }]}>
-                                <Text style={styles.label}>Manzana</Text>
-                                <Text style={styles.value}>{data.lot.manzana}</Text>
-                            </View>
-                            <View style={[styles.gridItem, { width: '15%' }]}>
-                                <Text style={styles.label}>Lote N°</Text>
-                                <Text style={styles.value}>{data.lot.loteNumero}</Text>
-                            </View>
-                            <View style={[styles.gridItem, { width: '15%' }]}>
-                                <Text style={styles.label}>Área</Text>
-                                <Text style={styles.value}>{data.lot.areaM2} m²</Text>
-                            </View>
-                            <View style={[styles.gridItem, { width: '15%' }]}>
-                                <Text style={styles.label}>Etapa</Text>
-                                <Text style={styles.value}>{data.lot.etapa || 'N/A'}</Text>
-                            </View>
+                            <FieldItem label="Proyecto"  value={project.name}              w="38%" />
+                            <FieldItem label="Manzana"   value={lot.manzana}               w="14%" />
+                            <FieldItem label="Lote N°"   value={String(lot.loteNumero)}    w="14%" />
+                            <FieldItem label="Área"      value={`${lot.areaM2} m²`}        w="17%" />
+                            <FieldItem label="Etapa"     value={lot.etapa || '—'}          w="17%" />
                         </View>
-                        <View style={[styles.grid, { marginTop: 8, borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 8 }]}>
-                            <View style={[styles.gridItem, { width: '25%' }]}>
-                                <Text style={styles.label}>Tipología</Text>
-                                <Text style={styles.value}>{data.lot.tipologia || 'Lote'}</Text>
-                            </View>
-                            {data.lot.frenteM && (
-                                <View style={[styles.gridItem, { width: '15%' }]}>
-                                    <Text style={styles.label}>Frente</Text>
-                                    <Text style={styles.value}>{data.lot.frenteM} m</Text>
-                                </View>
-                            )}
-                            {data.lot.fondoM && (
-                                <View style={[styles.gridItem, { width: '15%' }]}>
-                                    <Text style={styles.label}>Fondo</Text>
-                                    <Text style={styles.value}>{data.lot.fondoM} m</Text>
-                                </View>
-                            )}
-                            {data.lot.ladoDerM && (
-                                <View style={[styles.gridItem, { width: '15%' }]}>
-                                    <Text style={styles.label}>Lado Der.</Text>
-                                    <Text style={styles.value}>{data.lot.ladoDerM} m</Text>
-                                </View>
-                            )}
-                            {data.lot.ladoIzqM && (
-                                <View style={[styles.gridItem, { width: '15%' }]}>
-                                    <Text style={styles.label}>Lado Izq.</Text>
-                                    <Text style={styles.value}>{data.lot.ladoIzqM} m</Text>
-                                </View>
-                            )}
-                            <View style={[styles.gridItem, { width: '15%', marginLeft: 'auto' }]}>
+                        <View style={{ height: 1, backgroundColor: C.borderLight, marginBottom: 8 }} />
+                        <View style={styles.grid}>
+                            <FieldItem label="Tipología"   value={lot.tipologia || 'Lote'} w="30%" small />
+                            {lot.frenteM   && <FieldItem label="Frente"    value={`${lot.frenteM} m`}   w="14%" small />}
+                            {lot.fondoM    && <FieldItem label="Fondo"     value={`${lot.fondoM} m`}    w="14%" small />}
+                            {lot.ladoDerM  && <FieldItem label="Lado Der." value={`${lot.ladoDerM} m`}  w="14%" small />}
+                            {lot.ladoIzqM  && <FieldItem label="Lado Izq." value={`${lot.ladoIzqM} m`} w="14%" small />}
+                            <View style={{ marginLeft: 'auto', marginBottom: 10 }}>
                                 <Text style={styles.label}>Precio Lista</Text>
-                                <Text style={styles.value}>{formatCurrency(data.lot.precioLista)}</Text>
+                                <Text style={[styles.value, { color: C.accent, fontSize: 11 }]}>
+                                    {fmt(lot.precioLista)}
+                                </Text>
                             </View>
                         </View>
                     </View>
 
-                    {/* Financial Summary */}
-                    <Text style={styles.sectionTitle}>Propuesta Económica</Text>
+                    {/* ── Propuesta Económica ───────────────────────────── */}
+                    <Section title="Propuesta Económica" />
 
-                    {/* Price breakdown row */}
-                    <View style={{ flexDirection: 'row', backgroundColor: 'white', borderRadius: 8, borderWidth: 1, borderColor: '#e2e8f0', paddingHorizontal: 14, paddingVertical: 10, marginBottom: 8 }}>
-                        <View style={{ flex: 1, marginRight: 8 }}>
-                            <Text style={{ fontSize: 8, color: '#64748b', textTransform: 'uppercase', marginBottom: 3 }}>Precio Lista</Text>
-                            <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#0f172a' }}>{formatCurrency(data.financial.precioLista)}</Text>
+                    {/* Fila precio lista → descuento → precio final */}
+                    <View style={[styles.card, { flexDirection: 'row', alignItems: 'center', gap: 0, paddingVertical: 10, marginBottom: 6 }]}>
+                        {/* Precio lista */}
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.label}>Precio Lista</Text>
+                            <Text style={[styles.value, { fontSize: 12 }]}>{fmt(f.precioLista)}</Text>
                         </View>
-                        <View style={{ width: 20, justifyContent: 'flex-end', marginBottom: 1, marginRight: 8 }}>
-                            <Text style={{ fontSize: 14, color: '#cbd5e1' }}>−</Text>
+
+                        {/* Separador */}
+                        <View style={{ width: 28, alignItems: 'center' }}>
+                            <Text style={{ fontSize: 18, color: C.textFaint, marginBottom: 2 }}>−</Text>
                         </View>
-                        <View style={{ flex: 1, marginRight: 8 }}>
-                            <Text style={{ fontSize: 8, color: '#64748b', textTransform: 'uppercase', marginBottom: 3 }}>Descuento</Text>
-                            <Text style={{ fontSize: 12, fontWeight: 'bold', color: data.financial.descuento > 0 ? '#16a34a' : '#94a3b8' }}>
-                                {data.financial.descuento > 0 ? `- ${formatCurrency(data.financial.descuento)}` : 'S/ 0.00'}
+
+                        {/* Descuento */}
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.label}>Descuento</Text>
+                            <Text style={[styles.value, { fontSize: 12, color: f.descuento > 0 ? C.green : C.textFaint }]}>
+                                {f.descuento > 0 ? `- ${fmt(f.descuento)}` : 'S/ 0.00'}
                             </Text>
                         </View>
-                        <View style={{ width: 20, justifyContent: 'flex-end', marginBottom: 1, marginRight: 8 }}>
-                            <Text style={{ fontSize: 14, color: '#cbd5e1' }}>=</Text>
+
+                        {/* Separador */}
+                        <View style={{ width: 28, alignItems: 'center' }}>
+                            <Text style={{ fontSize: 18, color: C.textFaint, marginBottom: 2 }}>=</Text>
                         </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 8, color: '#64748b', textTransform: 'uppercase', marginBottom: 3 }}>Precio Final</Text>
-                            <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#0f172a' }}>{formatCurrency(data.financial.precioFinal)}</Text>
+
+                        {/* Precio final — destacado */}
+                        <View style={{
+                            flex: 1.2,
+                            backgroundColor: C.primary,
+                            borderRadius: 7,
+                            paddingVertical: 8,
+                            paddingHorizontal: 12,
+                        }}>
+                            <Text style={{ fontSize: 8, color: C.accentMid, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3 }}>Precio Final</Text>
+                            <Text style={{ fontSize: 14, fontFamily: 'Helvetica-Bold', color: C.white }}>{fmt(f.precioFinal)}</Text>
                         </View>
                     </View>
 
-                    <View style={styles.financialContainer}>
-                        <View style={styles.financialCard}>
-                            <Text style={styles.financialCardLabel}>A Inicial</Text>
-                            <Text style={[styles.financialCardValue, { color: '#0f172a' }]}>{formatCurrency(data.financial.inicial)}</Text>
+                    {/* Cards financieras */}
+                    <View style={styles.finRow}>
+                        {/* Inicial */}
+                        <View style={styles.finCard}>
+                            <Text style={styles.finLabel}>A Inicial</Text>
+                            <Text style={[styles.finValue, { fontSize: 11 }]}>{fmt(f.inicial)}</Text>
                         </View>
-                        <View style={styles.financialCard}>
-                            <Text style={styles.financialCardLabel}>Saldo a Financiar</Text>
-                            <Text style={[styles.financialCardValue, { color: '#0f172a' }]}>{formatCurrency(data.financial.precioFinal - data.financial.inicial)}</Text>
+
+                        {/* Saldo */}
+                        <View style={styles.finCard}>
+                            <Text style={styles.finLabel}>Saldo a Financiar</Text>
+                            <Text style={[styles.finValue, { fontSize: 11 }]}>{fmt(saldoFinanciar)}</Text>
                         </View>
-                        <View style={[styles.financialCard, styles.financialCardHighlight]}>
-                            <Text style={[styles.financialCardLabel, { color: '#1d4ed8' }]}>Financiamiento</Text>
-                            <Text style={[styles.financialCardValue, { color: '#1e3a8a' }]}>{data.financial.cuotas} Meses</Text>
+
+                        {/* Cuotas — azul */}
+                        <View style={[styles.finCard, { backgroundColor: C.accentLight, borderColor: C.accentMid }]}>
+                            <Text style={[styles.finLabel, { color: C.accent }]}>Financiamiento</Text>
+                            <Text style={[styles.finValue, { color: C.primary }]}>{f.cuotas} meses</Text>
                         </View>
-                        <View style={[styles.financialCard, styles.financialCardSuccess]}>
-                            <Text style={[styles.financialCardLabel, { color: '#166534' }]}>Cuota Mensual</Text>
-                            <Text style={[styles.financialCardValue, { color: '#14532d' }]}>{formatCurrency(data.financial.cuotaMensual)}</Text>
+
+                        {/* Cuota mensual — verde */}
+                        <View style={[styles.finCard, { backgroundColor: C.greenLight, borderColor: C.greenMid }]}>
+                            <Text style={[styles.finLabel, { color: C.green }]}>Cuota Mensual</Text>
+                            <Text style={[styles.finValue, { color: '#14532d', fontSize: 13 }]}>{fmt(f.cuotaMensual)}</Text>
                         </View>
                     </View>
 
-                    <Text style={styles.sectionTitle}>Cronograma Corto</Text>
-                    <View style={[styles.card, { paddingVertical: 10, marginBottom: 15 }]}>
+                    {/* Cronograma resumen */}
+                    <Section title="Cronograma Corto" />
+                    <View style={styles.cronoCard}>
                         <View style={styles.grid}>
-                            <View style={[styles.gridItem, { width: '25%', marginBottom: 0 }]}>
-                                <Text style={styles.label}>N° de cuotas</Text>
-                                <Text style={styles.value}>{data.financial.cuotas}</Text>
-                            </View>
-                            <View style={[styles.gridItem, { width: '25%', marginBottom: 0 }]}>
-                                <Text style={styles.label}>Monto de cuota</Text>
-                                <Text style={styles.value}>S/ {formatCurrency(data.financial.cuotaMensual).replace('S/ ', '').replace('S/', '')}</Text>
-                            </View>
-                            <View style={[styles.gridItem, { width: '25%', marginBottom: 0 }]}>
-                                <Text style={styles.label}>Primera cuota</Text>
-                                <Text style={styles.value}>{data.financial.cronograma[0]?.fecha || '-'}</Text>
-                            </View>
-                            <View style={[styles.gridItem, { width: '25%', marginBottom: 0 }]}>
-                                <Text style={styles.label}>Última cuota</Text>
-                                <Text style={styles.value}>{data.financial.cronograma[data.financial.cronograma.length - 1]?.fecha || '-'}</Text>
-                            </View>
+                            <FieldItem
+                                label="N° de cuotas"
+                                value={String(f.cuotas)}
+                                w="25%" accent
+                            />
+                            <FieldItem
+                                label="Monto de cuota"
+                                value={fmt(f.cuotaMensual)}
+                                w="30%" accent
+                            />
+                            <FieldItem
+                                label="Primera cuota"
+                                value={f.cronograma[0]?.fecha || '—'}
+                                w="22%"
+                            />
+                            <FieldItem
+                                label="Última cuota"
+                                value={f.cronograma[f.cronograma.length - 1]?.fecha || '—'}
+                                w="23%"
+                            />
                         </View>
-                        <Text style={{ fontSize: 8, color: '#64748b', marginTop: 8, fontStyle: 'italic', textAlign: 'center' }}>
-                            Detalle completo del cronograma disponible con tu asesor.
+                        <Text style={{ fontSize: 7.5, color: C.textMuted, fontStyle: 'italic', textAlign: 'center' }}>
+                            El detalle completo del cronograma está disponible con tu asesor comercial.
                         </Text>
                     </View>
 
-                    {/* Terminos y Reserva en formato Columnas */}
-                    <View style={{ flexDirection: 'row', gap: 15, marginTop: 5 }}>
-                        {/* Reserva */}
-                        <View style={{ flex: 1, backgroundColor: '#f0fdfa', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#ccfbf1' }}>
-                            <Text style={[styles.sectionTitle, { marginTop: 0, paddingBottom: 4, borderBottomWidth: 0, color: '#0f766e', fontSize: 10 }]}>ASEGURA HOY ESTA UBICACIÓN</Text>
-                            <Text style={[styles.value, { marginBottom: 6, color: '#0f766e' }]}>Separación inmediata: S/ 500</Text>
-                            <Text style={{ fontSize: 9, color: '#134e4a', marginBottom: 2, lineHeight: 1.3 }}>Proceso:</Text>
-                            <Text style={{ fontSize: 9, color: '#134e4a', marginBottom: 1, lineHeight: 1.3 }}>1. Confirma la Manzana y Lote.</Text>
-                            <Text style={{ fontSize: 9, color: '#134e4a', marginBottom: 1, lineHeight: 1.3 }}>2. Realiza transferencia o Yape.</Text>
-                            <Text style={{ fontSize: 9, color: '#134e4a', marginBottom: 4, lineHeight: 1.3 }}>3. Envía el comprobante al asesor asignado.</Text>
-                            <Text style={{ fontSize: 9, color: '#134e4a', fontWeight: 'bold', lineHeight: 1.2 }}>Con la separación, la ubicación queda bloqueada y retirada temporalmente de la oferta comercial. El monto se descuenta íntegramente de la inicial.</Text>
+                    {/* ── Reserva + Términos ───────────────────────────── */}
+                    <View style={styles.bottomRow}>
+                        {/* Separación */}
+                        <View style={{
+                            flex: 1,
+                            backgroundColor: C.tealLight,
+                            borderRadius: 8,
+                            padding: 11,
+                            borderWidth: 1,
+                            borderColor: C.tealMid,
+                        }}>
+                            <Text style={{
+                                fontSize: 9, fontFamily: 'Helvetica-Bold',
+                                color: C.teal, textTransform: 'uppercase',
+                                letterSpacing: 0.8, marginBottom: 5,
+                            }}>
+                                Asegura Esta Ubicación
+                            </Text>
+                            <Text style={{ fontSize: 11, fontFamily: 'Helvetica-Bold', color: '#0f766e', marginBottom: 6 }}>
+                                Separación: S/ 500
+                            </Text>
+                            <Text style={{ fontSize: 8, color: '#134e4a', marginBottom: 2, lineHeight: 1.4 }}>
+                                1. Confirma la Manzana y Lote.
+                            </Text>
+                            <Text style={{ fontSize: 8, color: '#134e4a', marginBottom: 2, lineHeight: 1.4 }}>
+                                2. Realiza transferencia o Yape.
+                            </Text>
+                            <Text style={{ fontSize: 8, color: '#134e4a', marginBottom: 6, lineHeight: 1.4 }}>
+                                3. Envía el comprobante a tu asesor.
+                            </Text>
+                            <View style={{ height: 1, backgroundColor: C.tealMid, marginBottom: 6 }} />
+                            <Text style={{ fontSize: 7.5, color: '#0f766e', fontFamily: 'Helvetica-Bold', lineHeight: 1.4 }}>
+                                El monto de separación se descuenta íntegramente de la inicial al momento de firma.
+                            </Text>
                         </View>
 
                         {/* Términos */}
-                        <View style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#e2e8f0' }}>
-                            <Text style={[styles.sectionTitle, { marginTop: 0, paddingBottom: 4, borderBottomWidth: 0, fontSize: 10, color: '#0f172a' }]}>TÉRMINOS Y CONDICIONES</Text>
-                            <View style={{ flexDirection: 'row', marginBottom: 3 }}>
-                                <Text style={{ fontSize: 10, color: '#475569', marginRight: 4, lineHeight: 1 }}>•</Text>
-                                <Text style={{ fontSize: 8, color: '#475569', flex: 1, lineHeight: 1.2 }}>Esta cotización tiene vigencia de 3 días calendario desde su fecha y hora de emisión.</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', marginBottom: 3 }}>
-                                <Text style={{ fontSize: 10, color: '#475569', marginRight: 4, lineHeight: 1 }}>•</Text>
-                                <Text style={{ fontSize: 8, color: '#475569', flex: 1, lineHeight: 1.2 }}>La disponibilidad se confirma al momento de la separación.</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', marginBottom: 3 }}>
-                                <Text style={{ fontSize: 10, color: '#475569', marginRight: 4, lineHeight: 1 }}>•</Text>
-                                <Text style={{ fontSize: 8, color: '#475569', flex: 1, lineHeight: 1.2 }}>La separación de S/ 500 asegura la ubicación seleccionada.</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', marginBottom: 3 }}>
-                                <Text style={{ fontSize: 10, color: '#475569', marginRight: 4, lineHeight: 1 }}>•</Text>
-                                <Text style={{ fontSize: 8, color: '#475569', flex: 1, lineHeight: 1.2 }}>Fuera del plazo de vigencia, precios y condiciones pueden actualizarse.</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row' }}>
-                                <Text style={{ fontSize: 10, color: '#475569', marginRight: 4, lineHeight: 1 }}>•</Text>
-                                <Text style={{ fontSize: 8, color: '#475569', flex: 1, lineHeight: 1.2 }}>Documento referencial que no constituye contrato de compra-venta.</Text>
-                            </View>
+                        <View style={{
+                            flex: 1,
+                            backgroundColor: C.white,
+                            borderRadius: 8,
+                            padding: 11,
+                            borderWidth: 1,
+                            borderColor: C.border,
+                        }}>
+                            <Text style={{
+                                fontSize: 9, fontFamily: 'Helvetica-Bold',
+                                color: C.primary, textTransform: 'uppercase',
+                                letterSpacing: 0.8, marginBottom: 7,
+                            }}>
+                                Términos y Condiciones
+                            </Text>
+                            {[
+                                'Esta cotización tiene vigencia de 3 días calendario desde su emisión.',
+                                'La disponibilidad se confirma al momento de efectuar la separación.',
+                                'La separación de S/ 500 bloquea la ubicación seleccionada.',
+                                'Vencida la vigencia, precios y condiciones pueden actualizarse.',
+                                'Documento referencial — no constituye contrato de compra-venta.',
+                            ].map((t, i) => (
+                                <View key={i} style={{ flexDirection: 'row', marginBottom: 4, gap: 4 }}>
+                                    <View style={{
+                                        width: 4, height: 4, borderRadius: 2,
+                                        backgroundColor: C.accent, marginTop: 2.5,
+                                    }} />
+                                    <Text style={{ fontSize: 7.5, color: C.textMid, flex: 1, lineHeight: 1.4 }}>{t}</Text>
+                                </View>
+                            ))}
                         </View>
+                    </View>
+
+                    {/* ── Footer ─────────────────────────────────────────── */}
+                    <View style={styles.footer}>
+                        <Text style={styles.footerText}>
+                            Documento generado automáticamente por el Sistema Comercial
+                        </Text>
+                        <Text style={styles.footerBrand}>
+                            {tenant.name} · {codigo}
+                        </Text>
                     </View>
 
                     <Text style={styles.watermark}>S.COMERCIAL</Text>
