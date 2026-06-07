@@ -16,6 +16,7 @@ import {
   FileText,
   Download,
   Users,
+  Unlock,
 } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1049,6 +1050,8 @@ export function PlanoCotizador({
                 Descargar cotizacion PDF
               </button>
             </div>
+          ) : lot.estado === 'SEPARADO' ? (
+            <LiberarBlock lot={lot} statusCfg={statusCfg} onLiberar={_onUpdate} />
           ) : (
             <div className="py-4 text-center border border-gray-200 rounded-xl bg-gray-50">
               <p className="text-sm text-gray-500">
@@ -1065,6 +1068,100 @@ export function PlanoCotizador({
         </div>
       </div>
     </>
+  )
+}
+
+// ─── LiberarBlock ─────────────────────────────────────────────────────────────
+
+function LiberarBlock({
+  lot,
+  statusCfg,
+  onLiberar,
+}: {
+  lot: NonNullable<PlanoCotizadorProps['lot']>
+  statusCfg: { label: string; cls: string }
+  onLiberar?: () => void
+}) {
+  const [confirming, setConfirming] = React.useState(false)
+  const [loading, setLoading] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+
+  async function handleLiberar() {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/lots/${lot.id}/liberar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ motivo: 'Liberación desde cotizador' }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error al liberar lote')
+      onLiberar?.()
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Error desconocido')
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-3 pb-2">
+      {/* Info separado */}
+      <div className="border border-amber-200 bg-amber-50 rounded-xl px-4 py-3">
+        <p className="text-sm font-medium text-amber-800">
+          Este lote está{' '}
+          <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border', statusCfg.cls)}>
+            {statusCfg.label}
+          </span>
+        </p>
+        {lot.asesor && (
+          <p className="text-xs text-amber-700 mt-1">
+            Asesor: {lot.asesor.name}
+          </p>
+        )}
+      </div>
+
+      {/* Acciones */}
+      {!confirming ? (
+        <button
+          onClick={() => setConfirming(true)}
+          className="w-full py-2.5 rounded-xl bg-white text-amber-700 text-sm font-medium border border-amber-300 hover:bg-amber-50 hover:border-amber-400 transition-colors flex items-center justify-center gap-2"
+        >
+          <Unlock className="w-4 h-4" />
+          Liberar lote
+        </button>
+      ) : (
+        <div className="border border-red-200 bg-red-50 rounded-xl p-3 space-y-3">
+          <p className="text-sm font-semibold text-red-800 flex items-center gap-1.5">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            ¿Confirmas liberar este lote?
+          </p>
+          <p className="text-xs text-red-700">
+            La separación quedará cancelada y el lote volverá a estar disponible.
+          </p>
+          {error && (
+            <p className="text-xs text-red-600 font-medium">{error}</p>
+          )}
+          <div className="flex gap-2">
+            <button
+              onClick={() => { setConfirming(false); setError(null) }}
+              disabled={loading}
+              className="flex-1 py-2 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleLiberar}
+              disabled={loading}
+              className="flex-1 py-2 rounded-lg text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors flex items-center justify-center gap-1.5"
+            >
+              {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Unlock className="w-3.5 h-3.5" />}
+              {loading ? 'Liberando...' : 'Sí, liberar'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 

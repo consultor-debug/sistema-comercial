@@ -2,7 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { Database, Search, ExternalLink } from 'lucide-react'
+import { Database, Search, ExternalLink, Unlock, Loader2 } from 'lucide-react'
 import { Sidebar } from '@/components/Sidebar'
 import { cn } from '@/lib/utils'
 
@@ -30,6 +30,25 @@ export default function InmueblesPage() {
     const [loading, setLoading] = React.useState(true)
     const [search, setSearch] = React.useState('')
     const [estadoFilter, setEstadoFilter] = React.useState<'ALL' | 'LIBRE' | 'SEPARADO' | 'VENDIDO'>('ALL')
+    const [liberando, setLiberando] = React.useState<string | null>(null)
+    const [confirmId, setConfirmId] = React.useState<string | null>(null)
+
+    async function liberarLote(id: string) {
+        setLiberando(id)
+        try {
+            const res = await fetch(`/api/lots/${id}/liberar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ motivo: 'Liberación desde panel de inmuebles' }),
+            })
+            if (res.ok) {
+                setLots(prev => prev.map(l => l.id === id ? { ...l, estado: 'LIBRE' } : l))
+            }
+        } finally {
+            setLiberando(null)
+            setConfirmId(null)
+        }
+    }
 
     React.useEffect(() => {
         fetch('/api/admin/lots')
@@ -111,7 +130,7 @@ export default function InmueblesPage() {
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="border-b border-white/5">
-                                            {['Código', 'Manzana', 'Lote', 'Área', 'Proyecto', 'Estado', 'Precio', 'Asesor'].map(h => (
+                                            {['Código', 'Manzana', 'Lote', 'Área', 'Proyecto', 'Estado', 'Precio', 'Asesor', ''].map(h => (
                                                 <th key={h} className="px-5 py-3.5 text-left text-[10px] font-semibold tracking-widest text-slate-500 uppercase">{h}</th>
                                             ))}
                                         </tr>
@@ -135,6 +154,38 @@ export default function InmueblesPage() {
                                                     </td>
                                                     <td className="px-5 py-3.5"><span className="text-white text-xs font-medium">{fmtCurrency(l.precioLista)}</span></td>
                                                     <td className="px-5 py-3.5"><span className="text-slate-400 text-xs">{l.asesor?.name || '—'}</span></td>
+                                                    <td className="px-5 py-3.5">
+                                                        {l.estado === 'SEPARADO' && (
+                                                            confirmId === l.id ? (
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <button
+                                                                        onClick={() => liberarLote(l.id)}
+                                                                        disabled={liberando === l.id}
+                                                                        className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs font-medium transition-colors"
+                                                                    >
+                                                                        {liberando === l.id
+                                                                            ? <Loader2 className="w-3 h-3 animate-spin" />
+                                                                            : <Unlock className="w-3 h-3" />}
+                                                                        Confirmar
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setConfirmId(null)}
+                                                                        className="px-2 py-1 rounded-md text-slate-400 hover:text-white text-xs transition-colors"
+                                                                    >
+                                                                        No
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => setConfirmId(l.id)}
+                                                                    className="flex items-center gap-1 px-2.5 py-1 rounded-md border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 text-xs transition-colors"
+                                                                >
+                                                                    <Unlock className="w-3 h-3" />
+                                                                    Liberar
+                                                                </button>
+                                                            )
+                                                        )}
+                                                    </td>
                                                 </tr>
                                             )
                                         })}
