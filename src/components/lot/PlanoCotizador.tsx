@@ -669,10 +669,6 @@ export function PlanoCotizador({
   const descuentoActivo = descuento
   const precioConDesc = Math.max(0, precioLista - descuentoActivo)
 
-  // contado: 5% pronto pago
-  const prontoPago = Math.round(precioConDesc * 0.05)
-  const totalContado = precioConDesc - prontoPago
-
   // financing — inicialMinPct now stores S/ amount directly
   const inicialMin = cond?.inicialMinPct ?? 0
   const inicialNum = typeof inicialS === 'number' ? inicialS : 0
@@ -845,23 +841,12 @@ export function PlanoCotizador({
                     cls="text-blue-600"
                   />
                 )}
-                <LineItem
-                  label="Pronto pago 5%"
-                  value={`-${fmtPEN(prontoPago)}`}
-                  cls="text-green-600"
-                />
                 <div className="border-t border-gray-100 pt-2 flex items-center justify-between">
-                  <span className="text-xs font-semibold text-gray-700">Pagas hoy</span>
+                  <span className="text-xs font-semibold text-gray-700">Precio al contado</span>
                   <span className="text-xl font-bold font-mono text-gray-900">
-                    {fmtPEN(totalContado)}
+                    {fmtPEN(precioConDesc)}
                   </span>
                 </div>
-              </div>
-              <div className="px-4 py-2 bg-blue-50 border-t border-blue-100">
-                <p className="text-[11px] text-blue-700 flex items-start gap-1.5">
-                  <Info className="w-3 h-3 mt-0.5 shrink-0" />
-                  Pago unico contra contrato. Incluye gestion notarial.
-                </p>
               </div>
             </div>
           )}
