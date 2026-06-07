@@ -5,6 +5,25 @@ import { generateQuotationCode } from '@/lib/auth'
 import { generatePdfBuffer } from '@/lib/pdf'
 import { QuotationPdf } from '@/components/pdf/QuotationPdf'
 import React from 'react'
+import fs from 'fs'
+import path from 'path'
+
+/** Convierte un logoUrl local (ej: "/logo-lumina.png") a data URI base64.
+ *  @react-pdf/renderer no puede acceder a localhost en SSR,
+ *  pero sí acepta data URIs y rutas absolutas del filesystem. */
+function resolveLogoUrl(logoUrl: string | null | undefined): string | undefined {
+    if (!logoUrl) return undefined
+    if (logoUrl.startsWith('http') || logoUrl.startsWith('data:')) return logoUrl
+    try {
+        const filePath = path.join(process.cwd(), 'public', logoUrl.replace(/^\//, ''))
+        const buffer = fs.readFileSync(filePath)
+        const ext = path.extname(filePath).slice(1).toLowerCase()
+        const mime = ext === 'jpg' ? 'image/jpeg' : ext === 'svg' ? 'image/svg+xml' : `image/${ext}`
+        return `data:${mime};base64,${buffer.toString('base64')}`
+    } catch {
+        return undefined
+    }
+}
 
 export async function POST(request: NextRequest) {
     try {
@@ -103,7 +122,7 @@ export async function GET(request: NextRequest) {
             },
             tenant: {
                 name: quotation.tenant.name,
-                logoUrl: quotation.tenant.logoUrl || undefined
+                logoUrl: resolveLogoUrl(quotation.tenant.logoUrl)
             },
             project: {
                 name: quotation.project.name

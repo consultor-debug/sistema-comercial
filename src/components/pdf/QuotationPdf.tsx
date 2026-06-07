@@ -4,7 +4,8 @@ import {
     Page,
     Text,
     View,
-    StyleSheet
+    StyleSheet,
+    Image,
 } from '@react-pdf/renderer';
 
 // ── Paleta ──────────────────────────────────────────────────────
@@ -69,6 +70,11 @@ const styles = StyleSheet.create({
         color: C.white,
         fontSize: 22,
         fontFamily: 'Helvetica-Bold',
+    },
+    logoImage: {
+        width: 120,
+        height: 48,
+        objectFit: 'contain',
     },
     companyName: {
         fontSize: 17,
@@ -340,15 +346,24 @@ export const QuotationPdf = ({ data }: QuotationPdfProps) => {
                     <View style={styles.headerInner}>
                         {/* Logo + empresa */}
                         <View style={styles.logoRow}>
-                            <View style={styles.logoBox}>
-                                <Text style={styles.logoLetter}>
-                                    {tenant.name.charAt(0).toUpperCase()}
-                                </Text>
-                            </View>
-                            <View>
-                                <Text style={styles.companyName}>{tenant.name}</Text>
-                                <Text style={styles.companySub}>Gestión Inmobiliaria · Cotización Oficial</Text>
-                            </View>
+                            {tenant.logoUrl ? (
+                                <Image
+                                    src={tenant.logoUrl}
+                                    style={styles.logoImage}
+                                />
+                            ) : (
+                                <>
+                                    <View style={styles.logoBox}>
+                                        <Text style={styles.logoLetter}>
+                                            {tenant.name.charAt(0).toUpperCase()}
+                                        </Text>
+                                    </View>
+                                    <View>
+                                        <Text style={styles.companyName}>{tenant.name}</Text>
+                                        <Text style={styles.companySub}>Gestión Inmobiliaria · Cotización Oficial</Text>
+                                    </View>
+                                </>
+                            )}
                         </View>
                         {/* Código cotización */}
                         <View>
