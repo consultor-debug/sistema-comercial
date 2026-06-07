@@ -465,6 +465,147 @@ function QuickSaleModal({ lot, onClose, onSuccess }: QuickSaleModalProps) {
   )
 }
 
+// ─── QuotationModal ─────────────────────────────────────────────────────────
+// Small modal to collect client DNI (+ RENIEC name) before generating the PDF.
+
+interface QuotationModalProps {
+  lot: NonNullable<PlanoCotizadorProps['lot']>
+  quotationData: {
+    precioLista: number
+    descuento: number
+    precioFinal: number
+    inicial: number
+    cuotas: number        // plazo en meses
+    tasa: number
+    cronograma: Array<{ numero: number; fecha: string; monto: number }>
+  }
+  onClose: () => void
+}
+
+function QuotationModal({ lot, quotationData, onClose }: QuotationModalProps) {
+  const [dni, setDni] = React.useState('')
+  const [email, setEmail] = React.useState('')
+  const [nombres, setNombres] = React.useState('')
+  const [apellidos, setApellidos] = React.useState('')
+  const [reniecStatus, setReniecStatus] = React.useState<'idle' | 'loading' | 'found' | 'not_found'>('idle')
+  const [loading, setLoading] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    if (dni.length !== 8) { setReniecStatus('idle'); setNombres(''); setApellidos(''); return }
+    let cancelled = false
+    setReniecStatus('loading')
+    fetch(`/api/clients/validate?dni=${dni}`)
+      .then(r => r.json())
+      .then(d => {
+        if (cancelled) return
+        if (d?.nombres) { setNombres(d.nombres); setApellidos(d.apellidos ?? ''); setReniecStatus('found') }
+        else setReniecStatus('not_found')
+      })
+      .catch(() => { if (!cancelled) setReniecStatus('not_found') })
+    return () => { cancelled = true }
+  }, [dni])
+
+  async function handleDownload() {
+    if (dni.length !== 8) { setError('Ingresa un DNI de 8 dígitos'); return }
+    setLoading(true); setError(null)
+    try {
+      // 1. Crear registro de cotización
+      const nom = nombres || 'S/N'
+      const ape = apellidos || ''
+      const today = new Date()
+      const fechaInicio = today.toISOString().split('T')[0]
+
+      const res = await fetch('/api/quotations/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lotId: lot.id,
+          client: { dni, nombres: nom, apellidos: ape, email: email || '', phone: '' },
+          quotation: {
+            precioLista:  quotationData.precioLista,
+            descuento:    quotationData.descuento,
+            precioFinal:  quotationData.precioFinal,
+            inicial:      quotationData.inicial,
+            cuotas:       quotationData.cuotas,
+            tasa:         quotationData.tasa,
+            fechaInicio,
+            cronograma:   quotationData.cronograma,
+          },
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.success) throw new Error(data.error ?? 'Error al crear cotización')
+
+      // 2. Descargar PDF en nueva pestaña
+      window.open(`/api/quotations/download?id=${data.quotationId}`, '_blank')
+      onClose()
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Error al generar')
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40">
+      <div className="w-full sm:max-w-sm bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900">Descargar cotización PDF</h3>
+            <p className="text-xs text-gray-400 mt-0.5">Lote {lot.code}</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100"><X className="w-4 h-4" /></button>
+        </div>
+        <div className="px-5 py-5 space-y-4">
+          <div>
+            <label className="text-xs font-medium text-gray-600 block mb-1.5">DNI del cliente <span className="text-red-400">*</span></label>
+            <div className="relative">
+              <input
+                type="text" inputMode="numeric" maxLength={8}
+                value={dni} onChange={e => setDni(e.target.value.replace(/\D/g, ''))}
+                placeholder="12345678"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 pr-10"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                {reniecStatus === 'loading' && <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />}
+                {reniecStatus === 'found' && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+              </span>
+            </div>
+            {reniecStatus === 'found' && (nombres || apellidos) && (
+              <p className="text-[11px] text-green-600 mt-1 flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 shrink-0" />{nombres} {apellidos}
+              </p>
+            )}
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-600 block mb-1.5">Email <span className="text-gray-400">(opcional)</span></label>
+            <input
+              type="email" value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="correo@mail.com"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
+            />
+          </div>
+          {error && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-xs">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />{error}
+            </div>
+          )}
+        </div>
+        <div className="px-5 pb-5 flex gap-3">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50">Cancelar</button>
+          <button
+            onClick={handleDownload}
+            disabled={loading || dni.length !== 8}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Download className="w-4 h-4" /> Descargar</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function PlanoCotizador({
@@ -484,6 +625,7 @@ export function PlanoCotizador({
 
   const [showModal, setShowModal] = React.useState(false)
   const [showCronograma, setShowCronograma] = React.useState(false)
+  const [showQuotation, setShowQuotation] = React.useState(false)
 
   // reset on lot change or mode change
   React.useEffect(() => {
@@ -556,6 +698,21 @@ export function PlanoCotizador({
           lot={lot}
           onClose={() => setShowModal(false)}
           onSuccess={() => { setShowModal(false); _onUpdate?.() }}
+        />
+      )}
+      {showQuotation && (
+        <QuotationModal
+          lot={lot}
+          quotationData={{
+            precioLista,
+            descuento:   descuentoActivo,
+            precioFinal: precioConDesc,
+            inicial:     modo === 'financiamiento' ? inicialNum : 0,
+            cuotas:      modo === 'financiamiento' ? plazo : 0,
+            tasa:        modo === 'financiamiento' ? tasa : 0,
+            cronograma:  [],
+          }}
+          onClose={() => setShowQuotation(false)}
         />
       )}
 
@@ -883,10 +1040,10 @@ export function PlanoCotizador({
                 Generar venta con documentos
               </button>
 
-              {/* Terciario — no funcional */}
+              {/* Terciario — descarga cotización PDF */}
               <button
-                disabled
-                className="w-full py-2.5 rounded-xl bg-white text-gray-400 text-sm font-medium border border-gray-200 cursor-not-allowed flex items-center justify-center gap-2"
+                onClick={() => setShowQuotation(true)}
+                className="w-full py-2.5 rounded-xl bg-white text-gray-600 text-sm font-medium border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-colors flex items-center justify-center gap-2"
               >
                 <Download className="w-4 h-4" />
                 Descargar cotizacion PDF

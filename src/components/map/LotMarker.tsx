@@ -80,7 +80,7 @@ export const LotMarker: React.FC<LotMarkerProps> = ({
     if (lot.mapShapeType === 'circle' && shapeData.x !== undefined && shapeData.y !== undefined) {
         const cx = toPixel(shapeData.x, imageSize.width)
         const cy = toPixel(shapeData.y, imageSize.height)
-        const r  = 8
+        const r  = 7
         // Fuente más pequeña para códigos largos (A-10 vs G1)
         const fs = lot.code.length <= 3 ? r * 0.62 : r * 0.52
 
