@@ -217,6 +217,10 @@ export default function PlantillasPage() {
     const editorContainerRef = React.useRef<HTMLDivElement>(null)
     const lastSelRef       = React.useRef<{ index: number; length: number } | null>(null)
 
+    // Derived state — declared early so useEffects below can reference them
+    const selected = templates[selectedIndex]
+    const locked   = selected?.editable === false
+
     // Solo cuenta cambios en plantillas editables
     const isDirty = templates.some((t, i) => {
         if (t.editable === false) return false
@@ -328,9 +332,6 @@ export default function PlantillasPage() {
             lastSelRef.current = { index: range.index + key.length, length: 0 }
         }, 0)
     }
-
-    const selected = templates[selectedIndex]
-    const locked   = selected?.editable === false
 
     if (loading) return (
         <div className="min-h-screen bg-slate-950 flex items-center justify-center">
