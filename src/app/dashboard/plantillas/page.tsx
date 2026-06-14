@@ -1,29 +1,13 @@
 'use client'
 
 import React from 'react'
-import dynamic from 'next/dynamic'
 import { Sidebar } from '@/components/Sidebar'
 import { Eye, EyeOff, RotateCcw, Save, Loader2, Check, FileText, Layers, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-// ── Quill (browser-only) ──────────────────────────────────────────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const ReactQuill = dynamic(
-    async () => {
-        const mod = await import('react-quill')
-        // Handles both ESM default and CJS module.exports
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return (mod.default ?? mod) as any
-    },
-    {
-        ssr: false,
-        loading: () => (
-            <div className="h-[420px] bg-slate-800 rounded-b-lg animate-pulse flex items-center justify-center">
-                <Loader2 className="w-5 h-5 text-slate-600 animate-spin" />
-            </div>
-        ),
-    }
-) as React.ComponentType<any>
+// ── Quill (browser-only, loaded dynamically to avoid SSR) ────────────────────
+// We use Quill directly (not react-quill) because react-quill@2.0.0 calls
+// ReactDOM.findDOMNode internally, which was removed in React 19.
 
 
 const QUILL_MODULES = {
@@ -229,8 +213,9 @@ export default function PlantillasPage() {
     const [showVars,  setShowVars]        = React.useState(false)
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const quillRef  = React.useRef<any>(null)
-    const lastSelRef = React.useRef<{ index: number; length: number } | null>(null)
+    const quillRef         = React.useRef<any>(null)
+    const editorContainerRef = React.useRef<HTMLDivElement>(null)
+    const lastSelRef       = React.useRef<{ index: number; length: number } | null>(null)
 
     // Solo cuenta cambios en plantillas editables
     const isDirty = templates.some((t, i) => {
@@ -256,6 +241,59 @@ export default function PlantillasPage() {
             .finally(() => setLoading(false))
     }, [])
 
+    // ── Mount / remount Quill whenever the selected template changes ──────────
+    React.useEffect(() => {
+        const container = editorContainerRef.current
+        if (!container || locked) return
+
+        // Capture values synchronously before the async import resolves
+        const initialContent = templates[selectedIndex]?.cuerpo ?? '<p><br></p>'
+        const capturedIndex  = selectedIndex
+        let cancelled = false
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        import('quill').then(({ default: Quill }: { default: any }) => {
+            if (cancelled || !container || !container.isConnected) return
+
+            // Tear down previous instance's DOM (toolbar + container divs)
+            container.innerHTML = ''
+            quillRef.current = null
+
+            const q = new Quill(container, {
+                theme:    'snow',
+                modules:  QUILL_MODULES,
+                formats:  QUILL_FORMATS,
+                placeholder: 'Escribe el contenido del documento...',
+            })
+
+            // Paste initial HTML content
+            if (initialContent && initialContent.trim() !== '<p><br></p>') {
+                q.clipboard.dangerouslyPasteHTML(initialContent)
+            }
+
+            // Propagate edits back to React state
+            q.on('text-change', () => {
+                const html: string = q.root.innerHTML
+                setTemplates(prev => prev.map((t, i) =>
+                    i === capturedIndex && t.editable !== false ? { ...t, cuerpo: html } : t
+                ))
+            })
+
+            // Track cursor for variable insertion
+            q.on('selection-change', (range: { index: number; length: number } | null) => {
+                if (range) lastSelRef.current = range
+            })
+
+            quillRef.current = q
+        })
+
+        return () => {
+            cancelled = true
+            quillRef.current = null
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedIndex, locked, templates.length])
+
     async function handleSave() {
         setSaving(true)
         try {
@@ -280,14 +318,13 @@ export default function PlantillasPage() {
 
     /** Inserta una variable en la posición del cursor de Quill */
     function insertVar(key: string) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const editor = (quillRef.current as any)?.getEditor?.()
-        if (!editor) return
-        const range = lastSelRef.current ?? { index: Math.max(0, editor.getLength() - 1), length: 0 }
-        editor.focus()
+        const q = quillRef.current
+        if (!q) return
+        const range = lastSelRef.current ?? { index: Math.max(0, q.getLength() - 1), length: 0 }
+        q.focus()
         setTimeout(() => {
-            editor.insertText(range.index, key, 'user')
-            editor.setSelection(range.index + key.length, 0)
+            q.insertText(range.index, key, 'user')
+            q.setSelection(range.index + key.length, 0)
             lastSelRef.current = { index: range.index + key.length, length: 0 }
         }, 0)
     }
@@ -556,18 +593,8 @@ export default function PlantillasPage() {
                                         {/* Editor visual (editable) */}
                                         {!locked ? (
                                             <div className="quill-dark rounded-lg border border-white/8 overflow-hidden">
-                                                <ReactQuill
-                                                    ref={quillRef}
-                                                    theme="snow"
-                                                    value={selected.cuerpo}
-                                                    onChange={(html: string) => update('cuerpo', html)}
-                                                    onChangeSelection={(range: { index: number; length: number } | null) => {
-                                                        if (range) lastSelRef.current = range
-                                                    }}
-                                                    modules={QUILL_MODULES}
-                                                    formats={QUILL_FORMATS}
-                                                    placeholder="Escribe el contenido del documento..."
-                                                />
+                                                {/* Quill mounts its toolbar + editor directly into this div */}
+                                                <div ref={editorContainerRef} />
                                             </div>
                                         ) : (
                                             /* Vista bloqueada — sólo muestra un extracto */
