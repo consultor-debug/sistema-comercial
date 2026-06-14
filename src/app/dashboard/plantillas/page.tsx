@@ -2,7 +2,6 @@
 
 import React from 'react'
 import dynamic from 'next/dynamic'
-import 'react-quill/dist/quill.snow.css'
 import { Sidebar } from '@/components/Sidebar'
 import { Eye, EyeOff, RotateCcw, Save, Loader2, Check, FileText, Layers, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -10,7 +9,12 @@ import { cn } from '@/lib/utils'
 // ── Quill (browser-only) ──────────────────────────────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ReactQuill = dynamic(
-    () => import('react-quill').then(mod => mod.default),
+    async () => {
+        const mod = await import('react-quill')
+        // Handles both ESM default and CJS module.exports
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return (mod.default ?? mod) as any
+    },
     {
         ssr: false,
         loading: () => (
